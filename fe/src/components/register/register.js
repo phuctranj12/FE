@@ -5,14 +5,14 @@ function Register() {
             <div class="container" id="container">
                 <div class="form-container register-container">
                     <form action="" method="POST">
-                        <h1>Refgister</h1>
-                        <input type="text" placeholder="Full Name" id="fullName" name="fullName" required />
+                        <h1>Register</h1>
+                        <input type="text" placeholder="Họ và teen đầy đủ" id="fullName" name="fullName" required />
                         <input type="email" placeholder="Email" id="email" name="email" required />
-                        <input type="tel" placeholder="PhoneNumber" id="phoneNumber" name="phoneNumber" required />
-                        <input type="password" placeholder="Password" id="password" name="password" required />
-                        <input type="confirmPassword" placeholder="Confirm password" id="confirmPassword" name="confirmPassword" required />
+                        <input type="tel" placeholder="Số điện thoại" id="phoneNumber" name="phoneNumber" required />
+                        <input type="password" placeholder="Mạt khẩu" id="Mật khẩu" name="password" required />
+                        <input type="confirmPassword" placeholder="Xác nhận mật khẩu" id="confirmPassword" name="confirmPassword" required />
                         <div class="pass-link-back-to-login">
-                            <a class="pass-link-back-to-login" href="/login">I already have an account</a>
+                            <a class="pass-link-back-to-login" href="/">I already have an account</a>
                         </div>
                         <button type="submit" name="submitRegister">Register</button>
 

@@ -1,0 +1,50 @@
+
+.sidebar {
+  width: 250px;
+  background-color: #f7f7f7;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+  height: 100vh;
+}
+
+.create-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  border: none;
+  color: white;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.menu {
+  margin-top: 15px;
+}
+
+.menu-item {
+  padding: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
+}
+
+.menu-item:hover {
+  background-color: #eaeaea;
+}
+
+.submenu {
+  margin-left: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.submenu a {
+  padding: 6px 10px;
+  text-decoration: none;
+  color: #555;
+}
+
+.submenu a:hover {
+  background-color: #ddd;
+}

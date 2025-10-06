@@ -1,0 +1,65 @@
+.main-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+  background-color: #f5f7fb;
+}
+
+.content-body {
+  display: flex;
+  flex: 1;
+}
+
+.content-main {
+  flex: 1;
+  padding: 20px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.toolbar input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.toolbar button {
+  background-color: #0048ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.toolbar button:hover {
+  background-color: #0033cc;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+}
+
+.doc-table th,
+.doc-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.status {
+  background: #fff7e6;
+  color: #b58900;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
