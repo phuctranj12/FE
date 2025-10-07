@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../../styles/header.css";
-
+import Logo from "../assets/logo.png";
 function Header() {
     // Dữ liệu người dùng sample
     const [user, setUser] = useState({
@@ -64,7 +64,7 @@ function Header() {
         <header className="header">
             {/* --- Bên trái --- */}
             <div className="header-left">
-                <img src="/logo.png" alt="Logo" className="logo" />
+                <img src="../assets/logo.png" alt="Logo" className="logo" />
                 <span className="header-title">Hệ thống quản lý hợp đồng điện tử</span>
             </div>
 
