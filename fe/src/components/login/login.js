@@ -20,7 +20,7 @@ function Login() {
                         <button name="submitLogin" type="submit">Login</button>
                         <div className='register-link'>
                             <div class="pass-link">
-                                <a href="/register">Register</a>
+                                <a href="/register">Register </a>
                                 <span>or use your acount</span>
                             </div>
 

@@ -2,28 +2,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #fff;
   padding: 10px 20px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+
   position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 40px;
 }
 
 .logo {
-  width: 40px;
+  width: 210px;
   height: 40px;
+ 
+  
+}
+.divider {
+  border-left: 2px solid black;
+  border-width: 80%;
+  height: 40px;
+
+}
+.header-title {
+  font-size: 25px;
+  font-weight: 700;
+  padding-left: 10px;
 }
 
-.header-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #003399;
-}
+
 
 .header-right {
   display: flex;
@@ -69,7 +81,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f7f9fc;
+  background: #fff;
   padding: 8px 12px;
   border-bottom: 1px solid #e6e6e6;
   font-weight: 600;
@@ -192,7 +204,7 @@
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 20px;
   cursor: pointer;
 }
 
@@ -206,22 +218,23 @@
 .user-text {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  /* align-items: flex-end; */
 }
 
 .user-text .name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: #222;
 }
 
 .user-text .phone {
-  font-size: 12px;
+  font-size: 14px;
   color: #777;
+  
 }
-/* --- Cấu trúc gốc giữ nguyên --- */
 
-/* --- Dropdown chung (cả user và noti) --- */
+
+
 .dropdown-box {
   position: absolute;
   top: 50px;
@@ -246,7 +259,7 @@
   }
 }
 
-/* --- Vị trí cho dropdown thông báo --- */
+
 .bell-wrapper {
   position: relative;
 }
@@ -256,12 +269,12 @@
   right: -80px;
 }
 
-/* --- Vị trí cho dropdown user --- */
+
 .user-wrapper {
   position: relative;
 }
 
-/* --- User menu giống noti, nhưng nhỏ hơn --- */
+
 .user-menu {
   width: 220px;
 }

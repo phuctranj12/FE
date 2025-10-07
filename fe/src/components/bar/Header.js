@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // Thêm dòng này
 import "../../styles/header.css";
 import Logo from "../assets/logo.png";
 function Header() {
+    const navigate = useNavigate(); // Thêm dòng này
     // Dữ liệu người dùng sample
     const [user, setUser] = useState({
         name: "Trần Tuấn Phúc",
@@ -64,8 +66,11 @@ function Header() {
         <header className="header">
             {/* --- Bên trái --- */}
             <div className="header-left">
-                <img src="../assets/logo.png" alt="Logo" className="logo" />
-                <span className="header-title">Hệ thống quản lý hợp đồng điện tử</span>
+                <img src={Logo} alt="Logo" className="logo" />
+                <div className="divider">
+                    <span className="header-title">Hệ thống quản lý hợp đồng điện tử</span>
+                </div>
+
             </div>
 
             {/* Bên phải */}
@@ -147,7 +152,7 @@ function Header() {
                             <div className="menu-item">👤 Thông tin tài khoản</div>
                             <div className="menu-item">🔒 Đổi mật khẩu</div>
                             <div className="menu-item">🔌 Plugin ký Token</div>
-                            <div className="menu-item logout">🚪 Đăng xuất</div>
+                            <div className="menu-item logout" onClick={() => navigate("/login")}>🚪 Đăng xuất</div>
                         </div>
                     )}
                 </div>
