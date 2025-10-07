@@ -22,7 +22,7 @@ function Document({ filteredDocs, selectedStatus }) {
             case "thanh-ly":
                 return "Thanh lý";
             default:
-                return "Tất cả";
+                return "";
         }
     };
 
@@ -39,7 +39,7 @@ function Document({ filteredDocs, selectedStatus }) {
                             <th>Tên tài liệu</th>
                             <th>Trạng thái</th>
                             <th>Thời gian tạo</th>
-                            <th>Hết hạn ký</th>
+                            <th>Thời gian hạn ký</th>
                         </tr>
                     </thead>
                     <tbody>

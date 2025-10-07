@@ -1,10 +1,11 @@
 .header {
-  background: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: white;
   padding: 10px 20px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e6e6e6;
+  position: relative;
 }
 
 .header-left {
@@ -14,25 +15,271 @@
 }
 
 .logo {
-  height: 30px;
+  width: 40px;
+  height: 40px;
 }
 
 .header-title {
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 600;
   color: #003399;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
+  position: relative;
 }
 
+/* --- Bell Button --- */
+.bell-btn {
+  position: relative;
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  background: red;
+  color: white;
+  font-size: 11px;
+  border-radius: 10px;
+  padding: 2px 5px;
+}
+
+/* --- Dropdown Thông báo --- */
+.noti-dropdown {
+  position: absolute;
+  right: 120px;
+  top: 50px;
+  width: 360px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 99;
+}
+
+.noti-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f7f9fc;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e6e6e6;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.read-all-btn {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 13px;
+  cursor: pointer;
+}
+/* --- Dropdown User Menu --- */
+.user-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 220px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.menu-item {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.menu-item:hover {
+  background: #f8f8ff;
+}
+
+.logout {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+
+.noti-list {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.noti-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.noti-item:hover {
+  background: #f8f8ff;
+}
+
+.noti-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.noti-sender {
+  font-size: 12px;
+  color: #777;
+  margin-top: 3px;
+}
+
+.noti-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3px;
+}
+
+.noti-time {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.noti-status {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-warning {
+  color: #e6b800;
+}
+
+.status-cancel {
+  color: #e74c3c;
+}
+
+.status-expired {
+  color: #888;
+}
+
+.noti-footer-btn {
+  text-align: center;
+  padding: 6px 0;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+}
+
+.view-all-btn {
+  border: none;
+  background: none;
+  color: #007bff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* --- User Info --- */
 .user-info {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
 }
 
-.user-info .name {
-  font-weight: bold;
-  display: block;
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ddd;
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.user-text .name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+}
+
+.user-text .phone {
+  font-size: 12px;
+  color: #777;
+}
+/* --- Cấu trúc gốc giữ nguyên --- */
+
+/* --- Dropdown chung (cả user và noti) --- */
+.dropdown-box {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 250px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  animation: fadeIn 0.15s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Vị trí cho dropdown thông báo --- */
+.bell-wrapper {
+  position: relative;
+}
+
+.noti-dropdown {
+  width: 360px;
+  right: -80px;
+}
+
+/* --- Vị trí cho dropdown user --- */
+.user-wrapper {
+  position: relative;
+}
+
+/* --- User menu giống noti, nhưng nhỏ hơn --- */
+.user-menu {
+  width: 220px;
+}
+
+.menu-item {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.menu-item:hover {
+  background: #f8f8ff;
+}
+
+.logout {
+  color: #e74c3c;
+  font-weight: 600;
 }

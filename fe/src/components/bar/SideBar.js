@@ -7,7 +7,7 @@ function Sidebar({ setSelectedStatus, selectedStatus }) {
     const toggleMenu = (menuName) => {
         setActiveMenu(activeMenu === menuName ? null : menuName);
     };
-    // ✅ Khi click submenu thì đổi trạng thái tài liệu
+    // Khi click submenu thì đổi trạng thái tài liệu
     const handleSelect = (status) => {
         setSelectedStatus(status);
     };
