@@ -40,7 +40,7 @@
     transition: 0.3s ease-in-out;
 }
 .main-login-container a:hover{
-    color: #4bb6b7;
+    color: #dd8339;
 }
 .main-login-container .content{
     display: flex;
@@ -67,8 +67,8 @@
 .main-login-container button{
     position: relative;
     border-radius: 20px;
-    border:  1px solid #4bb6b7;
-    background-color: #4bb6b7;
+    border:  1px solid #dd8339;
+    background-color: #dd8339;
     color:#fff;
     font-size: 15px;
     font-weight: 700;
@@ -79,7 +79,7 @@
     transition: 0.3s ease-in-out;
 }
 .main-login-container button:hover{
-    letter-spacing: 3px;
+    letter-spacing: 2px;
 }
 .main-login-container button:active{
     transform: scale(0.95);
@@ -244,7 +244,8 @@ transition: transform 0.6s ease-in-out;
     transition: 0.3 ease-in-out;
 }
 .main-login-container .social-container a:hover{
-    border: 1px solid #4bb6b7;
+    border: 1px solid #dd8339;
+    
 } 
 .pass-link-back-to-login{
   width: 100%;

@@ -66,7 +66,7 @@ function Header() {
         <header className="header">
             {/* --- Bên trái --- */}
             <div className="header-left">
-                <img src={Logo} alt="Logo" className="logo" />
+                <img alt="Logo" className="logo" />
                 <div className="divider">
                     <span className="header-title">Hệ thống quản lý hợp đồng điện tử</span>
                 </div>
