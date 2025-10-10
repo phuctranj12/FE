@@ -30,10 +30,12 @@ function MainContent() {
                 />
 
                 {/* Document nhận danh sách tài liệu đã lọc */}
-                <Document
-                    filteredDocs={filteredDocs}
-                    selectedStatus={selectedStatus}
-                />
+                <div className="content-right">
+                    <Document
+                        filteredDocs={filteredDocs}
+                        selectedStatus={selectedStatus}
+                    />
+                </div>
             </div>
         </div>
     );

@@ -1,28 +1,38 @@
 import React, { useState } from "react";
 import "../../styles/sideBar.css";
+import { useNavigate } from "react-router-dom";
 
 function Sidebar({ setSelectedStatus, selectedStatus }) {
     const [activeMenu, setActiveMenu] = useState(null);
-
+    const [contentStatus, setContentStatus] = useState("home");
+    const navigate = useNavigate();
+    const handleNavigation = (path) => {
+        navigate(path);
+    }
     const toggleMenu = (menuName) => {
         setActiveMenu(activeMenu === menuName ? null : menuName);
+
     };
+    const chooseMainContent = (status) => {
+        setContentStatus(status);
+    }
+
     // Khi click submenu thì đổi trạng thái tài liệu
     const handleSelect = (status) => {
         setSelectedStatus(status);
     };
     return (
         <aside className="sidebar">
-            <button className="create-btn">Tạo ngay</button>
+            <button className="create-btn" onClick={() => handleNavigation("/login")}>Tạo ngay</button>
 
             <div className="menu">
                 {/* Trang chủ */}
-                <div className="menu-item" onClick={() => handleSelect("home")}>
+                <div className="menu-item" onClick={() => toggleMenu("home")} >
                     Trang chủ
                 </div>
 
                 {/* Tài liệu đã tạo */}
-                <div className="menu-item" onClick={() => toggleMenu("tao")}>
+                <div className="menu-item" onClick={() => { toggleMenu("tao") }} >
                     Tài liệu đã tạo{" "}
                     <i
                         className={`lni ${activeMenu === "tao" ? "lni-chevron-down" : "lni-chevron-right"
