@@ -10,6 +10,14 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 
 }
+.header a{
+    color: #e2974d;
+    cursor: pointer;
+    font-size: 18px;
+}
+.header a:hover{
+    color:#ff7200;
+}
 
 .header-left {
   display: flex;
@@ -18,14 +26,14 @@
 }
 
 .logo {
-  width: 220px;
+  width: 230px;
   height: 40px;
  
   
 }
 .divider {
-  border-left: 2px solid black;
-  border-width: 80%;
+  /* border-left: 2px solid black;
+  border-width: 80%; */
   height: 40px;
 
 }
@@ -90,11 +98,15 @@
 }
 
 .read-all-btn {
+  color: #e2974d;
   background: none;
   border: none;
-  color: #007bff;
+
   font-size: 13px;
   cursor: pointer;
+}
+.read-all-btn:hover {
+  color:#ff7200;
 }
 /* --- Dropdown User Menu --- */
 .user-menu {
@@ -195,9 +207,12 @@
 .view-all-btn {
   border: none;
   background: none;
-  color: #007bff;
+  color: #e2974d;
   font-size: 13px;
   cursor: pointer;
+}
+.view-all-btn:hover{
+  color:#ff7200;
 }
 
 /* --- User Info --- */

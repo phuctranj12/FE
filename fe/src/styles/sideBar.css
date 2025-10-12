@@ -47,15 +47,24 @@
   background-color: #f0eeee;
   
 }
+.menu-item.active-menu {
+
+  background-color: #f0eeee;
+}
 
 .submenu {
-   font-size: 15px;
-  margin:0 0 0 15px;
+  font-size: 15px;
+  font-weight: 500;
+  margin:0 0 0 20px;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 }
 .submenu .subitem{
-  padding: 2px;
+  padding: 5px;
+}
+.submenu .subitem:hover{
+    background-color: #f0eeee;
 }
 
 .submenu a {

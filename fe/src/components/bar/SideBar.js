@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import "../../styles/sideBar.css";
 import { useNavigate } from "react-router-dom";
 
-function Sidebar({ setSelectedStatus, selectedStatus }) {
+function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus }) {
     const [activeMenu, setActiveMenu] = useState(null);
-    const [contentStatus, setContentStatus] = useState("home");
     const navigate = useNavigate();
     const handleNavigation = (path) => {
         navigate(path);
@@ -13,26 +12,33 @@ function Sidebar({ setSelectedStatus, selectedStatus }) {
         setActiveMenu(activeMenu === menuName ? null : menuName);
 
     };
-    const chooseMainContent = (status) => {
-        setContentStatus(status);
-    }
 
     // Khi click submenu thì đổi trạng thái tài liệu
     const handleSelect = (status) => {
         setSelectedStatus(status);
     };
+    const handleSelectMenu = (menu) => {
+        setMenuStatus(menu);
+    }
     return (
         <aside className="sidebar">
             <button className="create-btn" onClick={() => handleNavigation("/login")}>Tạo ngay</button>
 
             <div className="menu">
                 {/* Trang chủ */}
-                <div className="menu-item" onClick={() => toggleMenu("home")} >
+                <div className="menu-item" onClick={() => {
+                    handleSelectMenu("home");
+                    toggleMenu(null);
+                }} >
                     Trang chủ
                 </div>
 
                 {/* Tài liệu đã tạo */}
-                <div className="menu-item" onClick={() => { toggleMenu("tao") }} >
+                <div className={`menu-item${(menuStatus === "document") ? " active-menu" : ""}`} onClick={() => {
+                    toggleMenu("tao");
+                    handleSelectMenu("document");
+                    handleSelect("all")
+                }} >
                     Tài liệu đã tạo{" "}
                     <i
                         className={`lni ${activeMenu === "tao" ? "lni-chevron-down" : "lni-chevron-right"
@@ -69,7 +75,10 @@ function Sidebar({ setSelectedStatus, selectedStatus }) {
                 )}
 
                 {/* Tài liệu mẫu */}
-                <div className="menu-item" onClick={() => handleSelect("tai-lieu-mau")}>
+                <div className="menu-item" onClick={() => {
+                    handleSelectMenu("tai-lieu-mau");
+                    toggleMenu(null);
+                }}>
                     Tài liệu mẫu
                 </div>
 
@@ -107,10 +116,10 @@ function Sidebar({ setSelectedStatus, selectedStatus }) {
                         <div className="subitem" onClick={() => handleSelect("gui-sms-email")}>
                             Cấu hình gửi SMS/Email
                         </div>
-                        <div onClick={() => handleSelect("chung-thu-so")}>
+                        <div className="subitem" onClick={() => handleSelect("chung-thu-so")}>
                             Danh sách chứng thư số Server
                         </div>
-                        <div onClick={() => handleSelect("webhook")}>Cấu hình WebHook</div>
+                        <div className="subitem" onClick={() => handleSelect("webhook")}>Cấu hình WebHook</div>
                     </div>
                 )}
 
@@ -153,7 +162,11 @@ function Sidebar({ setSelectedStatus, selectedStatus }) {
                 )}
 
                 {/* Kiểm tra chữ ký số */}
-                <div className="menu-item" onClick={() => handleSelect("kiem-tra-chu-ky-so")}>
+                <div className="menu-item" onClick={() => {
+                    handleSelectMenu("kiem-tra-chu-ky-so");
+                    toggleMenu(null);
+                }
+                }>
                     Kiểm tra chữ ký số
                 </div>
             </div>

@@ -4,7 +4,7 @@ import Login from './components/login/login';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Register from './components/register/register';
 import MainContent from './views/MainContent';
-import HomeContent from './views/HomeContent';
+import HomeComponent from './components/document/Home';
 function App() {
 
 
@@ -13,8 +13,7 @@ function App() {
     <Routes>
       <Route path="/Login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/main" element={<MainContent />} />
-      <Route path="/" element={<HomeContent />} />
+      <Route path="/" element={<MainContent />} />
     </Routes>
 
   );

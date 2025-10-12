@@ -149,10 +149,10 @@ function Header() {
 
                     {showUserMenu && (
                         <div className="dropdown-box user-menu">
-                            <div className="menu-item">👤 Thông tin tài khoản</div>
-                            <div className="menu-item">🔒 Đổi mật khẩu</div>
-                            <div className="menu-item">🔌 Plugin ký Token</div>
-                            <div className="menu-item logout" onClick={() => navigate("/login")}>🚪 Đăng xuất</div>
+                            <div className="menu-item">Thông tin tài khoản</div>
+                            <div className="menu-item">Đổi mật khẩu</div>
+                            <div className="menu-item">Plugin ký Token</div>
+                            <div className="menu-item logout" onClick={() => navigate("/login")}>Đăng xuất</div>
                         </div>
                     )}
                 </div>

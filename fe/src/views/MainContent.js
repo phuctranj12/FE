@@ -3,9 +3,10 @@ import "../styles/MainContent.css";
 import Header from "../components/bar/Header";
 import Sidebar from "../components/bar/SideBar";
 import Document from "../components/document/document";
-
+import HomeComponent from "../components/document/Home";
 function MainContent() {
-    const [selectedStatus, setSelectedStatus] = useState("Đang xử lý");
+    const [selectedStatus, setSelectedStatus] = useState("");
+    const [menuStatus, setMenuStatus] = useState("home");
 
     // Dữ liệu mẫu
     const documents = [
@@ -16,7 +17,9 @@ function MainContent() {
     ];
 
     // ⚙️ Lọc danh sách tài liệu theo trạng thái hiện tại
-    const filteredDocs = documents.filter((doc) => doc.status === selectedStatus);
+    const filteredDocs = selectedStatus === "all"
+        ? documents
+        : documents.filter((doc) => doc.status === selectedStatus);
 
     return (
         <div className="main-container">
@@ -27,14 +30,22 @@ function MainContent() {
                 <Sidebar
                     setSelectedStatus={setSelectedStatus}
                     selectedStatus={selectedStatus}
+                    setMenuStatus={setMenuStatus}
+                    menuStatus={menuStatus}
                 />
 
                 {/* Document nhận danh sách tài liệu đã lọc */}
                 <div className="content-right">
-                    <Document
-                        filteredDocs={filteredDocs}
-                        selectedStatus={selectedStatus}
-                    />
+                    {menuStatus === "home" ? (
+                        <HomeComponent />
+                    ) : menuStatus === "document" ? (
+                        <Document
+                            filteredDocs={filteredDocs}
+                            selectedStatus={selectedStatus}
+                        />
+                    ) : (
+                        null
+                    )}
                 </div>
             </div>
         </div>
