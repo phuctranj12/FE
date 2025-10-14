@@ -1,0 +1,286 @@
+/* User Management Styles */
+
+/* Breadcrumb styling for header */
+.header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.user-management-wrapper {
+    flex: 1;
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+}
+
+.user-management-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    flex: 1; /* Fill hết height của wrapper */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Quan trọng để flex hoạt động đúng */
+}
+
+.page-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.page-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.search-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.add-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #218838;
+}
+
+.import-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.import-btn:hover {
+    background-color: #5a6268;
+}
+
+.template-link {
+    align-self: flex-end;
+    margin-bottom: 20px;
+}
+
+.template-download {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.template-download:hover {
+    text-decoration: underline;
+}
+
+/* Table styles moved to src/styles/table.css */
+
+.child-row {
+    background-color: #f8f9fa;
+}
+
+.child-row td:first-child {
+    padding-left: 40px;
+}
+
+.expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 8px;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+.expand-btn:hover {
+    background-color: #e9ecef;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.edit-btn, .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 2px;
+    margin: 0 2px;
+}
+
+.edit-btn:hover {
+    background-color: #e3f2fd;
+}
+
+.delete-btn:hover {
+    background-color: #ffebee;
+}
+
+.action-buttons-cell {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.pagination-container {
+    display: grid; /* center pagination on page */
+    grid-template-columns: 1fr auto 1fr; /* left spacer | pagination | right area */
+    align-items: center;
+    margin-top: 20px;
+    gap: 16px;
+}
+
+.pagination {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.page-btn {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+}
+
+.page-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #6c757d;
+    justify-self: end; /* stay at far right */
+    grid-column: 3;
+    text-align: right;
+}
+
+/* Place pagination in the center column */
+.pagination-container > .pagination {
+    grid-column: 2;
+}
+
+@media (max-width: 768px) {
+    .pagination-container {
+        grid-template-columns: 1fr; /* stack on small screens */
+        justify-items: center;
+        row-gap: 8px;
+    }
+    .pagination-info {
+        grid-column: 1;
+        justify-self: center;
+        text-align: center;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .user-management-wrapper {
+        padding: 10px;
+    }
+    
+    .user-management-container {
+        padding: 16px;
+    }
+    
+    .search-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-inputs {
+        flex-direction: column;
+    }
+    
+    .search-inputs input {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .action-buttons {
+        justify-content: center;
+    }
+    
+    .pagination-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .data-table {
+        font-size: 12px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-header h2 {
+        font-size: 20px;
+    }
+    
+    .search-inputs input {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}

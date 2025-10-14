@@ -1,0 +1,44 @@
+/* Styles specific to OrganizationDropDown */
+
+.org-dropdown {
+    position: relative;
+}
+
+.org-input {
+    height: 42px;
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    background: #F1F5FE;
+    padding: 0 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.org-input-text { color: #374151; font-size: 14px; }
+.org-caret { color: #2563eb; }
+
+.org-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    max-height: 320px;
+    overflow: auto;
+    z-index: 20;
+}
+
+.org-item { padding: 0; }
+.org-row { padding: 8px 12px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.org-row:hover { background: #f8fafc; }
+.org-children { margin-left: 0; }
+.org-name { font-size: 14px; color: #374151; }
+.expand-btn.small { font-size: 10px; padding: 0 4px; }
+
+

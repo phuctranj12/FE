@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom"; // Thêm dòng này
 import "../../styles/header.css";
-import Logo from "../assets/logo.png";
-function Header() {
+// Logo is loaded from remote URL
+function Header({ breadcrumb }) {
     const navigate = useNavigate(); // Thêm dòng này
     // Dữ liệu người dùng sample
     const [user, setUser] = useState({
@@ -66,9 +66,26 @@ function Header() {
         <header className="header">
             {/* --- Bên trái --- */}
             <div className="header-left">
-                <img alt="Logo" className="logo" />
+                <img alt="Logo" className="logo" src="https://econtractdev.mobifone.ai/images/logo_web.png" />
                 <div className="divider">
-                    <span className="header-title">Hệ thống quản lý hợp đồng điện tử</span>
+                    {(() => {
+                        const text = breadcrumb || "Hệ thống quản lý hợp đồng điện tử";
+                        const parts = text.split('>').map(p => p.trim());
+                        return (
+                            <div className="breadcrumb-inline">
+                                {parts.map((p, idx) => (
+                                    <React.Fragment key={idx}>
+                                        <span className={`crumb ${idx === parts.length - 1 ? 'crumb-current' : ''}`}>{p}</span>
+                                        {idx < parts.length - 1 && (
+                                            <svg className="chev" viewBox="0 0 8 12" aria-hidden="true">
+                                                <path d="M2 1l4 5-4 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </div>
 
             </div>

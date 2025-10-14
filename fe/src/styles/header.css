@@ -3,9 +3,9 @@
   justify-content: space-between;
   align-items: center;
   background: #fff;
-  padding: 10px 20px;
+  padding: 20px 20px;
   border-bottom: 1px solid rgba(255,255,255,0.2);
-
+  
   position: relative;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 
@@ -23,24 +23,40 @@
   display: flex;
   align-items: center;
   gap: 40px;
+  vertical-align: center;
 }
 
 .logo {
-  width: 230px;
-  height: 40px;
- 
-  
+  height: 100%;
+  width: auto;           
+  max-width: 230px;      
+  object-fit: cover; 
+  padding: 0px 18px; 
 }
 .divider {
   /* border-left: 2px solid black;
   border-width: 80%; */
   height: 40px;
-
+  display: flex;
+  align-items: center;
 }
-.header-title {
-  font-size: 25px;
-  font-weight: 700;
+.breadcrumb-inline {
+  display: inline-flex;
+  align-items: center; /* vertical-align center */
+  gap: 8px;
+  font-size: 22px; /* text to hơn */
+  font-weight: 700; /* bold */
   padding-left: 10px;
+}
+
+.breadcrumb-inline .chev {
+  width: 10px;
+  height: 10px;
+  color: #8aa0c7;
+}
+
+.breadcrumb-inline .crumb-current {
+  color: #0041C4; /* màu phần cuối */
 }
 
 
