@@ -1,5 +1,4 @@
 import '../../styles/login.css';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 function Login() {
     const handleGoogleLoginSuccess = (credentialResponse) => {
         // Xử lý đăng nhập thành công, credentialResponse chứa token
