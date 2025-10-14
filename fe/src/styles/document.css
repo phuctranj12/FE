@@ -1,9 +1,12 @@
-.main-content {
+.document-wrapper {
   flex: 1;
   padding: 20px;
+  background: #fff;;
+  border-radius: 5px;
+  margin: 10px;
 }
 
-.no-docs {
+/* .no-docs {
   color: #666;
   font-style: italic;
 }
@@ -28,4 +31,4 @@
 
 .docs-table tr:hover {
   background-color: #fafafa;
-}
+} */

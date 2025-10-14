@@ -1,6 +1,6 @@
 import React from "react";
 import "../../styles/document.css";
-
+import "../../styles/table.css";
 function Document({ filteredDocs, selectedStatus }) {
     // Hàm chuyển đổi tên trạng thái cho hiển thị thân thiện hơn
     const getStatusLabel = (status) => {
@@ -27,13 +27,14 @@ function Document({ filteredDocs, selectedStatus }) {
     };
 
     return (
-        <div className="main-content">
+        <div className="document-wrapper">
+              <div className="table-container">
             <h2>Tài liệu: {getStatusLabel(selectedStatus)}</h2>
 
             {filteredDocs.length === 0 ? (
                 <p className="no-docs">Không có tài liệu nào ở trạng thái này.</p>
             ) : (
-                <table className="docs-table">
+                <table className="data-table">
                     <thead>
                         <tr>
                             <th>Tên tài liệu</th>
@@ -55,6 +56,8 @@ function Document({ filteredDocs, selectedStatus }) {
                 </table>
             )}
         </div>
+        </div>
+      
     );
 }
 
