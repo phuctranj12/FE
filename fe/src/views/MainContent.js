@@ -4,9 +4,20 @@ import Header from "../components/bar/Header";
 import Sidebar from "../components/bar/SideBar";
 import Document from "../components/document/document";
 import HomeComponent from "../components/document/Home";
+import UserManagement from "../components/userManagement/UserManagement";
 function MainContent() {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
+
+    const getBreadcrumb = () => {
+        if (menuStatus === "user-management") {
+            if (selectedStatus === "to-chuc") return "Quản lý người dùng > Danh sách tổ chức";
+            if (selectedStatus === "nguoi-dung") return "Quản lý người dùng > Danh sách người dùng";
+            if (selectedStatus === "vai-tro") return "Quản lý người dùng > Danh sách vai trò";
+            return "Quản lý người dùng";
+        }
+        return "Hệ thống quản lý hợp đồng điện tử";
+    };
 
     // Dữ liệu mẫu
     const documents = [
@@ -23,7 +34,7 @@ function MainContent() {
 
     return (
         <div className="main-container">
-            <Header />
+            <Header breadcrumb={getBreadcrumb()} />
 
             <div className="content-body">
                 {/* Sidebar truyền callback để thay đổi trạng thái */}
@@ -43,6 +54,8 @@ function MainContent() {
                             filteredDocs={filteredDocs}
                             selectedStatus={selectedStatus}
                         />
+                    ) : menuStatus === "user-management" ? (
+                        <UserManagement selectedStatus={selectedStatus} />
                     ) : (
                         null
                     )}

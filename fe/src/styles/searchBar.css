@@ -1,0 +1,94 @@
+/* Styles dedicated to the reusable SearchBar component */
+
+.search-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 1px;
+    width: 100%;
+}
+
+.search-section--filled {
+    padding: 0;               /* đồng nhất chiều cao với button */
+    border-radius: 10px;
+}
+
+/* Organization dropdown styles moved to orgDropdown.css */
+
+.search-inputs {
+    display: flex;
+    gap: 12px;
+    flex: 1;              /* fill remaining space */
+    min-width: 0;         /* prevent overflow */
+}
+
+.search-inputs input {
+    padding-left: 16px;
+    height: 42px;             /* chiều cao chuẩn */
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    min-width: 200px;
+    background: #F1F5FE;
+    width: 100%;         /* input fills full width within its container */
+}
+
+.search-inputs input:focus {
+    outline: none;
+    background: #E8F2FF;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.search-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.search-btn:hover {
+    background-color: #0056b3;
+}
+
+.add-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #218838;
+}
+
+.import-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.import-btn:hover {
+    background-color: #5a6268;
+}
+
+

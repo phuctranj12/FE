@@ -83,7 +83,10 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 </div>
 
                 {/* Quản lý người dùng */}
-                <div className="menu-item" onClick={() => toggleMenu("nguoidung")}>
+                <div className={`menu-item${(menuStatus === "user-management") ? " active-menu" : ""}`} onClick={() => {
+                    toggleMenu("nguoidung");
+                    handleSelectMenu("user-management");
+                }}>
                     Quản lý người dùng{" "}
                     <i
                         className={`lni ${activeMenu === "nguoidung"
