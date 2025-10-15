@@ -6,7 +6,7 @@ import BaseTable from '../common/BaseTable';
 import Pagination from '../common/Pagination';
 import OrganizationDropDown from '../common/OrganizationDropDown';
 
-const UserList = () => {
+const UserList = ({ onAddNew }) => {
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -284,7 +284,7 @@ const UserList = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
-                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" />
+                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={onAddNew} />
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Import file" icon={<span style={{fontWeight:700}}>☁️</span>} />
                 </div>
             </div>

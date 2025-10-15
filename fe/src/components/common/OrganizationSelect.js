@@ -6,10 +6,11 @@ import '../../styles/orgSelect.css';
   Props:
   - organizations: Array<{ id: number|string, name: string, [key:string]: any }>
   - placeholder?: string
+  - searchPlaceholder?: string           // placeholder for search input
   - value?: number|string|null           // selected organization id
   - onChange?: (org: any|null) => void   // return selected org object (or null)
 */
-export default function OrganizationSelect({ organizations = [], placeholder = 'Chọn tổ chức', value = null, onChange }) {
+export default function OrganizationSelect({ organizations = [], placeholder = 'Chọn tổ chức', searchPlaceholder = 'Tìm kiếm tổ chức...', value = null, onChange }) {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -83,7 +84,7 @@ export default function OrganizationSelect({ organizations = [], placeholder = '
                     <div className="org-search">
                         <input
                             type="text"
-                            placeholder="Tìm kiếm tổ chức..."
+                            placeholder={searchPlaceholder}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             autoFocus
