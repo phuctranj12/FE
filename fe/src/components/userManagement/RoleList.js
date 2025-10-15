@@ -4,14 +4,16 @@ import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
 import Pagination from '../common/Pagination';
+import AddNewRolePanel from './AddNewRolePanel';
 
-const RoleList = () => {
+const RoleList = ({ onAddNew }) => {
     const [roles, setRoles] = useState([]);
     const [filteredRoles, setFilteredRoles] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(15);
     const [searchName, setSearchName] = useState('');
     const [searchCode, setSearchCode] = useState('');
+    const [showAddRole, setShowAddRole] = useState(false);
 
     // Sample data
     useEffect(() => {
@@ -73,53 +75,59 @@ const RoleList = () => {
     };
 
     return (
-        <div className="user-management-container">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'baseline' }}>
-                <div style={{ flex: '1 1 320px', minWidth: 220 }}>
-                    <SearchBar placeholder="Tên vai trò" value={searchName} onChange={setSearchName} />
+        <>
+            {showAddRole && (
+                <AddNewRolePanel onCancel={() => setShowAddRole(false)} />
+            )}
+            
+            <div className="user-management-container">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'baseline' }}>
+                    <div style={{ flex: '1 1 320px', minWidth: 220 }}>
+                        <SearchBar placeholder="Tên vai trò" value={searchName} onChange={setSearchName} />
+                    </div>
+                    <div style={{ flex: '1 1 320px', minWidth: 220 }}>
+                        <SearchBar placeholder="Mã vai trò" value={searchCode} onChange={setSearchCode} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
+                        <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
+                        <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => setShowAddRole(true)} />
+                    </div>
                 </div>
-                <div style={{ flex: '1 1 320px', minWidth: 220 }}>
-                    <SearchBar placeholder="Mã vai trò" value={searchCode} onChange={setSearchCode} />
-                </div>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
-                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
-                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" />
+                <div className="template-link template-right"></div>
+                <BaseTable
+                    columns={[ 'Tên vai trò', 'Mã vai trò', 'Quản lý' ]}
+                    data={getPaginatedData().map(role => ([
+                        role.name,
+                        role.code,
+                        (
+                            <div key={`actions-${role.id}`} className="action-buttons-cell">
+                                <button 
+                                    className="edit-btn" 
+                                    title="Chỉnh sửa"
+                                    onClick={() => handleEdit(role.id)}
+                                >
+                                    ✏️
+                                </button>
+                                <button 
+                                    className="delete-btn" 
+                                    title="Xóa"
+                                    onClick={() => handleDelete(role.id)}
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        )
+                    ]))}
+                />
+
+                <div className="pagination-container">
+                    <Pagination currentPage={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+                    <div className="pagination-info">
+                        Số lượng {startItem} - {endItem} / {filteredRoles.length}
+                    </div>
                 </div>
             </div>
-
-            <BaseTable
-                columns={[ 'Tên vai trò', 'Mã vai trò', 'Quản lý' ]}
-                data={getPaginatedData().map(role => ([
-                    role.name,
-                    role.code,
-                    (
-                        <div key={`actions-${role.id}`} className="action-buttons-cell">
-                            <button 
-                                className="edit-btn" 
-                                title="Chỉnh sửa"
-                                onClick={() => handleEdit(role.id)}
-                            >
-                                ✏️
-                            </button>
-                            <button 
-                                className="delete-btn" 
-                                title="Xóa"
-                                onClick={() => handleDelete(role.id)}
-                            >
-                                🗑️
-                            </button>
-                        </div>
-                    )
-                ]))}
-            />
-
-            <div className="pagination-container">
-                <Pagination currentPage={currentPage} totalPages={totalPages} onChange={handlePageChange} />
-                <div className="pagination-info">
-                    Số lượng {startItem} - {endItem} / {filteredRoles.length}
-                </div>
-            </div>
-        </div>
+        </>
     );
 };
 
