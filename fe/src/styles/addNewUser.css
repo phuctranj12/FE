@@ -1,0 +1,302 @@
+/* Add New User Styles */
+.add-user-header {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-user-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+}
+
+.add-user-content {
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.section {
+    margin-bottom: 40px;
+}
+
+.section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 24px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #106DB6;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.required {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.date-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.calendar-btn {
+    width: 42px;
+    height: 42px;
+    border: 1px solid #106DB6;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.calendar-btn:hover {
+    background: #f8f9fa;
+}
+
+.radio-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.radio-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.radio-section-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.radio-group {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+}
+
+.radio-item input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #106DB6;
+}
+
+/* Signature Grid - 4 columns, each 25% */
+.signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 20px;
+}
+
+.signature-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.signature-subtitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 16px 0;
+    text-align: center;
+}
+
+.image-upload-area {
+    background: #E8F2FF;
+    border: 2px dashed #106DB6;
+    border-radius: 8px;
+    padding: 30px 15px;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.upload-btn {
+    background: #106DB6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: background-color 0.2s ease;
+}
+
+.upload-btn:hover {
+    background: #0d5aa7;
+}
+
+.upload-instruction {
+    font-size: 10px;
+    color: #666;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.signature-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.checkbox-group {
+    margin-top: 8px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #333;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #106DB6;
+}
+
+.add-user-actions {
+    background: white;
+    border-radius: 8px;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.search-section{
+    margin-bottom: 0px;
+}
+
+/* Override component styles for AddNewUser */
+.add-new-user .search-section--filled {
+    background: white;
+    border: 1px solid #106DB6;
+    border-radius: 8px;
+}
+
+.add-new-user .search-inputs input {
+    background: white;
+    border: none;
+    color: #333;
+}
+
+.add-new-user .search-inputs input:focus {
+    background: white;
+    outline: none;
+}
+
+/* OrganizationSelect overrides */
+.add-user-content .org-select-container {
+    width: 100%;
+}
+
+.add-user-content .org-select-panel {
+    width: 100% !important;
+    max-width: none !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    transform: none !important;
+}
+
+.add-new-user .org-select-input {
+    background: white;
+    border: 1px solid #106DB6;
+    color: #333;
+}
+
+.add-new-user .org-select-input:hover {
+    background: white;
+    border-color: #106DB6;
+}
+
+.add-new-user .org-select-input:focus {
+    background: white;
+    border-color: #106DB6;
+    outline: none;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .signature-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .signature-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .add-user-actions {
+        flex-direction: column;
+    }
+    
+    .add-user-actions > * {
+        width: 100%;
+    }
+}

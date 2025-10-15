@@ -3,6 +3,7 @@ import '../../styles/userManagement.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
+import AddOrganizationPanel from './AddOrganizationPanel';
 
 const OrganizationList = () => {
     const [organizations, setOrganizations] = useState([]); // flat list from backend
@@ -10,6 +11,7 @@ const OrganizationList = () => {
     const [searchCode, setSearchCode] = useState('');
     const [searchName, setSearchName] = useState('');
     const [expandedRows, setExpandedRows] = useState(new Set());
+    const [showAddPanel, setShowAddPanel] = useState(false);
 
     // Sample data (mô phỏng backend trả về dạng phẳng với parent_id)
     useEffect(() => {
@@ -53,6 +55,29 @@ const OrganizationList = () => {
 
     const statusLabel = (s) => (s === 1 ? 'Hoạt động' : 'Không hoạt động');
 
+    const handleAddOrganization = (newOrgData) => {
+        // Generate new ID
+        const newId = Math.max(...organizations.map(o => o.id)) + 1;
+        
+        // Create new organization object
+        const newOrg = {
+            id: newId,
+            name: newOrgData.name,
+            abbreviation: newOrgData.abbreviation || '',
+            code: newOrgData.code,
+            status: newOrgData.status,
+            parent_id: newOrgData.parentOrg,
+            type: 'Tổ chức con'
+        };
+        
+        // Add to organizations list
+        const updatedOrgs = [...organizations, newOrg];
+        setOrganizations(updatedOrgs);
+        setFilteredOrganizations(updatedOrgs);
+        
+        console.log('Added new organization:', newOrg);
+    };
+
     // Tạo map parent -> children cho dữ liệu phẳng
     const buildChildrenMap = (list) => {
         const map = new Map();
@@ -75,7 +100,7 @@ const OrganizationList = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
-                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" />
+                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => setShowAddPanel(true)} />
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Import file" icon={<span style={{fontWeight:700}}>☁️</span>} />
                 </div>
             </div>
@@ -121,6 +146,14 @@ const OrganizationList = () => {
                     return rows;
                 })()}
             />
+            
+            {showAddPanel && (
+                <AddOrganizationPanel 
+                    onClose={() => setShowAddPanel(false)}
+                    onSave={handleAddOrganization}
+                    organizations={organizations}
+                />
+            )}
         </div>
     );
 };
