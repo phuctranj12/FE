@@ -1,0 +1,56 @@
+@import '~bootstrap-icons/font/bootstrap-icons.css';
+
+.footer-contain2{
+    background-color:rgb(241, 235, 229);
+    font-family: 'Montserrat', sans-serif;
+    padding : 80px 30px 50px 40px; 
+    display: flex;
+}
+.footer-row1,
+.footer-row2,
+.footer-row3{
+    width: 22%;
+}
+.footer-tieude{
+    color: black;
+    font-size: 17px;
+    font-weight: bold;
+}
+.footer-row4{
+    width : 34%;
+}
+.footer-noidung{
+    color: rgb(84, 55, 31);
+    padding: 20px 0 0 0;
+    line-height: 2;
+}
+.footer-contain2 a{
+    color : rgb(84, 55, 31) ;
+    text-decoration: none ;
+
+}
+.footer-contain2 a:hover{
+    color : #ff7200;
+}
+.footer-thongtin{
+    color: rgb(84, 55, 31);
+    padding: 20px 0 0 0;
+    line-height: 1.5;
+}
+.lienhe1{
+    color: #ff7200;
+    padding: 20px 0 0 0;
+    font-size: 30px;
+    font-weight: 600;
+}
+.icon-contain{
+    display: flex;
+    padding : 20px 0 0 0 ;
+}
+.icon-contain svg{
+    height:30px;
+    width: 30px;
+    margin-right: 10px;
+    cursor: pointer;
+    
+}

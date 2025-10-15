@@ -5,6 +5,7 @@ import Sidebar from "../components/bar/SideBar";
 import Document from "../components/document/document";
 import HomeComponent from "../components/document/Home";
 import UserManagement from "../components/userManagement/UserManagement";
+import Footer from "../components/bar/Footer";
 function MainContent() {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
@@ -61,6 +62,7 @@ function MainContent() {
                     )}
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }
@@ -68,40 +70,3 @@ function MainContent() {
 export default MainContent;
 
 
-{/* <div className="content-main">
-                    <div className="toolbar">
-                        <input
-                            type="text"
-                            placeholder="Nhập từ khóa tìm kiếm theo tên tài liệu, mã tài liệu..."
-                        />
-                        <button>Nâng cao</button>
-                        <button>Phát hành</button>
-                        <button>Xóa nhiều</button>
-                    </div>
-
-                    <table className="doc-table">
-                        <thead>
-                            <tr>
-                                <th>Tài liệu</th>
-                                <th>Trạng thái tài liệu</th>
-                                <th>Thời gian tạo</th>
-                                <th>Thời gian cập nhật</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>TL CHECK HSM</td>
-                                <td><span className="status">Bản nháp</span></td>
-                                <td>08/08/2025 17:19:28</td>
-                                <td>08/08/2025 17:19:28</td>
-                            </tr>
-                            <tr>
-                                <td>TL CHECK HSM NGOÀI HỆ THỐNG</td>
-                                <td><span className="status">Bản nháp</span></td>
-                                <td>04/08/2025 14:04:19</td>
-                                <td>04/08/2025 14:04:19</td>
-                            </tr>
-                           
-                        </tbody>
-                    </table>
-                </div> */}

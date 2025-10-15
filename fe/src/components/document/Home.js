@@ -1,10 +1,10 @@
 import Header from "../bar/Header";
 import Sidebar from "../bar/SideBar";
+import WelcomeComponent from "../common/welcome";
 function HomeComponent() {
     return (
         <div className="home-content">
-            <h2>Home Page</h2>
-
+            <WelcomeComponent />
         </div>
     );
 }
