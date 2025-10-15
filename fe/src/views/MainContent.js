@@ -22,16 +22,20 @@ function MainContent() {
 
     // Dữ liệu mẫu
     const documents = [
-        { id: 1, title: "Test nhập 2", status: "dang-xu-ly", createdAt: "06/10/2025 15:42", expired: "05/11/2025" },
-        { id: 2, title: "Test người nhập", status: "dang-xu-ly", createdAt: "06/10/2025 15:38", expired: "05/11/2025" },
-        { id: 3, title: "Hợp đồng thử việc_005", status: "ban-nhap", createdAt: "05/10/2025 14:12", expired: "04/11/2025" },
-        { id: 4, title: "Hợp đồng thử việc_004", status: "hoan-thanh", createdAt: "01/10/2025 13:10", expired: "01/11/2025" },
+        { id: 1, title: "Hợp đồng chữ ký số - Nhân viên A", status: 1, createdAt: "2025-10-06T15:42:00", expired: "2025-11-05T00:00:00" },
+        { id: 2, title: "Hợp đồng lao động - Nhân viên B", status: 2, createdAt: "2025-10-06T15:38:00", expired: "2025-11-05T00:00:00" },
+        { id: 3, title: "Hợp đồng cộng tác viên - Nhân viên C", status: 0, createdAt: "2025-10-05T14:12:00", expired: "2025-11-04T00:00:00" },
+        { id: 4, title: "Hợp đồng thử việc - Nhân viên D", status: 3, createdAt: "2025-10-01T13:10:00", expired: "2025-11-01T00:00:00" },
+        { id: 5, title: "Hợp đồng xác thực chữ ký - Nhân viên E", status: 4, createdAt: "2025-10-03T09:30:00", expired: "2025-11-02T00:00:00" },
+        { id: 6, title: "Hợp đồng chờ duyệt - Nhân viên F", status: 5, createdAt: "2025-10-07T10:25:00", expired: "2025-11-06T00:00:00" },
     ];
+
 
     // ⚙️ Lọc danh sách tài liệu theo trạng thái hiện tại
     const filteredDocs = selectedStatus === "all"
         ? documents
-        : documents.filter((doc) => doc.status === selectedStatus);
+        : documents.filter((doc) => doc.status === Number(selectedStatus));
+
 
     return (
         <div className="main-container">

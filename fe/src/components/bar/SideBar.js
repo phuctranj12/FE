@@ -47,14 +47,12 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 </div>
                 {activeMenu === "tao" && (
                     <div className="submenu">
-                        <div className="subitem" onClick={() => handleSelect("ban-nhap")}>Bản nháp</div>
-                        <div className="subitem" onClick={() => handleSelect("dang-xu-ly")}>Đang xử lý</div>
-                        <div className="subitem" onClick={() => handleSelect("sap-het-han")}>Sắp hết hạn</div>
-                        <div className="subitem" onClick={() => handleSelect("qua-han")}>Quá hạn</div>
-                        <div className="subitem" onClick={() => handleSelect("tu-choi")}>Từ chối</div>
-                        <div className="subitem" onClick={() => handleSelect("huy-bo")}>Hủy bỏ</div>
-                        <div className="subitem" onClick={() => handleSelect("hoan-thanh")}>Hoàn thành</div>
-                        <div className="subitem" onClick={() => handleSelect("thanh-ly")}>Thanh lý</div>
+                        <div className="subitem" onClick={() => handleSelect(0)}>Bản nháp</div>
+                        <div className="subitem" onClick={() => handleSelect(1)}>Đang xử lý</div>
+                        <div className="subitem" onClick={() => handleSelect(2)}>Đã xử lý</div>
+                        <div className="subitem" onClick={() => handleSelect(3)}>Từ chối</div>
+                        <div className="subitem" onClick={() => handleSelect(4)}>Xác Thực</div>
+                        <div className="subitem" onClick={() => handleSelect(5)}>Chờ</div>
                     </div>
                 )}
 
