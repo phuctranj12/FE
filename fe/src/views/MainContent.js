@@ -5,12 +5,16 @@ import Sidebar from "../components/bar/SideBar";
 import Document from "../components/document/document";
 import HomeComponent from "../components/document/Home";
 import UserManagement from "../components/userManagement/UserManagement";
+import DocumentForm from "../components/document/DocumentForm";
 import Footer from "../components/bar/Footer";
 function MainContent() {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
 
     const getBreadcrumb = () => {
+        if (menuStatus === "create-document") {
+            return "Tạo tài liệu mới";
+        }
         if (menuStatus === "user-management") {
             if (selectedStatus === "to-chuc") return "Quản lý người dùng > Danh sách tổ chức";
             if (selectedStatus === "nguoi-dung") return "Quản lý người dùng > Danh sách người dùng";
@@ -61,6 +65,8 @@ function MainContent() {
                         />
                     ) : menuStatus === "user-management" ? (
                         <UserManagement selectedStatus={selectedStatus} />
+                    ) : menuStatus === "create-document" ? (
+                        <DocumentForm />
                     ) : (
                         null
                     )}

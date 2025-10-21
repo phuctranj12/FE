@@ -22,7 +22,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
     }
     return (
         <aside className="sidebar">
-            <button className="create-btn" onClick={() => handleNavigation("/login")}>Tạo ngay</button>
+            <button className="create-btn" onClick={() => handleSelectMenu("create-document")}>Tạo ngay</button>
 
             <div className="menu">
                 {/* Trang chủ */}
