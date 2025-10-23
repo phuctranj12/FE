@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/MainContent.css";
 import Header from "../components/bar/Header";
 import Sidebar from "../components/bar/SideBar";
@@ -7,11 +7,13 @@ import HomeComponent from "../components/document/Home";
 import UserManagement from "../components/userManagement/UserManagement";
 import DocumentForm from "../components/document/DocumentForm";
 import DocumentDetail from "../components/document/DocumentDetail";
+import DocumentEditor from "../components/document/DocumentEditor";
 import Footer from "../components/bar/Footer";
 function MainContent() {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [documentType, setDocumentType] = useState("single-no-template");
 
     const getBreadcrumb = () => {
         if (menuStatus === "create-document") {
@@ -19,6 +21,9 @@ function MainContent() {
         }
         if (menuStatus === "document-detail") {
             return selectedDocument ? `Chi tiết tài liệu: ${selectedDocument.title}` : "Chi tiết tài liệu";
+        }
+        if (menuStatus === "document-editor") {
+            return "Chỉnh sửa tài liệu";
         }
         if (menuStatus === "user-management") {
             if (selectedStatus === "to-chuc") return "Quản lý người dùng > Danh sách tổ chức";
@@ -57,6 +62,34 @@ function MainContent() {
         setMenuStatus("document");
     };
 
+    // Hàm xử lý DocumentEditor
+    const handleEditorBack = () => {
+        setMenuStatus("document-detail");
+    };
+
+    const handleEditorNext = () => {
+        // Logic cho bước tiếp theo
+        console.log("Tiếp theo");
+    };
+
+    const handleSaveDraft = () => {
+        // Logic lưu nháp
+        console.log("Lưu nháp");
+    };
+
+    // Event listener cho navigation
+    useEffect(() => {
+        const handleNavigateToEditor = () => {
+            setMenuStatus("document-editor");
+        };
+
+        window.addEventListener('navigate-to-editor', handleNavigateToEditor);
+        
+        return () => {
+            window.removeEventListener('navigate-to-editor', handleNavigateToEditor);
+        };
+    }, []);
+
 
     return (
         <div className="main-container">
@@ -85,6 +118,13 @@ function MainContent() {
                         <DocumentDetail
                             document={selectedDocument}
                             onBack={handleBackToDocuments}
+                        />
+                    ) : menuStatus === "document-editor" ? (
+                        <DocumentEditor
+                            documentType={documentType}
+                            onBack={handleEditorBack}
+                            onNext={handleEditorNext}
+                            onSaveDraft={handleSaveDraft}
                         />
                     ) : menuStatus === "user-management" ? (
                         <UserManagement selectedStatus={selectedStatus} />

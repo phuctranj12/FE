@@ -390,6 +390,24 @@
     background: #0a4bb8;
 }
 
+.edit-btn {
+    padding: 12px 24px;
+    background: white;
+    color: #0B57D0;
+    border: 1px solid #0B57D0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 12px;
+}
+
+.edit-btn:hover {
+    background: #f0f8ff;
+    border-color: #0a4bb8;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .document-sidebar {

@@ -196,6 +196,10 @@ function DocumentDetail({ document, onBack }) {
 
                     {/* Nút Kết thúc */}
                     <div className="document-actions">
+                        <button className="edit-btn" onClick={() => {
+                            // Trigger navigation to DocumentEditor
+                            window.dispatchEvent(new CustomEvent('navigate-to-editor'));
+                        }}>Chỉnh sửa</button>
                         <button className="finish-btn">Kết thúc</button>
                     </div>
                 </div>
