@@ -66,7 +66,7 @@ import React from "react";
 import "../../styles/document.css";
 import "../../styles/table.css";
 
-function Document({ filteredDocs = [], selectedStatus }) {
+function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
     // Hàm đổi mã trạng thái sang tên thân thiện
     const getStatusLabel = (status) => {
         switch (status) {
@@ -114,8 +114,8 @@ function Document({ filteredDocs = [], selectedStatus }) {
                         </thead>
                         <tbody>
                             {filteredDocs.map((doc) => (
-                                <tr key={doc.id}>
-                                    <td>{doc.title}</td>
+                                <tr key={doc.id} className="document-row" onClick={() => onDocumentClick && onDocumentClick(doc)}>
+                                    <td className="document-title-cell">{doc.title}</td>
                                     <td>{getStatusLabel(doc.status)}</td>
                                     <td>{formatDate(doc.createdAt)}</td>
                                     <td>{formatDate(doc.expired)}</td>

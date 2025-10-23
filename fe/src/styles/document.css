@@ -1,9 +1,45 @@
 .document-wrapper {
   flex: 1;
   padding: 20px;
-  background: #fff;;
+  background: #fff;
   border-radius: 5px;
   margin: 10px;
+}
+
+.document-title {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.no-docs {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 40px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Document row styles */
+.document-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.document-row:hover {
+    background-color: #f0f8ff;
+}
+
+.document-title-cell {
+    color: #0B57D0;
+    font-weight: 500;
+}
+
+.document-title-cell:hover {
+    text-decoration: underline;
 }
 
 /* .no-docs {

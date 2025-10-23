@@ -6,14 +6,19 @@ import Document from "../components/document/document";
 import HomeComponent from "../components/document/Home";
 import UserManagement from "../components/userManagement/UserManagement";
 import DocumentForm from "../components/document/DocumentForm";
+import DocumentDetail from "../components/document/DocumentDetail";
 import Footer from "../components/bar/Footer";
 function MainContent() {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
+    const [selectedDocument, setSelectedDocument] = useState(null);
 
     const getBreadcrumb = () => {
         if (menuStatus === "create-document") {
             return "Tạo tài liệu mới";
+        }
+        if (menuStatus === "document-detail") {
+            return selectedDocument ? `Chi tiết tài liệu: ${selectedDocument.title}` : "Chi tiết tài liệu";
         }
         if (menuStatus === "user-management") {
             if (selectedStatus === "to-chuc") return "Quản lý người dùng > Danh sách tổ chức";
@@ -40,6 +45,18 @@ function MainContent() {
         ? documents
         : documents.filter((doc) => doc.status === Number(selectedStatus));
 
+    // Hàm xử lý khi click vào document
+    const handleDocumentClick = (document) => {
+        setSelectedDocument(document);
+        setMenuStatus("document-detail");
+    };
+
+    // Hàm quay lại danh sách document
+    const handleBackToDocuments = () => {
+        setSelectedDocument(null);
+        setMenuStatus("document");
+    };
+
 
     return (
         <div className="main-container">
@@ -62,6 +79,12 @@ function MainContent() {
                         <Document
                             filteredDocs={filteredDocs}
                             selectedStatus={selectedStatus}
+                            onDocumentClick={handleDocumentClick}
+                        />
+                    ) : menuStatus === "document-detail" ? (
+                        <DocumentDetail
+                            document={selectedDocument}
+                            onBack={handleBackToDocuments}
                         />
                     ) : menuStatus === "user-management" ? (
                         <UserManagement selectedStatus={selectedStatus} />
