@@ -6,12 +6,17 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.form-header {
+.document-form-wrapper {
     background: white;
     padding: 20px;
     border-radius: 8px;
-    margin-bottom: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-header {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
     position: relative;
 }
 
@@ -92,9 +97,7 @@
 
 .form-body {
     background: white;
-    padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 20px;
 }
 
@@ -256,8 +259,6 @@
     gap: 15px;
     padding: 20px;
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .save-draft-btn {
@@ -482,15 +483,6 @@
     text-decoration: underline;
 }
 
-.form-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
 
 .footer-right {
     display: flex;

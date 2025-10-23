@@ -746,37 +746,38 @@ const DocumentForm = () => {
 
     return (
         <div className="document-form-container">
-            <div className="form-header">
-                <div className="step-indicator">
-                    {steps.map((step) => (
-                        <div key={step.id} className={`step ${step.active ? 'active' : ''}`}>
-                            <div className={`step-circle ${step.active ? 'active' : ''}`}>
-                                {step.id}
+            <div className="document-form-wrapper">
+                <div className="form-header">
+                    <div className="step-indicator">
+                        {steps.map((step) => (
+                            <div key={step.id} className={`step ${step.active ? 'active' : ''}`}>
+                                <div className={`step-circle ${step.active ? 'active' : ''}`}>
+                                    {step.id}
+                                </div>
+                                <div className="step-title">{step.title}</div>
                             </div>
-                            <div className="step-title">{step.title}</div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-                <button className="close-button">✕</button>
-            </div>
 
-            <div className="form-body">
-                {renderStepContent()}
-            </div>
+                <div className="form-body">
+                    {renderStepContent()}
+                </div>
 
-            <div className="form-footer">
-                {currentStep > 1 && (
-                    <button className="back-btn" onClick={handleBack}>
-                        Quay lại
-                    </button>
-                )}
-                <div className="footer-right">
-                    <button className="save-draft-btn" onClick={handleSaveDraft}>
-                        Lưu nháp
-                    </button>
-                    <button className="next-btn" onClick={handleNext}>
-                        Tiếp theo
-                    </button>
+                <div className="form-footer">
+                    {currentStep > 1 && (
+                        <button className="back-btn" onClick={handleBack}>
+                            Quay lại
+                        </button>
+                    )}
+                    <div className="footer-right">
+                        <button className="save-draft-btn" onClick={handleSaveDraft}>
+                            Lưu nháp
+                        </button>
+                        <button className="next-btn" onClick={handleNext}>
+                            Tiếp theo
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
