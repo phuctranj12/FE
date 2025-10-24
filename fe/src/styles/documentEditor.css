@@ -141,7 +141,7 @@
 /* Component Wrapper for Dropdown */
 .component-wrapper {
     position: relative;
-    z-index: 10000;
+    z-index: 10001;
 }
 
 .dropdown-arrow {
@@ -157,15 +157,12 @@
 
 /* Signature Dropdown */
 .signature-dropdown {
-    position: absolute;
-    top: 0;
-    left: 100%;
+    position: fixed;
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 9999;
-    margin-left: 8px;
+    z-index: 99999;
     overflow: hidden;
     min-width: 300px;
 }
@@ -183,6 +180,10 @@
 
 .signature-option:hover {
     background: #f8f9fa;
+}
+
+.signature-option:active {
+    background: #e9ecef;
 }
 
 .signature-preview {
@@ -223,6 +224,72 @@
     font-size: 13px;
     color: #333;
     font-weight: 500;
+}
+
+/* Document Components */
+.document-component {
+    position: absolute;
+    border: 2px dashed #0B57D0;
+    background: rgba(11, 87, 208, 0.1);
+    border-radius: 4px;
+    padding: 8px;
+    cursor: move;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.document-component:hover {
+    background: rgba(11, 87, 208, 0.2);
+    border-color: #0a4bb8;
+}
+
+.document-component.editing {
+    border-color: #ff6b35;
+    background: rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.3);
+}
+
+.component-content {
+    flex: 1;
+    text-align: center;
+    font-weight: 500;
+    color: #0B57D0;
+    overflow: hidden;
+    word-wrap: break-word;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.remove-component-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ff4444;
+    color: white;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.remove-component-btn:hover {
+    background: #cc0000;
+    transform: scale(1.1);
 }
 
 /* Document Content */

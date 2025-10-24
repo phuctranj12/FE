@@ -7,6 +7,9 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [documentComponents, setDocumentComponents] = useState([]);
     const [showSignatureDropdown, setShowSignatureDropdown] = useState(false);
+    const [hoveredComponentId, setHoveredComponentId] = useState(null);
+    const [editingComponentId, setEditingComponentId] = useState(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
     // Dữ liệu mẫu cho các thành phần có thể kéo thả
     const availableComponents = [
@@ -78,6 +81,7 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
 
     const handleComponentSelect = (component) => {
         setSelectedComponent(component);
+        setEditingComponentId(null); // Reset editing mode
         // Reset properties khi chọn component mới
         setComponentProperties({
             signer: '',
@@ -98,14 +102,64 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
     };
 
     const handleAddComponent = () => {
-        if (selectedComponent) {
+        if (selectedComponent && componentProperties.signer) {
+            // Đảm bảo kích thước tối thiểu
+            const width = Math.max(componentProperties.width || 100, 50);
+            const height = Math.max(componentProperties.height || 30, 20);
+            
             const newComponent = {
                 id: Date.now(),
                 type: selectedComponent.id,
                 name: selectedComponent.name,
-                properties: { ...componentProperties }
+                properties: { 
+                    ...componentProperties,
+                    width: width,
+                    height: height
+                }
             };
             setDocumentComponents(prev => [...prev, newComponent]);
+        }
+    };
+
+    const handleRemoveComponent = (componentId) => {
+        setDocumentComponents(prev => prev.filter(comp => comp.id !== componentId));
+    };
+
+    const handleComponentClick = (component) => {
+        setEditingComponentId(component.id);
+        setComponentProperties(component.properties);
+        setSelectedComponent({
+            id: component.type,
+            name: component.name,
+            icon: availableComponents.find(comp => comp.id === component.type)?.icon || '📄'
+        });
+    };
+
+    const handleUpdateComponent = () => {
+        if (editingComponentId) {
+            setDocumentComponents(prev => prev.map(comp => 
+                comp.id === editingComponentId 
+                    ? { ...comp, properties: { ...componentProperties } }
+                    : comp
+            ));
+        }
+    };
+
+    const handleSignatureOptionClick = (option) => {
+        if (selectedComponent) {
+            const newComponent = {
+                id: Date.now(),
+                type: selectedComponent.id,
+                name: `${selectedComponent.name} - ${option.name}`,
+                signatureType: option.id,
+                properties: { 
+                    ...componentProperties,
+                    width: Math.max(componentProperties.width || 100, 50),
+                    height: Math.max(componentProperties.height || 30, 20)
+                }
+            };
+            setDocumentComponents(prev => [...prev, newComponent]);
+            setShowSignatureDropdown(false);
         }
     };
 
@@ -194,7 +248,16 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                                     <button
                                         className={`component-item ${selectedComponent?.id === component.id ? 'selected' : ''}`}
                                         onClick={() => handleComponentSelect(component)}
-                                        onMouseEnter={() => component.hasDropdown && setShowSignatureDropdown(true)}
+                                        onMouseEnter={(e) => {
+                                            if (component.hasDropdown) {
+                                                const rect = e.target.getBoundingClientRect();
+                                                setDropdownPosition({
+                                                    top: rect.top,
+                                                    left: rect.right + 8
+                                                });
+                                                setShowSignatureDropdown(true);
+                                            }
+                                        }}
                                         onMouseLeave={() => component.hasDropdown && setShowSignatureDropdown(false)}
                                     >
                                         <span className="component-icon">{component.icon}</span>
@@ -206,11 +269,19 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                                     {component.hasDropdown && showSignatureDropdown && (
                                         <div 
                                             className="signature-dropdown"
+                                            style={{
+                                                top: `${dropdownPosition.top}px`,
+                                                left: `${dropdownPosition.left}px`
+                                            }}
                                             onMouseEnter={() => setShowSignatureDropdown(true)}
                                             onMouseLeave={() => setShowSignatureDropdown(false)}
                                         >
                                             {signatureOptions.map(option => (
-                                                <div key={option.id} className="signature-option">
+                                                <div 
+                                                    key={option.id} 
+                                                    className="signature-option"
+                                                    onClick={() => handleSignatureOptionClick(option)}
+                                                >
                                                     <div className="signature-preview">
                                                         {option.icon === 'seal-info' && (
                                                             <div className="preview-boxes">
@@ -301,7 +372,7 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                             {documentComponents.map(component => (
                                 <div 
                                     key={component.id} 
-                                    className="document-component"
+                                    className={`document-component ${editingComponentId === component.id ? 'editing' : ''}`}
                                     style={{
                                         position: 'absolute',
                                         left: `${component.properties.x}px`,
@@ -311,8 +382,27 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                                         fontSize: `${component.properties.size}px`,
                                         fontFamily: component.properties.font
                                     }}
+                                    onMouseEnter={() => setHoveredComponentId(component.id)}
+                                    onMouseLeave={() => setHoveredComponentId(null)}
+                                    onClick={() => handleComponentClick(component)}
                                 >
-                                    [{component.name}]
+                                    <div className="component-content">
+                                        {component.type === 'text' && component.properties.fieldName 
+                                            ? `[${component.properties.fieldName}]` 
+                                            : component.signatureType 
+                                                ? `[${component.name}]`
+                                                : `[${component.name}]`
+                                        }
+                                    </div>
+                                    {hoveredComponentId === component.id && (
+                                        <button 
+                                            className="remove-component-btn"
+                                            onClick={() => handleRemoveComponent(component.id)}
+                                            title="Xóa component"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -324,22 +414,80 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                         
                         {selectedComponent ? (
                             <div className="properties-form">
-                                <div className="property-group">
-                                    <label className="property-label">
-                                        NGƯỜI KÝ: <span className="required">*</span>
-                                    </label>
-                                    <select 
-                                        className="property-input"
-                                        value={componentProperties.signer}
-                                        onChange={(e) => handlePropertyChange('signer', e.target.value)}
-                                    >
-                                        <option value="">Chọn người ký</option>
-                                        <option value="user1">Nguyễn Văn A</option>
-                                        <option value="user2">Trần Thị B</option>
-                                        <option value="user3">Lê Văn C</option>
-                                    </select>
-                                </div>
+                                {/* Properties cho SỐ TÀI LIỆU */}
+                                {selectedComponent.id === 'document-number' && (
+                                    <>
+                                        <div className="property-group">
+                                            <label className="property-label">
+                                                NGƯỜI NHẬP: <span className="required">*</span>
+                                            </label>
+                                            <select 
+                                                className="property-input"
+                                                value={componentProperties.signer}
+                                                onChange={(e) => handlePropertyChange('signer', e.target.value)}
+                                            >
+                                                <option value="">Chọn người nhập</option>
+                                                <option value="user1">Nguyễn Văn A</option>
+                                                <option value="user2">Trần Thị B</option>
+                                                <option value="user3">Lê Văn C</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
 
+                                {/* Properties cho TEXT */}
+                                {selectedComponent.id === 'text' && (
+                                    <>
+                                        <div className="property-group">
+                                            <label className="property-label">
+                                                TÊN TRƯỜNG: <span className="required">*</span>
+                                            </label>
+                                            <input 
+                                                type="text"
+                                                className="property-input"
+                                                value={componentProperties.fieldName || ''}
+                                                onChange={(e) => handlePropertyChange('fieldName', e.target.value)}
+                                                placeholder="Nhập tên trường"
+                                            />
+                                        </div>
+                                        <div className="property-group">
+                                            <label className="property-label">
+                                                NGƯỜI NHẬP: <span className="required">*</span>
+                                            </label>
+                                            <select 
+                                                className="property-input"
+                                                value={componentProperties.signer}
+                                                onChange={(e) => handlePropertyChange('signer', e.target.value)}
+                                            >
+                                                <option value="">Chọn người nhập</option>
+                                                <option value="user1">Nguyễn Văn A</option>
+                                                <option value="user2">Trần Thị B</option>
+                                                <option value="user3">Lê Văn C</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Properties cho CHỮ KÝ ẢNH và CHỮ KÝ SỐ */}
+                                {(selectedComponent.id === 'image-signature' || selectedComponent.id === 'digital-signature') && (
+                                    <div className="property-group">
+                                        <label className="property-label">
+                                            NGƯỜI KÝ: <span className="required">*</span>
+                                        </label>
+                                        <select 
+                                            className="property-input"
+                                            value={componentProperties.signer}
+                                            onChange={(e) => handlePropertyChange('signer', e.target.value)}
+                                        >
+                                            <option value="">Chọn người ký</option>
+                                            <option value="user1">Nguyễn Văn A</option>
+                                            <option value="user2">Trần Thị B</option>
+                                            <option value="user3">Lê Văn C</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Properties chung cho tất cả */}
                                 <div className="property-group">
                                     <label className="property-label">FONT:</label>
                                     <select 
@@ -404,10 +552,13 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
 
                                 <button 
                                     className="add-component-btn"
-                                    onClick={handleAddComponent}
-                                    disabled={!componentProperties.signer}
+                                    onClick={editingComponentId ? handleUpdateComponent : handleAddComponent}
+                                    disabled={
+                                        !componentProperties.signer || 
+                                        (selectedComponent.id === 'text' && !componentProperties.fieldName)
+                                    }
                                 >
-                                    Thêm vào tài liệu
+                                    {editingComponentId ? 'Cập nhật component' : 'Thêm vào tài liệu'}
                                 </button>
                             </div>
                         ) : (
