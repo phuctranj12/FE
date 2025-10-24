@@ -3,6 +3,7 @@ import '../../styles/documentForm.css';
 import DocumentTypeSelection from './DocumentTypeSelection';
 import DocumentSigners from './DocumentSigners';
 import DocumentEditor from './DocumentEditor';
+import DocumentConfirmation from './DocumentConfirmation';
 
 const DocumentForm = () => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -142,6 +143,11 @@ const DocumentForm = () => {
         // Implement save draft functionality
     };
 
+    const handleComplete = () => {
+        console.log('Completing document:', formData);
+        // Implement complete functionality
+    };
+
     const renderStepContent = () => {
         switch (currentStep) {
             case 1:
@@ -205,10 +211,17 @@ const DocumentForm = () => {
 
     const renderStep4 = () => {
         return (
-            <div className="step-content">
-                <h3>Xác nhận và hoàn tất</h3>
-                <p>Nội dung bước 4 sẽ được thêm vào đây</p>
-            </div>
+            <DocumentConfirmation
+                documentType={documentType}
+                formData={formData}
+                setFormData={setFormData}
+                reviewers={reviewers}
+                signers={signers}
+                documentClerks={documentClerks}
+                onBack={() => setCurrentStep(3)}
+                onComplete={handleComplete}
+                onSaveDraft={handleSaveDraft}
+            />
         );
     };
 
@@ -233,19 +246,21 @@ const DocumentForm = () => {
                 </div>
 
                 <div className="form-footer">
-                    {currentStep > 1 && (
+                    {currentStep > 1 && currentStep < 4 && (
                         <button className="back-btn" onClick={handleBack}>
                             Quay lại
                         </button>
                     )}
-                    <div className="footer-right">
-                        <button className="save-draft-btn" onClick={handleSaveDraft}>
-                            Lưu nháp
-                        </button>
-                        <button className="next-btn" onClick={handleNext}>
-                            Tiếp theo
-                        </button>
-                    </div>
+                    {currentStep < 4 && (
+                        <div className="footer-right">
+                            <button className="save-draft-btn" onClick={handleSaveDraft}>
+                                Lưu nháp
+                            </button>
+                            <button className="next-btn" onClick={handleNext}>
+                                Tiếp theo
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

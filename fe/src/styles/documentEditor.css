@@ -233,12 +233,13 @@
     background: rgba(11, 87, 208, 0.1);
     border-radius: 4px;
     padding: 8px;
-    cursor: move;
+    cursor: grab;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
+    user-select: none;
 }
 
 .document-component:hover {
@@ -246,10 +247,64 @@
     border-color: #0a4bb8;
 }
 
+.document-component.dragging {
+    cursor: grabbing;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: rotate(2deg);
+}
+
 .document-component.editing {
     border-color: #ff6b35;
     background: rgba(255, 107, 53, 0.1);
     box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.3);
+}
+
+/* Resize Handles */
+.resize-handle {
+    position: absolute;
+    background: #0B57D0;
+    border: 1px solid white;
+    border-radius: 50%;
+    width: 8px;
+    height: 8px;
+    z-index: 10;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.document-component:hover .resize-handle {
+    opacity: 1;
+}
+
+.resize-handle.nw {
+    top: -4px;
+    left: -4px;
+    cursor: nw-resize;
+}
+
+.resize-handle.ne {
+    top: -4px;
+    right: -4px;
+    cursor: ne-resize;
+}
+
+.resize-handle.sw {
+    bottom: -4px;
+    left: -4px;
+    cursor: sw-resize;
+}
+
+.resize-handle.se {
+    bottom: -4px;
+    right: -4px;
+    cursor: se-resize;
+}
+
+.resize-handle:hover {
+    background: #ff6b35;
+    transform: scale(1.2);
 }
 
 .component-content {
@@ -370,19 +425,6 @@
     margin-bottom: 4px;
 }
 
-/* Document Components */
-.document-component {
-    border: 2px dashed #0B57D0;
-    background: rgba(11, 87, 208, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: #0B57D0;
-    border-radius: 4px;
-    min-width: 100px;
-    min-height: 30px;
-}
 
 /* Right Sidebar - Properties */
 .properties-sidebar {

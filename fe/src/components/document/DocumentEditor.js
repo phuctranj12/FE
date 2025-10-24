@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/documentEditor.css';
 
 function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSaveDraft, hideFooter = false }) {
@@ -10,6 +10,11 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
     const [hoveredComponentId, setHoveredComponentId] = useState(null);
     const [editingComponentId, setEditingComponentId] = useState(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+    const [draggedComponent, setDraggedComponent] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizeHandle, setResizeHandle] = useState(null);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     // Dữ liệu mẫu cho các thành phần có thể kéo thả
     const availableComponents = [
@@ -94,6 +99,52 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
         });
     };
 
+    // Handle click outside to close dropdown
+    const handleClickOutside = (event) => {
+        if (showSignatureDropdown && !event.target.closest('.component-wrapper')) {
+            setShowSignatureDropdown(false);
+        }
+    };
+
+    // Add event listener for click outside
+    useEffect(() => {
+        if (showSignatureDropdown) {
+            document.addEventListener('click', handleClickOutside);
+            return () => {
+                document.removeEventListener('click', handleClickOutside);
+            };
+        }
+    }, [showSignatureDropdown]);
+
+    // Add event listeners for drag and resize
+    useEffect(() => {
+        const handleMouseMoveEvent = (e) => {
+            if (isDragging) {
+                handleMouseMove(e);
+            } else if (isResizing) {
+                handleResizeMove(e);
+            }
+        };
+
+        const handleMouseUpEvent = () => {
+            if (isDragging) {
+                handleMouseUp();
+            } else if (isResizing) {
+                handleResizeEnd();
+            }
+        };
+
+        if (isDragging || isResizing) {
+            document.addEventListener('mousemove', handleMouseMoveEvent);
+            document.addEventListener('mouseup', handleMouseUpEvent);
+            
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMoveEvent);
+                document.removeEventListener('mouseup', handleMouseUpEvent);
+            };
+        }
+    }, [isDragging, isResizing]);
+
     const handlePropertyChange = (property, value) => {
         setComponentProperties(prev => ({
             ...prev,
@@ -163,6 +214,118 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
         }
     };
 
+    // Drag and Drop handlers
+    const handleMouseDown = (e, componentId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const component = documentComponents.find(comp => comp.id === componentId);
+        if (!component) return;
+
+        setDraggedComponent(component);
+        setIsDragging(true);
+        setDragStart({
+            x: e.clientX - component.properties.x,
+            y: e.clientY - component.properties.y
+        });
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDragging || !draggedComponent) return;
+
+        const newX = e.clientX - dragStart.x;
+        const newY = e.clientY - dragStart.y;
+
+        setDocumentComponents(prev => prev.map(comp => 
+            comp.id === draggedComponent.id 
+                ? { ...comp, properties: { ...comp.properties, x: newX, y: newY } }
+                : comp
+        ));
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        setDraggedComponent(null);
+    };
+
+    // Resize handlers
+    const handleResizeStart = (e, componentId, handle) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Resize start:', { componentId, handle, clientX: e.clientX, clientY: e.clientY });
+        
+        const component = documentComponents.find(comp => comp.id === componentId);
+        if (!component) return;
+
+        setIsResizing(true);
+        setResizeHandle(handle);
+        setDraggedComponent(component);
+        setDragStart({
+            x: e.clientX,
+            y: e.clientY
+        });
+    };
+
+    const handleResizeMove = (e) => {
+        if (!isResizing || !draggedComponent || !resizeHandle) return;
+
+        const deltaX = e.clientX - dragStart.x;
+        const deltaY = e.clientY - dragStart.y;
+
+        console.log('Resize move:', { 
+            deltaX, 
+            deltaY, 
+            resizeHandle, 
+            clientX: e.clientX, 
+            clientY: e.clientY,
+            dragStart 
+        });
+
+        // Get current component from state to ensure we have latest values
+        const currentComponent = documentComponents.find(comp => comp.id === draggedComponent.id);
+        if (!currentComponent) return;
+
+        let newWidth = currentComponent.properties.width;
+        let newHeight = currentComponent.properties.height;
+
+        switch (resizeHandle) {
+            case 'se':
+                newWidth = Math.max(50, currentComponent.properties.width + deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height + deltaY);
+                break;
+            case 'sw':
+                newWidth = Math.max(50, currentComponent.properties.width - deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height + deltaY);
+                break;
+            case 'ne':
+                newWidth = Math.max(50, currentComponent.properties.width + deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height - deltaY);
+                break;
+            case 'nw':
+                newWidth = Math.max(50, currentComponent.properties.width - deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height - deltaY);
+                break;
+        }
+
+        console.log('New size:', { newWidth, newHeight });
+
+        setDocumentComponents(prev => prev.map(comp => 
+            comp.id === draggedComponent.id 
+                ? { ...comp, properties: { ...comp.properties, width: newWidth, height: newHeight } }
+                : comp
+        ));
+
+        // Update dragStart for next calculation
+        setDragStart({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleResizeEnd = () => {
+        setIsResizing(false);
+        setResizeHandle(null);
+        setDraggedComponent(null);
+    };
+
     return (
         <div className="document-editor-container">
             <div className="editor-wrapper">
@@ -173,21 +336,21 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                             <input 
                                 type="radio" 
                                 name="documentType" 
-                                value="single-template" 
-                                checked={documentType === 'single-template'}
-                                readOnly
-                            />
-                            Tài liệu đơn lẻ theo mẫu
-                        </label>
-                        <label className="radio-option">
-                            <input 
-                                type="radio" 
-                                name="documentType" 
                                 value="single-no-template"
                                 checked={documentType === 'single-no-template'}
                                 readOnly
                             />
                             Tài liệu đơn lẻ không theo mẫu
+                        </label>
+                        <label className="radio-option">
+                            <input 
+                                type="radio" 
+                                name="documentType" 
+                                value="single-template" 
+                                checked={documentType === 'single-template'}
+                                readOnly
+                            />
+                            Tài liệu đơn lẻ theo mẫu
                         </label>
                         <label className="radio-option">
                             <input 
@@ -247,18 +410,19 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                                 <div key={component.id} className="component-wrapper">
                                     <button
                                         className={`component-item ${selectedComponent?.id === component.id ? 'selected' : ''}`}
-                                        onClick={() => handleComponentSelect(component)}
-                                        onMouseEnter={(e) => {
+                                        onClick={(e) => {
                                             if (component.hasDropdown) {
+                                                e.stopPropagation();
                                                 const rect = e.target.getBoundingClientRect();
                                                 setDropdownPosition({
                                                     top: rect.top,
                                                     left: rect.right + 8
                                                 });
-                                                setShowSignatureDropdown(true);
+                                                setShowSignatureDropdown(!showSignatureDropdown);
+                                            } else {
+                                                handleComponentSelect(component);
                                             }
                                         }}
-                                        onMouseLeave={() => component.hasDropdown && setShowSignatureDropdown(false)}
                                     >
                                         <span className="component-icon">{component.icon}</span>
                                         <span className="component-name">{component.name}</span>
@@ -273,8 +437,6 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                                                 top: `${dropdownPosition.top}px`,
                                                 left: `${dropdownPosition.left}px`
                                             }}
-                                            onMouseEnter={() => setShowSignatureDropdown(true)}
-                                            onMouseLeave={() => setShowSignatureDropdown(false)}
                                         >
                                             {signatureOptions.map(option => (
                                                 <div 
@@ -372,7 +534,7 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                             {documentComponents.map(component => (
                                 <div 
                                     key={component.id} 
-                                    className={`document-component ${editingComponentId === component.id ? 'editing' : ''}`}
+                                    className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''}`}
                                     style={{
                                         position: 'absolute',
                                         left: `${component.properties.x}px`,
@@ -380,11 +542,17 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                                         width: `${component.properties.width}px`,
                                         height: `${component.properties.height}px`,
                                         fontSize: `${component.properties.size}px`,
-                                        fontFamily: component.properties.font
+                                        fontFamily: component.properties.font,
+                                        cursor: isDragging ? 'grabbing' : 'grab'
                                     }}
                                     onMouseEnter={() => setHoveredComponentId(component.id)}
                                     onMouseLeave={() => setHoveredComponentId(null)}
-                                    onClick={() => handleComponentClick(component)}
+                                    onMouseDown={(e) => handleMouseDown(e, component.id)}
+                                    onClick={(e) => {
+                                        if (!isDragging) {
+                                            handleComponentClick(component);
+                                        }
+                                    }}
                                 >
                                     <div className="component-content">
                                         {component.type === 'text' && component.properties.fieldName 
@@ -394,10 +562,20 @@ function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSa
                                                 : `[${component.name}]`
                                         }
                                     </div>
+                                    
+                                    {/* Resize handles */}
+                                    <div className="resize-handle nw" onMouseDown={(e) => handleResizeStart(e, component.id, 'nw')}></div>
+                                    <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, component.id, 'ne')}></div>
+                                    <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, component.id, 'sw')}></div>
+                                    <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, component.id, 'se')}></div>
+                                    
                                     {hoveredComponentId === component.id && (
                                         <button 
                                             className="remove-component-btn"
-                                            onClick={() => handleRemoveComponent(component.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveComponent(component.id);
+                                            }}
                                             title="Xóa component"
                                         >
                                             ×
