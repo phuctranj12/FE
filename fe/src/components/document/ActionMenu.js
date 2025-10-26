@@ -7,7 +7,7 @@ function ActionMenu({ onEdit, onViewFlow, onCopy, onDelete, doc }) {
     const [showConfirm, setShowConfirm] = useState(false);
     const menuRef = useRef(null);
 
-    const toggleMenu = () => setOpen(!open);
+    const toggleMenu = () => setOpen((prev) => !prev);
 
     // ✅ Đóng menu khi click ra ngoài
     useEffect(() => {
@@ -16,22 +16,17 @@ function ActionMenu({ onEdit, onViewFlow, onCopy, onDelete, doc }) {
                 setOpen(false);
             }
         };
-
-        // Dùng window.document chứ không phải prop doc
-        window.document.addEventListener("mousedown", handleClickOutside);
-
-        return () => {
-            window.document.removeEventListener("mousedown", handleClickOutside);
-        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleDelete = () => {
-        setShowConfirm(true); // Mở popup xác nhận
-        setOpen(false);       // Ẩn menu tác vụ
+        setShowConfirm(true);
+        setOpen(false);
     };
 
     const handleConfirmDelete = () => {
-        onDelete(doc?.id); // Gọi prop xóa thật
+        if (onDelete && doc?.id) onDelete(doc.id);
         setShowConfirm(false);
     };
 

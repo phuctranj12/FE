@@ -22,61 +22,89 @@ function MainContent() {
     };
 
     // Dữ liệu mẫu hợp đồng
-    const contracts = [
+    const documents = [
         {
-            id: 1, name: "Hợp đồng chữ ký số - Nhân viên A", contract_no: "HD-001", status: 1, created_at: "2025-10-06T15:42:00", sign_time: "2025-10-10T00:00:00", contract_expire_time: "2025-11-05T00:00:00",
-            type_id: 1,
-            customer_id: 101,
-            organization_id: 1001,
-            is_template: false,
-            notes: "Hợp đồng chữ ký số dành cho nhân viên A"
+            id: 1,
+            name: "Tài liệu gốc - Hợp đồng chữ ký số",
+            path: "/uploads/docs/file1.pdf",
+            status: 1,
+            type: 1,
+            contract_id: 101,
+            created_at: "2025-10-06T15:42:00",
+            created_by: 10,
+            updated_at: "2025-10-07T09:30:00",
+            updated_by: 10,
+            filename: "hopdong_chukyso.pdf",
+            bucket: "main-bucket",
+            recipient_id: 20,
         },
         {
-            id: 2, name: "Hợp đồng lao động - Nhân viên B", contract_no: "HD-002", status: 2, created_at: "2025-10-06T15:38:00", sign_time: "2025-10-09T00:00:00", contract_expire_time: "2025-11-05T00:00:00",
-            type_id: 1,
-            customer_id: 102,
-            organization_id: 1001,
-            is_template: false,
-            notes: "Hợp đồng lao động chính thức"
+            id: 2,
+            name: "Tài liệu đính kèm - Phụ lục hợp đồng B",
+            path: "/uploads/docs/file2.pdf",
+            status: 2,
+            type: 3,
+            contract_id: 102,
+            created_at: "2025-10-05T13:20:00",
+            created_by: 11,
+            updated_at: "2025-10-06T11:15:00",
+            updated_by: 11,
+            filename: "phuluc_hd_B.pdf",
+            bucket: "main-bucket",
+            recipient_id: 22,
         },
         {
-            id: 3, name: "Hợp đồng cộng tác viên - Nhân viên C", contract_no: "HD-003", status: 0, created_at: "2025-10-05T14:12:00", sign_time: "2025-10-12T00:00:00", contract_expire_time: "2025-11-04T00:00:00",
-            type_id: 2,
-            customer_id: 103,
-            organization_id: 1001,
-            is_template: false,
-            notes: "Bản nháp hợp đồng CTV"
+            id: 3,
+            name: "File backup hợp đồng C",
+            path: "/uploads/docs/file3.zip",
+            status: 0,
+            type: 6,
+            contract_id: 103,
+            created_at: "2025-10-08T10:00:00",
+            created_by: 12,
+            updated_at: "2025-10-09T08:30:00",
+            updated_by: 12,
+            filename: "backup_hd_C.zip",
+            bucket: "archive",
+            recipient_id: 23,
         },
         {
-            id: 4, name: "Hợp đồng thử việc - Nhân viên D", contract_no: "HD-004", status: 3, created_at: "2025-10-01T13:10:00", sign_time: "2025-10-08T00:00:00", contract_expire_time: "2025-11-01T00:00:00", type_id: 3,
-            customer_id: 104,
-            organization_id: 1001,
-            is_template: false,
-            notes: "Hợp đồng bị từ chối do thiếu thông tin"
+            id: 4,
+            name: "Ảnh E-KYC khách hàng D",
+            path: "/uploads/docs/file4.jpg",
+            status: 3,
+            type: 7,
+            contract_id: 104,
+            created_at: "2025-10-04T09:10:00",
+            created_by: 13,
+            updated_at: "2025-10-05T09:00:00",
+            updated_by: 13,
+            filename: "ekyc_kh_D.jpg",
+            bucket: "ekyc-images",
+            recipient_id: 24,
         },
         {
-            id: 5, name: "Hợp đồng xác thực chữ ký - Nhân viên E", contract_no: "HD-005", status: 4, created_at: "2025-10-03T09:30:00", sign_time: "2025-10-06T00:00:00", contract_expire_time: "2025-11-02T00:00:00", type_id: 4,
-            customer_id: 105,
-            organization_id: 1001,
-            is_template: true,
-            notes: "Đã hoàn thành xác thực chữ ký"
-        },
-        {
-            id: 6, name: "Hợp đồng chờ duyệt - Nhân viên F", contract_no: "HD-006", status: 2, created_at: "2025-10-07T10:25:00", sign_time: "2025-10-11T00:00:00",
-            contract_expire_time: "2025-11-06T00:00:00",
-            type_id: 2,
-            customer_id: 106,
-            organization_id: 1001,
-            is_template: false,
-            notes: "Đang chờ duyệt bởi phòng nhân sự"
+            id: 5,
+            name: "File tracking hợp đồng E",
+            path: "/uploads/docs/file5.log",
+            status: 4,
+            type: 8,
+            contract_id: 105,
+            created_at: "2025-10-03T15:40:00",
+            created_by: 14,
+            updated_at: "2025-10-05T16:10:00",
+            updated_by: 14,
+            filename: "tracking_hd_E.log",
+            bucket: "logs",
+            recipient_id: 25,
         },
     ];
 
-    // ⚙️ Lọc danh sách hợp đồng theo trạng thái
+    // ⚙️ Lọc danh sách tài liệu theo trạng thái
     const filteredDocs =
         selectedStatus === "all" || selectedStatus === ""
-            ? contracts
-            : contracts.filter((doc) => doc.status === Number(selectedStatus));
+            ? documents
+            : documents.filter((doc) => doc.status === Number(selectedStatus));
 
     return (
         <div className="main-container">
