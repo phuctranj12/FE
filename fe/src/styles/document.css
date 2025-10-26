@@ -5,7 +5,32 @@
   border-radius: 5px;
   margin: 10px;
 }
-
+.document-wrapper .documnent-head {
+  display: flex;
+  gap: 50px;
+  width: 100%;
+  padding: 20px 0 20px 0 ;
+}
+.documnent-head input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+.documnent-head button {
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.documnent-head input:focus {
+  outline: none;
+}
 /* .no-docs {
   color: #666;
   font-style: italic;

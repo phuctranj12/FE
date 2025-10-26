@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import Button from "../common/Button";
 function AdvancedSearchModal({ show, onClose, onSearch }) {
     const [filters, setFilters] = useState({
         name: "",
@@ -12,6 +12,14 @@ function AdvancedSearchModal({ show, onClose, onSearch }) {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFilters((prev) => ({ ...prev, [name]: value }));
+    };
+    const handleReset = () => {
+        setFilters({
+            name: "",
+            contract_no: "",
+            fromDate: "",
+            toDate: ""
+        });
     };
 
     const handleSubmit = (e) => {
@@ -27,7 +35,7 @@ function AdvancedSearchModal({ show, onClose, onSearch }) {
             <div className="modal-dialog modal-lg modal-dialog-centered">
                 <div className="modal-content shadow-lg">
                     <div className="modal-header">
-                        <h5 className="modal-title fw-bold">🔍 Tìm kiếm nâng cao</h5>
+                        <h5 className="modal-title fw-bold">Tìm kiếm nâng cao</h5>
                         <button type="button" className="btn-close" onClick={onClose}></button>
                     </div>
                     <form onSubmit={handleSubmit}>
@@ -78,12 +86,20 @@ function AdvancedSearchModal({ show, onClose, onSearch }) {
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" onClick={onClose}>
-                                Đóng
-                            </button>
-                            <button type="submit" className="btn btn-primary">
-                                Tìm kiếm
-                            </button>
+                            <Button
+                                outlineColor="rgb(11, 87, 208)"
+                                backgroundColor="transparent"
+
+                                text="Đặt lại"
+                                onClick={handleReset}
+                            />
+                            <Button
+                                outlineColor="#0B57D0"
+                                backgroundColor="rgb(11, 87, 208)"
+                                text="Tìm kiếm"
+                                onClick={handleSubmit}
+                                type="submit"
+                            />
                         </div>
                     </form>
                 </div>

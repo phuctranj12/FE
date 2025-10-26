@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "../../styles/document.css";
 import "../../styles/table.css";
+import Button from "../common/Button";
 import AdvancedSearchModal from "./AdvancedSearchModal";
-
+import ActionMenu from "./ActionMenu";
 function Document({ filteredDocs = [], selectedStatus }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -55,53 +56,73 @@ function Document({ filteredDocs = [], selectedStatus }) {
     return (
         <div className="document-wrapper">
             <div className="table-container">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h2 className="document-title mb-0">
+                <div>
+                    <h2 >
                         Danh sách hợp đồng:{" "}
                         {selectedStatus >= 0 ? getStatusLabel(Number(selectedStatus)) : ""}
                     </h2>
-                    <button className="btn btn-outline-primary" onClick={() => setShowAdvanced(true)}>
-                        Nâng cao
-                    </button>
-                </div>
 
-                {/* Ô nhập tìm kiếm */}
-                <div className="search-box mb-3">
+                </div>
+                <div className="documnent-head">
                     <input
                         type="text"
-                        className="search-input form-control"
-                        placeholder="🔍 Tìm kiếm nhanh theo tên hợp đồng..."
+
+                        placeholder="Tìm kiếm nhanh theo tên hợp đồng..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    <Button
+                        outlineColor="#0B57D0"
+                        backgroundColor="rgb(11, 87, 208)"
+                        text="Nâng cao"
+                        onClick={() => setShowAdvanced(true)}
+                    />
                 </div>
 
-                {filteredByName.length === 0 ? (
-                    <p className="no-docs">Không có hợp đồng nào phù hợp với tìm kiếm.</p>
-                ) : (
-                    <table className="data-table table table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th>Tên hợp đồng</th>
-                                <th>Mã hợp đồng</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày tạo</th>
-                                <th>Ngày hết hạn</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredByName.map((doc) => (
-                                <tr key={doc.id}>
-                                    <td>{doc.name}</td>
-                                    <td>{doc.contract_no}</td>
-                                    <td>{getStatusLabel(doc.status)}</td>
-                                    <td>{formatDate(doc.created_at)}</td>
-                                    <td>{formatDate(doc.contract_expire_time)}</td>
+                {/* Ô nhập tìm kiếm */}
+
+
+                {
+                    filteredByName.length === 0 ? (
+                        <p className="no-docs">Không có hợp đồng nào phù hợp với tìm kiếm.</p>
+                    ) : (
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tên hợp đồng</th>
+                                    <th>Mã hợp đồng</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Ngày hết hạn</th>
+                                    <th>Thao tác</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
+                            </thead>
+                            <tbody>
+                                {filteredByName.map((doc) => (
+                                    <tr key={doc.id}>
+                                        <td>{doc.name}</td>
+                                        <td>{doc.contract_no}</td>
+                                        <td>{getStatusLabel(doc.status)}</td>
+                                        <td>{formatDate(doc.created_at)}</td>
+                                        <td>{formatDate(doc.contract_expire_time)}</td>
+                                        <td>
+                                            <ActionMenu
+                                                onEdit={() => console.log("Sửa", doc.id)}
+                                                onViewFlow={() => console.log("Xem luồng ký", doc.id)}
+                                                onCopy={() => console.log("Sao chép", doc.id)}
+                                                onDelete={(id) => {
+                                                    console.log("Xóa tài liệu có id:", id);
+                                                    // gọi API xóa ở đây
+                                                    // fetch(`/api/documents/${id}`, { method: "DELETE" })
+                                                }}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )
+                }
 
                 {/* Popup tìm kiếm nâng cao */}
                 <AdvancedSearchModal
@@ -109,8 +130,8 @@ function Document({ filteredDocs = [], selectedStatus }) {
                     onClose={() => setShowAdvanced(false)}
                     onSearch={(filters) => setAdvancedFilters(filters)}
                 />
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
 
