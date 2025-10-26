@@ -1,0 +1,765 @@
+import React, { useState, useEffect } from 'react';
+import '../../styles/documentEditor.css';
+
+function DocumentEditor({ documentType = 'single-template', onBack, onNext, onSaveDraft, hideFooter = false }) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages] = useState(46);
+    const [selectedComponent, setSelectedComponent] = useState(null);
+    const [documentComponents, setDocumentComponents] = useState([]);
+    const [showSignatureDropdown, setShowSignatureDropdown] = useState(false);
+    const [hoveredComponentId, setHoveredComponentId] = useState(null);
+    const [editingComponentId, setEditingComponentId] = useState(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+    const [draggedComponent, setDraggedComponent] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizeHandle, setResizeHandle] = useState(null);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+    // Dữ liệu mẫu cho các thành phần có thể kéo thả
+    const availableComponents = [
+        {
+            id: 'document-number',
+            name: 'SỐ TÀI LIỆU',
+            icon: '📄',
+            type: 'field'
+        },
+        {
+            id: 'text',
+            name: 'TEXT',
+            icon: 'T',
+            type: 'field'
+        },
+        {
+            id: 'image-signature',
+            name: 'CHỮ KÝ ẢNH',
+            icon: '👤',
+            type: 'signature'
+        },
+        {
+            id: 'digital-signature',
+            name: 'CHỮ KÝ SỐ',
+            icon: '∞',
+            type: 'signature',
+            hasDropdown: true
+        }
+    ];
+
+    // Các tùy chọn chữ ký số
+    const signatureOptions = [
+        {
+            id: 'signature-with-seal-info',
+            name: 'Chữ ký có con dấu và thông tin',
+            icon: 'seal-info',
+            description: 'Con dấu/ chữ ký + Thông tin chữ ký số'
+        },
+        {
+            id: 'signature-seal-only',
+            name: 'Chỉ có con dấu/ chữ ký',
+            icon: 'seal-only',
+            description: 'Con dấu/ chữ ký'
+        },
+        {
+            id: 'signature-info-only',
+            name: 'Chỉ có thông tin',
+            icon: 'info-only',
+            description: 'Thông tin chữ ký số'
+        }
+    ];
+
+    // Thuộc tính của component được chọn
+    const [componentProperties, setComponentProperties] = useState({
+        signer: '',
+        font: 'Times New Roman',
+        size: 13,
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+    });
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    const handleComponentSelect = (component) => {
+        setSelectedComponent(component);
+        setEditingComponentId(null); // Reset editing mode
+        // Reset properties khi chọn component mới
+        setComponentProperties({
+            signer: '',
+            font: 'Times New Roman',
+            size: 13,
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0
+        });
+    };
+
+    // Handle click outside to close dropdown
+    const handleClickOutside = (event) => {
+        if (showSignatureDropdown && !event.target.closest('.component-wrapper')) {
+            setShowSignatureDropdown(false);
+        }
+    };
+
+    // Add event listener for click outside
+    useEffect(() => {
+        if (showSignatureDropdown) {
+            document.addEventListener('click', handleClickOutside);
+            return () => {
+                document.removeEventListener('click', handleClickOutside);
+            };
+        }
+    }, [showSignatureDropdown]);
+
+    // Add event listeners for drag and resize
+    useEffect(() => {
+        const handleMouseMoveEvent = (e) => {
+            if (isDragging) {
+                handleMouseMove(e);
+            } else if (isResizing) {
+                handleResizeMove(e);
+            }
+        };
+
+        const handleMouseUpEvent = () => {
+            if (isDragging) {
+                handleMouseUp();
+            } else if (isResizing) {
+                handleResizeEnd();
+            }
+        };
+
+        if (isDragging || isResizing) {
+            document.addEventListener('mousemove', handleMouseMoveEvent);
+            document.addEventListener('mouseup', handleMouseUpEvent);
+            
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMoveEvent);
+                document.removeEventListener('mouseup', handleMouseUpEvent);
+            };
+        }
+    }, [isDragging, isResizing]);
+
+    const handlePropertyChange = (property, value) => {
+        setComponentProperties(prev => ({
+            ...prev,
+            [property]: value
+        }));
+    };
+
+    const handleAddComponent = () => {
+        if (selectedComponent && componentProperties.signer) {
+            // Đảm bảo kích thước tối thiểu
+            const width = Math.max(componentProperties.width || 100, 50);
+            const height = Math.max(componentProperties.height || 30, 20);
+            
+            const newComponent = {
+                id: Date.now(),
+                type: selectedComponent.id,
+                name: selectedComponent.name,
+                properties: { 
+                    ...componentProperties,
+                    width: width,
+                    height: height
+                }
+            };
+            setDocumentComponents(prev => [...prev, newComponent]);
+        }
+    };
+
+    const handleRemoveComponent = (componentId) => {
+        setDocumentComponents(prev => prev.filter(comp => comp.id !== componentId));
+    };
+
+    const handleComponentClick = (component) => {
+        setEditingComponentId(component.id);
+        setComponentProperties(component.properties);
+        setSelectedComponent({
+            id: component.type,
+            name: component.name,
+            icon: availableComponents.find(comp => comp.id === component.type)?.icon || '📄'
+        });
+    };
+
+    const handleUpdateComponent = () => {
+        if (editingComponentId) {
+            setDocumentComponents(prev => prev.map(comp => 
+                comp.id === editingComponentId 
+                    ? { ...comp, properties: { ...componentProperties } }
+                    : comp
+            ));
+        }
+    };
+
+    const handleSignatureOptionClick = (option) => {
+        if (selectedComponent) {
+            const newComponent = {
+                id: Date.now(),
+                type: selectedComponent.id,
+                name: `${selectedComponent.name} - ${option.name}`,
+                signatureType: option.id,
+                properties: { 
+                    ...componentProperties,
+                    width: Math.max(componentProperties.width || 100, 50),
+                    height: Math.max(componentProperties.height || 30, 20)
+                }
+            };
+            setDocumentComponents(prev => [...prev, newComponent]);
+            setShowSignatureDropdown(false);
+        }
+    };
+
+    // Drag and Drop handlers
+    const handleMouseDown = (e, componentId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const component = documentComponents.find(comp => comp.id === componentId);
+        if (!component) return;
+
+        setDraggedComponent(component);
+        setIsDragging(true);
+        setDragStart({
+            x: e.clientX - component.properties.x,
+            y: e.clientY - component.properties.y
+        });
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDragging || !draggedComponent) return;
+
+        const newX = e.clientX - dragStart.x;
+        const newY = e.clientY - dragStart.y;
+
+        setDocumentComponents(prev => prev.map(comp => 
+            comp.id === draggedComponent.id 
+                ? { ...comp, properties: { ...comp.properties, x: newX, y: newY } }
+                : comp
+        ));
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        setDraggedComponent(null);
+    };
+
+    // Resize handlers
+    const handleResizeStart = (e, componentId, handle) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Resize start:', { componentId, handle, clientX: e.clientX, clientY: e.clientY });
+        
+        const component = documentComponents.find(comp => comp.id === componentId);
+        if (!component) return;
+
+        setIsResizing(true);
+        setResizeHandle(handle);
+        setDraggedComponent(component);
+        setDragStart({
+            x: e.clientX,
+            y: e.clientY
+        });
+    };
+
+    const handleResizeMove = (e) => {
+        if (!isResizing || !draggedComponent || !resizeHandle) return;
+
+        const deltaX = e.clientX - dragStart.x;
+        const deltaY = e.clientY - dragStart.y;
+
+        console.log('Resize move:', { 
+            deltaX, 
+            deltaY, 
+            resizeHandle, 
+            clientX: e.clientX, 
+            clientY: e.clientY,
+            dragStart 
+        });
+
+        // Get current component from state to ensure we have latest values
+        const currentComponent = documentComponents.find(comp => comp.id === draggedComponent.id);
+        if (!currentComponent) return;
+
+        let newWidth = currentComponent.properties.width;
+        let newHeight = currentComponent.properties.height;
+
+        switch (resizeHandle) {
+            case 'se':
+                newWidth = Math.max(50, currentComponent.properties.width + deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height + deltaY);
+                break;
+            case 'sw':
+                newWidth = Math.max(50, currentComponent.properties.width - deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height + deltaY);
+                break;
+            case 'ne':
+                newWidth = Math.max(50, currentComponent.properties.width + deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height - deltaY);
+                break;
+            case 'nw':
+                newWidth = Math.max(50, currentComponent.properties.width - deltaX);
+                newHeight = Math.max(20, currentComponent.properties.height - deltaY);
+                break;
+        }
+
+        console.log('New size:', { newWidth, newHeight });
+
+        setDocumentComponents(prev => prev.map(comp => 
+            comp.id === draggedComponent.id 
+                ? { ...comp, properties: { ...comp.properties, width: newWidth, height: newHeight } }
+                : comp
+        ));
+
+        // Update dragStart for next calculation
+        setDragStart({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleResizeEnd = () => {
+        setIsResizing(false);
+        setResizeHandle(null);
+        setDraggedComponent(null);
+    };
+
+    return (
+        <div className="document-editor-container">
+            <div className="editor-wrapper">
+                {/* Header với radio buttons và pagination */}
+                <div className="editor-header">
+                    <div className="document-type-selection">
+                        <label className="radio-option">
+                            <input 
+                                type="radio" 
+                                name="documentType" 
+                                value="single-no-template"
+                                checked={documentType === 'single-no-template'}
+                                readOnly
+                            />
+                            Tài liệu đơn lẻ không theo mẫu
+                        </label>
+                        <label className="radio-option">
+                            <input 
+                                type="radio" 
+                                name="documentType" 
+                                value="single-template" 
+                                checked={documentType === 'single-template'}
+                                readOnly
+                            />
+                            Tài liệu đơn lẻ theo mẫu
+                        </label>
+                        <label className="radio-option">
+                            <input 
+                                type="radio" 
+                                name="documentType" 
+                                value="batch"
+                                checked={documentType === 'batch'}
+                                readOnly
+                            />
+                            Tài liệu theo lô
+                        </label>
+                    </div>
+                    
+                    <div className="pagination-controls">
+                        <button 
+                            className="page-btn" 
+                            onClick={() => handlePageChange(1)}
+                            disabled={currentPage === 1}
+                        >
+                            ««
+                        </button>
+                        <button 
+                            className="page-btn" 
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            «
+                        </button>
+                        <span className="page-info">{currentPage} / {totalPages}</span>
+                        <button 
+                            className="page-btn" 
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                        >
+                            »
+                        </button>
+                        <button 
+                            className="page-btn" 
+                            onClick={() => handlePageChange(totalPages)}
+                            disabled={currentPage === totalPages}
+                        >
+                            »»
+                        </button>
+                    </div>
+                </div>
+
+                <div className="editor-content">
+                    {/* Left Sidebar - Components */}
+                    <div className="components-sidebar">
+                        <h3 className="sidebar-title">THÀNH PHẦN</h3>
+                        <p className="sidebar-instruction">
+                            Kéo thả các trường thông tin dưới đây để thêm ô nhập hoặc ô ký vào tài liệu
+                        </p>
+                        
+                        <div className="components-list">
+                            {availableComponents.map(component => (
+                                <div key={component.id} className="component-wrapper">
+                                    <button
+                                        className={`component-item ${selectedComponent?.id === component.id ? 'selected' : ''}`}
+                                        onClick={(e) => {
+                                            if (component.hasDropdown) {
+                                                e.stopPropagation();
+                                                const rect = e.target.getBoundingClientRect();
+                                                setDropdownPosition({
+                                                    top: rect.top,
+                                                    left: rect.right + 8
+                                                });
+                                                setShowSignatureDropdown(!showSignatureDropdown);
+                                            } else {
+                                                handleComponentSelect(component);
+                                            }
+                                        }}
+                                    >
+                                        <span className="component-icon">{component.icon}</span>
+                                        <span className="component-name">{component.name}</span>
+                                        {component.hasDropdown && <span className="dropdown-arrow">›</span>}
+                                    </button>
+                                    
+                                    {/* Dropdown cho chữ ký số */}
+                                    {component.hasDropdown && showSignatureDropdown && (
+                                        <div 
+                                            className="signature-dropdown"
+                                            style={{
+                                                top: `${dropdownPosition.top}px`,
+                                                left: `${dropdownPosition.left}px`
+                                            }}
+                                        >
+                                            {signatureOptions.map(option => (
+                                                <div 
+                                                    key={option.id} 
+                                                    className="signature-option"
+                                                    onClick={() => handleSignatureOptionClick(option)}
+                                                >
+                                                    <div className="signature-preview">
+                                                        {option.icon === 'seal-info' && (
+                                                            <div className="preview-boxes">
+                                                                <div className="preview-box">
+                                                                    <div className="preview-icon">✍️</div>
+                                                                    <div className="preview-text">Con dấu/ chữ ký</div>
+                                                                </div>
+                                                                <div className="preview-box">
+                                                                    <div className="preview-icon">📋</div>
+                                                                    <div className="preview-text">Thông tin chữ ký số</div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {option.icon === 'seal-only' && (
+                                                            <div className="preview-boxes">
+                                                                <div className="preview-box">
+                                                                    <div className="preview-icon">✍️</div>
+                                                                    <div className="preview-text">Con dấu/ chữ ký</div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {option.icon === 'info-only' && (
+                                                            <div className="preview-boxes">
+                                                                <div className="preview-box">
+                                                                    <div className="preview-icon">📋</div>
+                                                                    <div className="preview-text">Thông tin chữ ký số</div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="signature-label">{option.name}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Main Content - Document */}
+                    <div className="document-content">
+                        <div className="document-page">
+                            <div className="document-header">
+                                <h1>I. Đăng nhập hệ thống</h1>
+                                <h2>1.1. Đăng ký</h2>
+                            </div>
+                            
+                            <div className="document-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Tên chức năng</th>
+                                            <th>Đăng ký</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Đăng ký</td>
+                                            <td>
+                                                <div className="function-description">
+                                                    <p><strong>Mô tả:</strong> Cho phép người dùng đăng ký sử dụng hệ thống. Thông tin đăng ký bao gồm:</p>
+                                                    <ul>
+                                                        <li>Email đăng ký(*)</li>
+                                                        <li>Mã số thuế / CCCD / CMT (*)</li>
+                                                        <li>Số điện thoại (*)</li>
+                                                        <li>Mật khẩu (*)</li>
+                                                        <li>Họ và tên (*)</li>
+                                                    </ul>
+                                                    
+                                                    <p><strong>Tác nhân:</strong> Người dùng đăng ký sử dụng hệ thống</p>
+                                                    
+                                                    <p><strong>Điều kiện trước:</strong> Truy cập vào trang web eContract và chọn đăng ký</p>
+                                                    
+                                                    <p><strong>Điều kiện sau:</strong> Người dùng gửi thông tin đăng ký sử dụng hệ thống thành công. Hệ thống sẽ gửi thông báo đến cho trang quản trị hệ thống, thông tin tổ chức được thêm mới vào danh sách tổ chức sử dụng dịch vụ của trang quản trị và có trạng thái "Chưa kích hoạt"</p>
+                                                    
+                                                    <p><strong>Ngoại lệ 1:</strong> Người dùng nhập không đủ các trường thông tin bắt buộc. Hệ thống thông báo tại trường thông tin đó: "Đây là trường bắt buộc nhập"</p>
+                                                    
+                                                    <p><strong>Ngoại lệ 2:</strong> Người dùng nhập thông tin email đã được cấp tài khoản trên hệ thống. Hệ thống thông báo: "Tài khoản đã tồn tại trên hệ thống"</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Document Components */}
+                            {documentComponents.map(component => (
+                                <div 
+                                    key={component.id} 
+                                    className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''}`}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${component.properties.x}px`,
+                                        top: `${component.properties.y}px`,
+                                        width: `${component.properties.width}px`,
+                                        height: `${component.properties.height}px`,
+                                        fontSize: `${component.properties.size}px`,
+                                        fontFamily: component.properties.font,
+                                        cursor: isDragging ? 'grabbing' : 'grab'
+                                    }}
+                                    onMouseEnter={() => setHoveredComponentId(component.id)}
+                                    onMouseLeave={() => setHoveredComponentId(null)}
+                                    onMouseDown={(e) => handleMouseDown(e, component.id)}
+                                    onClick={(e) => {
+                                        if (!isDragging) {
+                                            handleComponentClick(component);
+                                        }
+                                    }}
+                                >
+                                    <div className="component-content">
+                                        {component.type === 'text' && component.properties.fieldName 
+                                            ? `[${component.properties.fieldName}]` 
+                                            : component.signatureType 
+                                                ? `[${component.name}]`
+                                                : `[${component.name}]`
+                                        }
+                                    </div>
+                                    
+                                    {/* Resize handles */}
+                                    <div className="resize-handle nw" onMouseDown={(e) => handleResizeStart(e, component.id, 'nw')}></div>
+                                    <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, component.id, 'ne')}></div>
+                                    <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, component.id, 'sw')}></div>
+                                    <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, component.id, 'se')}></div>
+                                    
+                                    {hoveredComponentId === component.id && (
+                                        <button 
+                                            className="remove-component-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveComponent(component.id);
+                                            }}
+                                            title="Xóa component"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Right Sidebar - Properties */}
+                    <div className="properties-sidebar">
+                        <h3 className="sidebar-title">THUỘC TÍNH</h3>
+                        
+                        {selectedComponent ? (
+                            <div className="properties-form">
+                                {/* Properties cho SỐ TÀI LIỆU */}
+                                {selectedComponent.id === 'document-number' && (
+                                    <>
+                                        <div className="property-group">
+                                            <label className="property-label">
+                                                NGƯỜI NHẬP: <span className="required">*</span>
+                                            </label>
+                                            <select 
+                                                className="property-input"
+                                                value={componentProperties.signer}
+                                                onChange={(e) => handlePropertyChange('signer', e.target.value)}
+                                            >
+                                                <option value="">Chọn người nhập</option>
+                                                <option value="user1">Nguyễn Văn A</option>
+                                                <option value="user2">Trần Thị B</option>
+                                                <option value="user3">Lê Văn C</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Properties cho TEXT */}
+                                {selectedComponent.id === 'text' && (
+                                    <>
+                                        <div className="property-group">
+                                            <label className="property-label">
+                                                TÊN TRƯỜNG: <span className="required">*</span>
+                                            </label>
+                                            <input 
+                                                type="text"
+                                                className="property-input"
+                                                value={componentProperties.fieldName || ''}
+                                                onChange={(e) => handlePropertyChange('fieldName', e.target.value)}
+                                                placeholder="Nhập tên trường"
+                                            />
+                                        </div>
+                                        <div className="property-group">
+                                            <label className="property-label">
+                                                NGƯỜI NHẬP: <span className="required">*</span>
+                                            </label>
+                                            <select 
+                                                className="property-input"
+                                                value={componentProperties.signer}
+                                                onChange={(e) => handlePropertyChange('signer', e.target.value)}
+                                            >
+                                                <option value="">Chọn người nhập</option>
+                                                <option value="user1">Nguyễn Văn A</option>
+                                                <option value="user2">Trần Thị B</option>
+                                                <option value="user3">Lê Văn C</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Properties cho CHỮ KÝ ẢNH và CHỮ KÝ SỐ */}
+                                {(selectedComponent.id === 'image-signature' || selectedComponent.id === 'digital-signature') && (
+                                    <div className="property-group">
+                                        <label className="property-label">
+                                            NGƯỜI KÝ: <span className="required">*</span>
+                                        </label>
+                                        <select 
+                                            className="property-input"
+                                            value={componentProperties.signer}
+                                            onChange={(e) => handlePropertyChange('signer', e.target.value)}
+                                        >
+                                            <option value="">Chọn người ký</option>
+                                            <option value="user1">Nguyễn Văn A</option>
+                                            <option value="user2">Trần Thị B</option>
+                                            <option value="user3">Lê Văn C</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Properties chung cho tất cả */}
+                                <div className="property-group">
+                                    <label className="property-label">FONT:</label>
+                                    <select 
+                                        className="property-input"
+                                        value={componentProperties.font}
+                                        onChange={(e) => handlePropertyChange('font', e.target.value)}
+                                    >
+                                        <option value="Times New Roman">Times New Roman</option>
+                                        <option value="Arial">Arial</option>
+                                        <option value="Calibri">Calibri</option>
+                                        <option value="Tahoma">Tahoma</option>
+                                    </select>
+                                </div>
+
+                                <div className="property-group">
+                                    <label className="property-label">SIZE:</label>
+                                    <input 
+                                        type="number"
+                                        className="property-input"
+                                        value={componentProperties.size}
+                                        onChange={(e) => handlePropertyChange('size', parseInt(e.target.value))}
+                                    />
+                                </div>
+
+                                <div className="property-group">
+                                    <label className="property-label">VỊ TRÍ VÀ KÍCH THƯỚC:</label>
+                                    <div className="position-inputs">
+                                        <div className="input-row">
+                                            <label>X:</label>
+                                            <input 
+                                                type="number"
+                                                value={componentProperties.x}
+                                                onChange={(e) => handlePropertyChange('x', parseInt(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="input-row">
+                                            <label>Y:</label>
+                                            <input 
+                                                type="number"
+                                                value={componentProperties.y}
+                                                onChange={(e) => handlePropertyChange('y', parseInt(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="input-row">
+                                            <label>CHIỀU DÀI:</label>
+                                            <input 
+                                                type="number"
+                                                value={componentProperties.height}
+                                                onChange={(e) => handlePropertyChange('height', parseInt(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="input-row">
+                                            <label>CHIỀU RỘNG:</label>
+                                            <input 
+                                                type="number"
+                                                value={componentProperties.width}
+                                                onChange={(e) => handlePropertyChange('width', parseInt(e.target.value))}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    className="add-component-btn"
+                                    onClick={editingComponentId ? handleUpdateComponent : handleAddComponent}
+                                    disabled={
+                                        !componentProperties.signer || 
+                                        (selectedComponent.id === 'text' && !componentProperties.fieldName)
+                                    }
+                                >
+                                    {editingComponentId ? 'Cập nhật component' : 'Thêm vào tài liệu'}
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="no-selection">
+                                <p>Chọn một thành phần để cấu hình thuộc tính</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer với các nút điều hướng - chỉ hiển thị khi không ẩn */}
+                {!hideFooter && (
+                    <div className="editor-footer">
+                        <button className="back-btn" onClick={onBack}>Quay lại</button>
+                        <div className="footer-right">
+                            <button className="save-draft-btn" onClick={onSaveDraft}>Lưu nháp</button>
+                            <button className="next-btn" onClick={onNext}>Tiếp theo</button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default DocumentEditor;

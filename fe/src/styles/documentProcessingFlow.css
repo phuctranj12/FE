@@ -1,0 +1,237 @@
+/* Document Processing Flow Modal */
+
+.document-processing-flow-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.document-processing-flow-panel {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 700px;
+    max-width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.panel-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #0B57D0;
+    margin: 0;
+}
+
+.panel-content {
+    padding: 20px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.workflow-step-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #e0e0e0;
+    gap: 15px;
+}
+
+.workflow-step-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.step-user-info {
+    flex: 2;
+}
+
+.user-name-email {
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.user-name {
+    font-weight: 600;
+}
+
+.user-email {
+    color: #666;
+    font-weight: normal;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.detail-line {
+    margin-top: 3px;
+}
+
+.step-status-time {
+    flex: 1.5;
+    display: flex;
+    flex-direction: column;
+}
+
+.step-status {
+    font-size: 15px;
+    font-weight: 500;
+    color: #0B57D0;
+    margin-bottom: 4px;
+}
+
+.step-timestamp {
+    font-size: 13px;
+    color: #888;
+}
+
+.step-action {
+    flex: 0.5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    border: 1.5px solid #0B57D0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-icon:hover {
+    background-color: #f0f8ff;
+}
+
+.action-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Step Operations */
+.step-operations {
+    flex: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.operation-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.operation-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sms-btn {
+    color: #666;
+    border-color: #ddd;
+}
+
+.sms-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #999;
+    color: #333;
+}
+
+.change-signer-btn {
+    color: #0B57D0;
+    border-color: #0B57D0;
+}
+
+.change-signer-btn:hover {
+    background-color: #f0f8ff;
+    border-color: #0a4bb8;
+}
+
+.operation-btn svg {
+    flex-shrink: 0;
+}
+
+.panel-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.exit-button {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 30px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.exit-button:hover {
+    background-color: #5a6268;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .document-processing-flow-panel {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .workflow-step-item {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .step-user-info,
+    .step-status-time,
+    .step-action,
+    .step-operations {
+        flex: none;
+    }
+    
+    .step-operations {
+        justify-content: center;
+    }
+}

@@ -5,7 +5,8 @@ import Button from "../common/Button";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
 
-function Document({ filteredDocs = [], selectedStatus }) {
+function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
+
     const [searchTerm, setSearchTerm] = useState("");
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState({});
@@ -60,6 +61,10 @@ function Document({ filteredDocs = [], selectedStatus }) {
 
         setDocs(filtered);
     }, [searchTerm, selectedStatus, advancedFilters, filteredDocs]);
+
+
+
+    // Hàm đổi mã trạng thái sang tên thân thiện
 
     const getStatusLabel = (status) => {
         switch (status) {
@@ -150,11 +155,13 @@ function Document({ filteredDocs = [], selectedStatus }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {docs.map((doc) => (
-                                <tr key={doc.id}>
-                                    <td>{doc.name}</td>
-                                    <td>{doc.contract_no || doc.id}</td>
-                                    <td>{getTypeLabel(doc.type)}</td>
+
+
+
+                            {filteredDocs.map((doc) => (
+                                <tr key={doc.id} className="document-row" onClick={() => onDocumentClick && onDocumentClick(doc)}>
+                                    <td className="document-title-cell">{doc.title}</td>
+
                                     <td>{getStatusLabel(doc.status)}</td>
                                     <td>{formatDate(doc.created_at)}</td>
                                     <td>{formatDate(doc.updated_at)}</td>
@@ -172,16 +179,17 @@ function Document({ filteredDocs = [], selectedStatus }) {
                                 </tr>
                             ))}
                         </tbody>
-                    </table>
-                )}
+                    </table >
+                )
+                }
 
                 <AdvancedSearchModal
                     show={showAdvanced}
                     onClose={() => setShowAdvanced(false)}
                     onSearch={handleAdvancedSearch}
                 />
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
 
