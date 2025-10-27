@@ -4,20 +4,32 @@ import "../../styles/table.css";
 import Button from "../common/Button";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
+import SearchBar from "../common/SearchBar";
 
 function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
-
     const [searchTerm, setSearchTerm] = useState("");
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState({});
     const [docs, setDocs] = useState(filteredDocs);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5);
 
-    // ✅ Cập nhật khi dữ liệu từ props thay đổi
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentDocs = docs.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(docs.length / itemsPerPage);
+
+    // Reset trang khi filter/search thay đổi
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedStatus, advancedFilters]);
+
+    // Cập nhật khi props thay đổi
     useEffect(() => {
         setDocs(filteredDocs);
     }, [filteredDocs]);
 
-    // ✅ Áp dụng lọc nâng cao
+    // Áp dụng lọc nâng cao + search + status
     useEffect(() => {
         let filtered = [...filteredDocs];
 
@@ -41,31 +53,22 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
             }
 
             if (type && type !== "all") {
-                filtered = filtered.filter(
-                    (doc) => String(doc.type) === String(type)
-                );
+                filtered = filtered.filter((doc) => String(doc.type) === String(type));
             }
 
             if (fromDate) {
-                filtered = filtered.filter(
-                    (doc) => new Date(doc.created_at) >= new Date(fromDate)
-                );
+                filtered = filtered.filter((doc) => new Date(doc.created_at) >= new Date(fromDate));
             }
 
             if (toDate) {
-                filtered = filtered.filter(
-                    (doc) => new Date(doc.created_at) <= new Date(toDate)
-                );
+                filtered = filtered.filter((doc) => new Date(doc.created_at) <= new Date(toDate));
             }
         }
 
         setDocs(filtered);
     }, [searchTerm, selectedStatus, advancedFilters, filteredDocs]);
 
-
-
-    // Hàm đổi mã trạng thái sang tên thân thiện
-
+    // Chuyển status code sang tên
     const getStatusLabel = (status) => {
         switch (status) {
             case 0: return "Bản nháp";
@@ -78,6 +81,7 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
         }
     };
 
+    // Chuyển type code sang tên
     const getTypeLabel = (type) => {
         const typeMap = {
             1: "Tài liệu gốc",
@@ -98,13 +102,7 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
     };
 
     const handleAdvancedSearch = (filters) => {
-        // ✅ Nếu ấn “Đặt lại” (tức là không có bộ lọc)
-        if (
-            !filters ||
-            Object.values(filters).every(
-                (v) => v === "" || v === "all" || v === null
-            )
-        ) {
+        if (!filters || Object.values(filters).every((v) => v === "" || v === "all" || v === null)) {
             setAdvancedFilters({});
             setDocs(filteredDocs);
             return;
@@ -118,18 +116,17 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
                 <div>
                     <h2>
                         Danh sách tài liệu{" "}
-                        {selectedStatus && selectedStatus !== "all"
+                        {selectedStatus !== "all" && selectedStatus !== undefined
                             ? `(${getStatusLabel(Number(selectedStatus))})`
                             : ""}
                     </h2>
                 </div>
 
                 <div className="documnent-head">
-                    <input
-                        type="text"
+                    <SearchBar
                         placeholder="Tìm kiếm nhanh theo tên tài liệu..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={setSearchTerm}
                     />
                     <Button
                         outlineColor="#0B57D0"
@@ -142,54 +139,102 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
                 {docs.length === 0 ? (
                     <p className="no-docs">Không có tài liệu nào phù hợp với tìm kiếm.</p>
                 ) : (
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>Tên tài liệu</th>
-                                <th>Mã hợp đồng</th>
-                                <th>Loại tài liệu</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày tạo</th>
-                                <th>Ngày cập nhật</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-
-
-                            {filteredDocs.map((doc) => (
-                                <tr key={doc.id} className="document-row" onClick={() => onDocumentClick && onDocumentClick(doc)}>
-                                    <td className="document-title-cell">{doc.title}</td>
-
-                                    <td>{getStatusLabel(doc.status)}</td>
-                                    <td>{formatDate(doc.created_at)}</td>
-                                    <td>{formatDate(doc.updated_at)}</td>
-                                    <td>
-                                        <ActionMenu
-                                            onEdit={() => console.log("Sửa", doc.id)}
-                                            onViewFlow={() => console.log("Xem luồng ký", doc.id)}
-                                            onCopy={() => console.log("Sao chép", doc.id)}
-                                            onDelete={(id) =>
-                                                console.log("Xóa tài liệu có id:", id)
-                                            }
-                                            doc={doc}
-                                        />
-                                    </td>
+                    <>
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tên tài liệu</th>
+                                    <th>Mã hợp đồng</th>
+                                    <th>Loại tài liệu</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thời gian tạo</th>
+                                    <th>Thời gian cập nhật</th>
+                                    <th>Thao tác</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table >
-                )
-                }
+                            </thead>
+                            <tbody>
+                                {currentDocs.map((doc) => (
+                                    <tr
+                                        key={doc.id}
+                                        className="document-row"
+                                        onClick={() => onDocumentClick && onDocumentClick(doc)}
+                                    >
+                                        <td className="document-title-cell">{doc.name}</td>
+                                        <td>{doc.id}</td>
+                                        <td>{getTypeLabel(doc.type)}</td>
+                                        <td>{getStatusLabel(doc.status)}</td>
+                                        <td>{formatDate(doc.created_at)}</td>
+                                        <td>{formatDate(doc.updated_at)}</td>
+                                        <td>
+                                            <ActionMenu
+                                                onEdit={() => console.log("Sửa", doc.id)}
+                                                onViewFlow={() => console.log("Xem luồng ký", doc.id)}
+                                                onCopy={() => console.log("Sao chép", doc.id)}
+                                                onDelete={(id) => console.log("Xóa tài liệu có id:", id)}
+                                                doc={doc}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {docs.length > itemsPerPage && (
+                            <div className="pagination">
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    ← Trước
+                                </button>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter(page => {
+                                        // Hiển thị: trang 1, trang cuối, và 2 trang quanh currentPage
+                                        return (
+                                            page === 1 ||
+                                            page === totalPages ||
+                                            (page >= currentPage - 1 && page <= currentPage + 1)
+                                        );
+                                    })
+                                    .map((page, index, arr) => {
+                                        const prev = arr[index - 1];
+                                        return (
+                                            <React.Fragment key={page}>
+                                                {prev && page - prev > 1 && <span className="dots">...</span>}
+
+                                                <button
+                                                    onClick={() => setCurrentPage(page)}
+                                                    className={currentPage === page ? "active" : ""}
+                                                >
+
+                                                    {page}
+
+                                                </button>
+
+                                            </React.Fragment>
+                                        );
+                                    })
+                                }
+
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Sau →
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
 
                 <AdvancedSearchModal
                     show={showAdvanced}
                     onClose={() => setShowAdvanced(false)}
                     onSearch={handleAdvancedSearch}
                 />
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
 
