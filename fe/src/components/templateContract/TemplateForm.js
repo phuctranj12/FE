@@ -5,9 +5,31 @@ import DocumentSigners from '../createContract/DocumentSigners';
 import DocumentEditor from '../createContract/DocumentEditor';
 import TemplateConfirmation from './TemplateConfirmation';
 
-const TemplateForm = ({ onBack }) => {
+// Helper function để convert date format từ DD/MM/YYYY sang YYYY-MM-DD
+const convertDateFormat = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+};
+
+const TemplateForm = ({ onBack, editTemplate = null }) => {
     const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState({
+    
+    // Tạo mock API data để fill form khi edit
+    const mockTemplateData = editTemplate ? {
+        templateName: editTemplate.name || editTemplate.templateId || '',
+        templateCode: editTemplate.contractCode || editTemplate.id || '',
+        documentType: editTemplate.type_id || '',
+        startDate: editTemplate.start_time ? editTemplate.start_time.split('T')[0] : '',
+        endDate: editTemplate.end_time ? editTemplate.end_time.split('T')[0] : (editTemplate.date ? convertDateFormat(editTemplate.date) : ''),
+        attachedFile: editTemplate.attachedFile || '',
+        organization: editTemplate.organization_name || editTemplate.partyA || 'Trung tâm công nghệ thông tin MobiFone',
+        printWorkflow: editTemplate.printWorkflow || false,
+        loginByPhone: editTemplate.loginByPhone || false
+    } : {
         templateName: '',
         templateCode: '',
         documentType: '',
@@ -17,7 +39,9 @@ const TemplateForm = ({ onBack }) => {
         organization: 'Trung tâm công nghệ thông tin MobiFone',
         printWorkflow: false,
         loginByPhone: false
-    });
+    };
+
+    const [formData, setFormData] = useState(mockTemplateData);
 
     const [reviewers, setReviewers] = useState([]);
     const [signers, setSigners] = useState([

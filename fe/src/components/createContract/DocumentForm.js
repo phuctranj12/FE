@@ -38,12 +38,24 @@ const DocumentForm = () => {
     ]);
     const [documentClerks, setDocumentClerks] = useState([]);
 
-    const steps = [
-        { id: 1, title: 'THÔNG TIN TÀI LIỆU', active: currentStep === 1 },
-        { id: 2, title: 'XÁC ĐỊNH NGƯỜI KÝ', active: currentStep === 2 },
-        { id: 3, title: 'THIẾT KẾ TÀI LIỆU', active: currentStep === 3 },
-        { id: 4, title: 'XÁC NHẬN VÀ HOÀN TẤT', active: currentStep === 4 }
-    ];
+    // Điều chỉnh số bước dựa trên loại tài liệu
+    const getSteps = () => {
+        if (documentType === 'batch') {
+            return [
+                { id: 1, title: 'THÔNG TIN TÀI LIỆU', active: currentStep === 1 },
+                { id: 2, title: 'XÁC NHẬN VÀ HOÀN TẤT', active: currentStep === 2 }
+            ];
+        }
+        return [
+            { id: 1, title: 'THÔNG TIN TÀI LIỆU', active: currentStep === 1 },
+            { id: 2, title: 'XÁC ĐỊNH NGƯỜI KÝ', active: currentStep === 2 },
+            { id: 3, title: 'THIẾT KẾ TÀI LIỆU', active: currentStep === 3 },
+            { id: 4, title: 'XÁC NHẬN VÀ HOÀN TẤT', active: currentStep === 4 }
+        ];
+    };
+
+    const steps = getSteps();
+    const maxStep = documentType === 'batch' ? 2 : 4;
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -127,7 +139,7 @@ const DocumentForm = () => {
     };
 
     const handleNext = () => {
-        if (currentStep < 4) {
+        if (currentStep < maxStep) {
             setCurrentStep(currentStep + 1);
         }
     };
@@ -149,6 +161,19 @@ const DocumentForm = () => {
     };
 
     const renderStepContent = () => {
+        // Nếu là batch document, chỉ có 2 bước
+        if (documentType === 'batch') {
+            switch (currentStep) {
+                case 1:
+                    return renderStep1();
+                case 2:
+                    return renderStep4(); // Confirmation step
+                default:
+                    return renderStep1();
+            }
+        }
+        
+        // Normal flow với 4 bước
         switch (currentStep) {
             case 1:
                 return renderStep1();
@@ -218,7 +243,7 @@ const DocumentForm = () => {
                 reviewers={reviewers}
                 signers={signers}
                 documentClerks={documentClerks}
-                onBack={() => setCurrentStep(3)}
+                onBack={() => setCurrentStep(documentType === 'batch' ? 1 : 3)}
                 onComplete={handleComplete}
                 onSaveDraft={handleSaveDraft}
             />
@@ -246,12 +271,12 @@ const DocumentForm = () => {
                 </div>
 
                 <div className="form-footer">
-                    {currentStep > 1 && currentStep < 4 && (
+                    {currentStep > 1 && currentStep < maxStep && (
                         <button className="back-btn" onClick={handleBack}>
                             Quay lại
                         </button>
                     )}
-                    {currentStep < 4 && (
+                    {currentStep < maxStep && (
                         <div className="footer-right">
                             <button className="save-draft-btn" onClick={handleSaveDraft}>
                                 Lưu nháp

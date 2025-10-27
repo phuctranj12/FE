@@ -14,6 +14,7 @@ function DocumentTemplates() {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [editingTemplate, setEditingTemplate] = useState(null);
 
     // Mock data - Replace with real API data
     const [templates] = useState([
@@ -79,10 +80,12 @@ function DocumentTemplates() {
 
     const handleAddNew = () => {
         setShowAddForm(true);
+        setEditingTemplate(null);
     };
 
     const handleBackToList = () => {
         setShowAddForm(false);
+        setEditingTemplate(null);
     };
 
     const handleTemplateClick = (template) => {
@@ -94,7 +97,8 @@ function DocumentTemplates() {
     };
 
     const handleEdit = (template) => {
-        console.log("Edit template:", template);
+        setEditingTemplate(template);
+        setShowAddForm(true);
     };
 
     const handleBatchCreate = (template) => {
@@ -130,7 +134,7 @@ function DocumentTemplates() {
     };
 
     if (showAddForm) {
-        return <TemplateForm onBack={handleBackToList} />;
+        return <TemplateForm onBack={handleBackToList} editTemplate={editingTemplate} />;
     }
 
     if (selectedTemplate) {
