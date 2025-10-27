@@ -73,7 +73,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 )}
 
                 {/* Tài liệu mẫu */}
-                <div className="menu-item" onClick={() => {
+                <div className={`menu-item${(menuStatus === "tai-lieu-mau") ? " active-menu" : ""}`} onClick={() => {
                     handleSelectMenu("tai-lieu-mau");
                     toggleMenu(null);
                 }}>

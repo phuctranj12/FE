@@ -1,0 +1,77 @@
+.template-action-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.dots-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dots-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.action-dropdown {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 240px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0;
+}
+
+.action-item {
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 10px 16px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #333;
+}
+
+.action-item:hover {
+    background-color: #f9fafb;
+}
+
+.action-icon {
+    flex-shrink: 0;
+}
+
+.action-item.edit-item:hover,
+.action-item.batch-item:hover,
+.action-item.single-item:hover,
+.action-item.pause-item:hover,
+.action-item.share-item:hover,
+.action-item.copy-item:hover,
+.action-item.flow-item:hover {
+    background-color: #eff6ff;
+}
+
+.action-item.delete-item {
+    color: #EE4235;
+}
+
+.action-item.delete-item:hover {
+    background-color: #fef2f2;
+}
+

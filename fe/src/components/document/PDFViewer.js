@@ -1,103 +1,139 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import '../../styles/pdfViewer.css';
 
-// Component PDF Viewer đơn giản
-// Để hiển thị PDF thực tế, bạn cần cài đặt thư viện:
-// npm install react-pdf
-// hoặc
-// npm install pdfjs-dist
+// Cấu hình worker: dùng file worker local trong public để tránh CORS
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 function PDFViewer({ document, currentPage, totalPages, zoom, onPageChange }) {
-    const [pdfUrl, setPdfUrl] = useState(null);
+    const [numPages, setNumPages] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [pageError, setPageError] = useState(false);
+    const documentRef = useRef(null);
+    const containerRef = useRef(null);
+    const pageRefs = useRef([]);
+    const lastDerivedPageRef = useRef(null); // trang tính được từ scroll gần nhất
+    const isProgrammaticScrollRef = useRef(false); // đang scroll do code
 
+    // URL PDF mẫu - trong thực tế sẽ lấy từ document.pdfUrl
+    const pdfUrl = document?.pdfUrl || 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf';
+
+    function onDocumentLoadSuccess({ numPages }) {
+        setNumPages(numPages);
+        setLoading(false);
+        setPageError(false);
+    }
+
+    function onDocumentLoadError(error) {
+        console.error('Error loading PDF:', error);
+        setLoading(false);
+        setPageError(true);
+    }
+
+    // Reset loading state khi document thay đổi
     useEffect(() => {
-        // Trong thực tế, bạn sẽ lấy URL PDF từ document
-        // setPdfUrl(document.pdfUrl);
-        
-        // Hiện tại sử dụng PDF mẫu
-        setPdfUrl('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
-    }, [document]);
+        setLoading(true);
+        setPageError(false);
+    }, [pdfUrl]);
+
+    // Scroll tới trang khi currentPage thay đổi từ bên ngoài (khác trang do scroll tính ra)
+    useEffect(() => {
+        if (!numPages || !currentPage) return;
+        if (lastDerivedPageRef.current === currentPage) return; // thay đổi do scroll, bỏ qua
+        const targetEl = pageRefs.current[currentPage - 1];
+        if (targetEl) {
+            isProgrammaticScrollRef.current = true;
+            targetEl.scrollIntoView({ behavior: 'auto', block: 'start', inline: 'nearest' });
+            // kết thúc cờ sau một frame
+            requestAnimationFrame(() => { isProgrammaticScrollRef.current = false; });
+        }
+    }, [currentPage, numPages]);
+
+    // Cập nhật currentPage dựa theo vị trí scroll
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || !numPages) return;
+
+        let rafId = null;
+        const handleScrollNow = () => {
+            const containerTop = container.getBoundingClientRect().top;
+            let bestPage = 1;
+            let bestDist = Infinity;
+            pageRefs.current.forEach((el, idx) => {
+                if (!el) return;
+                const rect = el.getBoundingClientRect();
+                const dist = Math.abs(rect.top - containerTop);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestPage = idx + 1;
+                }
+            });
+            lastDerivedPageRef.current = bestPage;
+            if (!isProgrammaticScrollRef.current && bestPage !== currentPage && typeof onPageChange === 'function') {
+                onPageChange(bestPage);
+            }
+        };
+        const handleScroll = () => {
+            if (rafId) return;
+            rafId = requestAnimationFrame(() => {
+                rafId = null;
+                handleScrollNow();
+            });
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        // Gọi 1 lần để sync ngay
+        handleScroll();
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            if (rafId) cancelAnimationFrame(rafId);
+        };
+    }, [numPages, currentPage, onPageChange]);
+
+    // Tạo ref cho từng trang
+    const setPageRef = (index) => (el) => {
+        pageRefs.current[index] = el;
+    };
 
     return (
-        <div className="pdf-viewer-container">
-            {pdfUrl ? (
-                <div className="pdf-iframe-container">
-                    <iframe
-                        src={`${pdfUrl}#page=${currentPage}&zoom=${zoom}`}
-                        width="100%"
-                        height="100%"
-                        style={{ border: 'none' }}
-                        title="PDF Viewer"
-                    />
-                </div>
-            ) : (
-                <div className="pdf-placeholder">
-                    <div className="pdf-content">
-                        {/* Nội dung PDF mẫu - trong thực tế sẽ sử dụng thư viện PDF viewer */}
-                        <div className="pdf-page">
-                            <div className="pdf-header">
-                                <div className="institution-left">
-                                    HỌC VIỆN CÔNG NGHỆ BƯU CHÍNH VIỄN THÔNG
-                                </div>
-                                <div className="institution-right">
-                                    CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>
-                                    Độc Lập - Tự Do - Hạnh Phúc
-                                </div>
-                            </div>
-                            
-                            <div className="pdf-title">
-                                KHOA CÔNG NGHỆ THÔNG TIN
-                            </div>
-                            
-                            <div className="pdf-main-title">
-                                ĐỀ CƯƠNG CHI TIẾT HỌC PHẦN
-                            </div>
-                            
-                            <div className="course-name">
-                                Tên học phần: Đồ án tốt nghiệp (Capstone Project)
-                            </div>
-                            
-                            <div className="section-title">
-                                1. Thông tin chung về học phần
-                            </div>
-                            
-                            <div className="info-table">
-                                <div className="table-row">
-                                    <div className="table-cell">1) Mã học phần:</div>
-                                    <div className="table-cell">INT</div>
-                                </div>
-                                <div className="table-row">
-                                    <div className="table-cell">2) Ký hiệu học phần:</div>
-                                    <div className="table-cell"></div>
-                                </div>
-                                <div className="table-row">
-                                    <div className="table-cell">3) Số tín chỉ:</div>
-                                    <div className="table-cell">6</div>
-                                </div>
-                                <div className="table-row">
-                                    <div className="table-cell">4) Hoạt động học tập</div>
-                                    <div className="table-cell">
-                                        - Lý thuyết: 0 tiết<br/>
-                                        - Bài tập/Thảo luận: 0 tiết<br/>
-                                        - Thực hành/Thí nghiệm: 0 tiết<br/>
-                                        - Tự học: 90 tiết
-                                    </div>
-                                </div>
-                                <div className="table-row">
-                                    <div className="table-cell">5) Điều kiện tham gia học phần:</div>
-                                    <div className="table-cell">
-                                        - Học phần tiên quyết: Các học phần đại cương, cơ sở ngành và chuyên ngành liên quan.<br/>
-                                        - Học phần học trước:
-                                    </div>
-                                </div>
-                                <div className="table-row">
-                                    <div className="table-cell">6) Các giảng viên phụ trách học phần:</div>
-                                    <div className="table-cell"></div>
-                                </div>
-                            </div>
-                        </div>
+        <div className="pdf-viewer-container" ref={containerRef}>
+            <Document
+                ref={documentRef}
+                file={pdfUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={onDocumentLoadError}
+                loading={
+                    <div className="pdf-loading">
+                        <div className="loading-spinner"></div>
+                        <p>Đang tải tài liệu...</p>
                     </div>
-                </div>
-            )}
+                }
+                error={
+                    <div className="pdf-error">
+                        <p>Không thể tải tài liệu PDF</p>
+                        <p className="error-detail">Vui lòng thử lại sau</p>
+                    </div>
+                }
+            >
+                {!pageError && !loading && numPages && (
+                    Array.from({ length: numPages }, (_, i) => (
+                        <div key={i} data-page-index={i} ref={setPageRef(i)}>
+                            <Page
+                                pageNumber={i + 1}
+                                scale={zoom / 100}
+                                renderTextLayer={true}
+                                renderAnnotationLayer={true}
+                                loading={
+                                    <div className="pdf-loading">
+                                        <div className="loading-spinner"></div>
+                                        <p>Đang tải trang...</p>
+                                    </div>
+                                }
+                            />
+                        </div>
+                    ))
+                )}
+            </Document>
         </div>
     );
 }
