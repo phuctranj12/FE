@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import '../../styles/documentConfirmation.css';
 
-function DocumentConfirmation({ 
-    documentType, 
+function TemplateConfirmation({ 
     formData, 
-    setFormData, 
-    reviewers,
-    signers,
-    documentClerks,
+    setFormData,
+    reviewers, 
+    signers, 
+    documentClerks, 
     onBack, 
     onComplete, 
     onSaveDraft 
 }) {
-    const [expirationDate, setExpirationDate] = useState('2025-11-23');
+    const [endDate, setEndDate] = useState(formData.endDate || '2025-11-23');
     const [ccEmails, setCcEmails] = useState('');
 
     const handleInputChange = (e) => {
@@ -23,11 +22,11 @@ function DocumentConfirmation({
         }));
     };
 
-    const handleExpirationDateChange = (e) => {
-        setExpirationDate(e.target.value);
+    const handleEndDateChange = (e) => {
+        setEndDate(e.target.value);
         setFormData(prev => ({
             ...prev,
-            expirationDate: e.target.value
+            endDate: e.target.value
         }));
     };
 
@@ -48,83 +47,64 @@ function DocumentConfirmation({
         return `${day}/${month}/${year}`;
     };
 
-    const getDocumentTypeLabel = (type) => {
-        switch (type) {
-            case 'single-no-template':
-                return 'Tài liệu đơn lẻ không theo mẫu';
-            case 'single-template':
-                return 'Tài liệu đơn lẻ theo mẫu';
-            case 'batch':
-                return 'Tài liệu theo lô';
+    const getDocumentTypeLabel = (typeId) => {
+        switch (typeId) {
+            case '1':
+                return 'Tài liệu gốc';
+            case '2':
+                return 'Tài liệu khách hàng';
+            case '3':
+                return 'Tài liệu đính kèm';
+            case '4':
+                return 'Tài liệu hợp đồng theo lô';
             default:
-                return 'Tài liệu đơn lẻ không theo mẫu';
+                return 'Chưa chọn loại tài liệu';
         }
     };
 
     return (
         <div className="step-content">
-            {/* Document Type Selection - Read Only */}
-            <div className="document-type-section">
-                <div className="radio-group readonly">
-                    <label className="radio-option">
-                        <input
-                            type="radio"
-                            name="documentType"
-                            value="single-no-template"
-                            checked={documentType === 'single-no-template'}
-                            readOnly
-                        />
-                        <span>Tài liệu đơn lẻ không theo mẫu</span>
-                    </label>
-                    <label className="radio-option">
-                        <input
-                            type="radio"
-                            name="documentType"
-                            value="single-template"
-                            checked={documentType === 'single-template'}
-                            readOnly
-                        />
-                        <span>Tài liệu đơn lẻ theo mẫu</span>
-                    </label>
-                    <label className="radio-option">
-                        <input
-                            type="radio"
-                            name="documentType"
-                            value="batch"
-                            checked={documentType === 'batch'}
-                            readOnly
-                        />
-                        <span>Tài liệu theo lô</span>
-                    </label>
-                </div>
-            </div>
-
             {/* Document Information Summary */}
             <div className="document-summary">
-                <h3 className="summary-title">Thông tin tài liệu</h3>
+                <h3 className="summary-title">Thông tin mẫu tài liệu</h3>
                 
                 <div className="summary-section">
                     <div className="summary-item">
-                        <label className="summary-label">Tên tài liệu</label>
-                        <div className="summary-value">{formData.documentName || 'adsasd'}</div>
+                        <label className="summary-label">Tên mẫu tài liệu</label>
+                        <div className="summary-value">{formData.templateName || 'Chưa nhập tên mẫu tài liệu'}</div>
                     </div>
                     
                     <div className="summary-item">
-                        <label className="summary-label">Lời nhắn</label>
-                        <div className="summary-value">{formData.message || ''}</div>
+                        <label className="summary-label">Mã mẫu tài liệu</label>
+                        <div className="summary-value">{formData.templateCode || 'Chưa nhập mã mẫu tài liệu'}</div>
+                    </div>
+
+                    <div className="summary-item">
+                        <label className="summary-label">Loại tài liệu</label>
+                        <div className="summary-value">{getDocumentTypeLabel(formData.documentType)}</div>
+                    </div>
+
+                    <div className="summary-item">
+                        <label className="summary-label">Ngày bắt đầu hiệu lực</label>
+                        <div className="summary-value">{formatDateForDisplay(formData.startDate) || 'Chưa chọn'}</div>
                     </div>
                     
                     <div className="summary-item">
-                        <label className="summary-label">Ngày hết hạn ký</label>
+                        <label className="summary-label">Ngày kết thúc hiệu lực</label>
                         <div className="date-input-wrapper">
                             <input
                                 type="date"
-                                value={expirationDate}
-                                onChange={handleExpirationDateChange}
+                                value={endDate}
+                                onChange={handleEndDateChange}
                                 className="date-input"
                             />
-                            <span className="date-display">{formatDateForDisplay(expirationDate)}</span>
+                            <span className="date-display">{formatDateForDisplay(endDate)}</span>
                         </div>
+                    </div>
+
+                    <div className="summary-item">
+                        <label className="summary-label">File đính kèm</label>
+                        <div className="summary-value">{formData.attachedFile || 'Chưa có file đính kèm'}</div>
                     </div>
                 </div>
 
@@ -222,4 +202,5 @@ function DocumentConfirmation({
     );
 }
 
-export default DocumentConfirmation;
+export default TemplateConfirmation;
+

@@ -5,6 +5,8 @@ import Sidebar from "../components/bar/SideBar";
 import Document from "../components/document/document";
 import HomeComponent from "../components/document/Home";
 import UserManagement from "../components/userManagement/UserManagement";
+import DocumentTemplates from "../components/templateContract/DocumentTemplates";
+import DocumentForm from "../components/createContract/DocumentForm";
 import Footer from "../components/bar/Footer";
 
 function MainContent() {
@@ -17,6 +19,12 @@ function MainContent() {
             if (selectedStatus === "nguoi-dung") return "Quản lý người dùng > Danh sách người dùng";
             if (selectedStatus === "vai-tro") return "Quản lý người dùng > Danh sách vai trò";
             return "Quản lý người dùng";
+        }
+        if (menuStatus === "tai-lieu-mau") {
+            return "Tài liệu mẫu";
+        }
+        if (menuStatus === "create-document") {
+            return "Tạo tài liệu mới";
         }
         return "Hệ thống quản lý hợp đồng điện tử";
     };
@@ -122,8 +130,12 @@ function MainContent() {
                 <div className="content-right">
                     {menuStatus === "home" ? (
                         <HomeComponent />
+                    ) : menuStatus === "create-document" ? (
+                        <DocumentForm />
                     ) : menuStatus === "document" ? (
                         <Document filteredDocs={filteredDocs} selectedStatus={selectedStatus} />
+                    ) : menuStatus === "tai-lieu-mau" ? (
+                        <DocumentTemplates />
                     ) : menuStatus === "user-management" ? (
                         <UserManagement selectedStatus={selectedStatus} />
                     ) : null}
