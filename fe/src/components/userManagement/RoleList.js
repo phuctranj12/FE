@@ -72,17 +72,27 @@ const RoleList = ({ onAddNew }) => {
         // Implement edit functionality
     };
 
-    const handleDelete = (roleId) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa vai trò này?')) {
-            setRoles(roles.filter(role => role.id !== roleId));
-            setFilteredRoles(filteredRoles.filter(role => role.id !== roleId));
+    const handleDelete = async (roleId) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa vai trò này?')) return;
+        try {
+            setLoading(true);
+            const res = await customerService.deleteRole(roleId);
+            if (res.code === 'SUCCESS') {
+                await fetchRoles();
+            } else {
+                alert('Không thể xóa vai trò: ' + (res.message || 'Unknown error'));
+            }
+        } catch (e) {
+            alert(e.response?.data?.message || e.message || 'Đã xảy ra lỗi khi xóa vai trò');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <>
             {showAddRole && (
-                <AddNewRolePanel onCancel={() => setShowAddRole(false)} />
+                <AddNewRolePanel onCancel={() => { setShowAddRole(false); fetchRoles(); }} />
             )}
             
             <div className="user-management-container">

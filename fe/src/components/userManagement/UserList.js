@@ -101,7 +101,7 @@ const UserList = ({ onAddNew }) => {
                     <SearchBar placeholder="Địa chỉ email/Họ tên/Số điện thoại" value={searchName || searchEmail || searchPhone} onChange={(v) => { setSearchName(v); setSearchEmail(v); setSearchPhone(v); }} />
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
-                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
+                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" onClick={handleSearch} />
                     <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={onAddNew} />
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Import file" icon={<span style={{fontWeight:700}}>☁️</span>} />
                 </div>

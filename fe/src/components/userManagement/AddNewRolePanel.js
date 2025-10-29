@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/addNewRolePanel.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
+import customerService from '../../api/customerService';
 
 const AddNewRolePanel = ({ onCancel }) => {
     const [formData, setFormData] = useState({
@@ -12,75 +13,30 @@ const AddNewRolePanel = ({ onCancel }) => {
     });
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [permissions, setPermissions] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Sample permissions data
-    const permissions = [
-        {
-            id: 1,
-            name: 'Xem danh sách tài liệu tổ chức của tôi',
-            category: 'Tài liệu'
-        },
-        {
-            id: 2,
-            name: 'Tìm kiếm tài liệu',
-            category: 'Tài liệu'
-        },
-        {
-            id: 3,
-            name: 'Xem thông tin chi tiết tài liệu',
-            category: 'Tài liệu'
-        },
-        {
-            id: 4,
-            name: 'Sao chép tài liệu',
-            category: 'Tài liệu'
-        },
-        {
-            id: 5,
-            name: 'Hủy tài liệu',
-            category: 'Tài liệu'
-        },
-        {
-            id: 6,
-            name: 'Xem lịch sử tài liệu',
-            category: 'Tài liệu'
-        },
-        {
-            id: 7,
-            name: 'Tạo tài liệu liên quan',
-            category: 'Tài liệu'
-        },
-        {
-            id: 8,
-            name: 'Xem tài liệu liên quan',
-            category: 'Tài liệu'
-        },
-        {
-            id: 9,
-            name: 'Quản lý người dùng',
-            category: 'Quản trị'
-        },
-        {
-            id: 10,
-            name: 'Quản lý tổ chức',
-            category: 'Quản trị'
-        },
-        {
-            id: 11,
-            name: 'Quản lý vai trò',
-            category: 'Quản trị'
-        },
-        {
-            id: 12,
-            name: 'Xem báo cáo',
-            category: 'Báo cáo'
-        },
-        {
-            id: 13,
-            name: 'Xuất báo cáo',
-            category: 'Báo cáo'
-        }
-    ];
+    useEffect(() => {
+        const loadPermissions = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await customerService.getAllPermissions({ page: 0, size: 1000 });
+                if (res.code === 'SUCCESS') {
+                    const list = Array.isArray(res.data?.content) ? res.data.content : [];
+                    setPermissions(list.map(p => ({ id: p.id, name: p.name, category: p.category || 'Khác' })));
+                } else {
+                    setError(res.message || 'Không thể tải danh sách phân quyền');
+                }
+            } catch (e) {
+                setError(e.response?.data?.message || e.message || 'Lỗi tải phân quyền');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadPermissions();
+    }, []);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -95,16 +51,32 @@ const AddNewRolePanel = ({ onCancel }) => {
         }));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Validate required fields
         if (!formData.roleName || !formData.roleCode || formData.permissions.length === 0) {
             alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
             return;
         }
-        
-        console.log('Saving role:', formData);
-        // Implement save logic here
-        onCancel && onCancel();
+        try {
+            setLoading(true);
+            const payload = {
+                name: formData.roleName,
+                code: formData.roleCode,
+                note: formData.note,
+                permissionIds: formData.permissions
+            };
+            const res = await customerService.createRole(payload);
+            if (res.code === 'SUCCESS') {
+                alert('Tạo vai trò thành công');
+                onCancel && onCancel();
+            } else {
+                alert('Không thể tạo vai trò: ' + (res.message || 'Unknown error'));
+            }
+        } catch (e) {
+            alert(e.response?.data?.message || e.message || 'Đã xảy ra lỗi');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCancel = () => {
@@ -215,8 +187,9 @@ const AddNewRolePanel = ({ onCancel }) => {
                     <Button 
                         outlineColor="#0B57D0" 
                         backgroundColor="#0B57D0" 
-                        text="Lưu lại" 
+                        text={loading ? 'Đang lưu...' : 'Lưu lại'} 
                         onClick={handleSave}
+                        disabled={loading}
                     />
                 </div>
             </div>
