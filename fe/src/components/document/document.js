@@ -181,48 +181,38 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
 
                         {docs.length > itemsPerPage && (
                             <div className="pagination">
-                                <button
+                                {/* <button
+                                    className="page-btn"
                                     onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
                                 >
-                                    ← Trước
-                                </button>
+                                    ←
+                                </button> */}
 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                    .filter(page => {
-                                        // Hiển thị: trang 1, trang cuối, và 2 trang quanh currentPage
-                                        return (
-                                            page === 1 ||
-                                            page === totalPages ||
-                                            (page >= currentPage - 1 && page <= currentPage + 1)
-                                        );
-                                    })
-                                    .map((page, index, arr) => {
-                                        const prev = arr[index - 1];
-                                        return (
-                                            <React.Fragment key={page}>
-                                                {prev && page - prev > 1 && <span className="dots">...</span>}
+                                <div className="page-info">
+                                    <span>Trang</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max={totalPages}
+                                        value={currentPage}
+                                        onChange={(e) => {
+                                            let page = Number(e.target.value);
+                                            if (page < 1) page = 1;
+                                            if (page > totalPages) page = totalPages;
+                                            setCurrentPage(page);
+                                        }}
+                                    />
+                                    <span>/ {totalPages}</span>
+                                </div>
 
-                                                <button
-                                                    onClick={() => setCurrentPage(page)}
-                                                    className={currentPage === page ? "active" : ""}
-                                                >
-
-                                                    {page}
-
-                                                </button>
-
-                                            </React.Fragment>
-                                        );
-                                    })
-                                }
-
-                                <button
+                                {/* <button
+                                    className="page-btn"
                                     onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                                     disabled={currentPage === totalPages}
                                 >
-                                    Sau →
-                                </button>
+                                    →
+                                </button> */}
                             </div>
                         )}
                     </>

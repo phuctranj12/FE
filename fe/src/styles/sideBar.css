@@ -1,21 +1,22 @@
 
 .sidebar {
   width: 250px;
-  background-color: #f7f7f7;
+  /* background-color: #f7f7f7; */
+   background: #f4f7fb;
   padding: 10px;
   border-right: 1px solid #ccc;
   height: 100vh;
-   background: linear-gradient(
+   /* background: linear-gradient(
         to bottom right, 
         rgb(241, 235, 229), 
         rgb(255, 255, 255)
-    );
+    ); */
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   margin: 10px 10px 10px 10px;
   border-radius: 10px;
 }
 
-.create-btn {
+/* .create-btn {
   width: 100%;
   padding: 10px;
    background-color: #e2974d;
@@ -28,8 +29,18 @@
 }
 .create-btn:hover{
   background-color: #dd8339;
+} */
+.sidebar button{
+  width: 100%;
+  padding: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;   /* căn giữa theo chiều dọc */
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
 }
-
 .menu {
   margin-top: 15px;
 }

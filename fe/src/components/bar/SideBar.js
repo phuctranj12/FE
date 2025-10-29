@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "../../styles/sideBar.css";
 import { useNavigate } from "react-router-dom";
-
+import Button from "../common/Button";
 function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus }) {
     const [activeMenu, setActiveMenu] = useState(null);
     const navigate = useNavigate();
@@ -22,8 +22,13 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
     }
     return (
         <aside className="sidebar">
-            <button className="create-btn" onClick={() => handleSelectMenu("create-document")}>Tạo ngay</button>
-
+            {/* <button className="create-btn" onClick={() => handleSelectMenu("create-document")}>Tạo ngay</button> */}
+            <Button
+                outlineColor="#0B57D0"
+                backgroundColor="rgb(11, 87, 208)"
+                text="Tạo ngay"
+                onClick={() => handleSelectMenu("create-document")}
+            />
             <div className="menu">
                 {/* Trang chủ */}
                 <div className="menu-item" onClick={() => {
