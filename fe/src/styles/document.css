@@ -70,6 +70,65 @@
     text-decoration: underline;
 }
 
+.document-wrapper .pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 20px;
+}
+
+.document-wrapper .page-btn {
+ 
+  background-color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.document-wrapper .page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.document-wrapper .page-btn:hover:not(:disabled) {
+ 
+}
+
+.document-wrapper .page-info {
+  
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: white;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  color: #333;
+  font-size: 1rem;
+  border: 1px solid #d0d2d7;
+}
+
+.document-wrapper .page-info input {
+  width: 50px;
+  background: transparent;
+  border: 1px solid #d0d2d7;
+  border-radius: 6px;
+
+  text-align: center;
+  outline: none;
+  padding: 0.2rem;
+}
+
+.document-wrapper .page-info input::-webkit-outer-spin-button,
+.document-wrapper .page-info input::-webkit-inner-spin-button {
+  opacity: 1;
+  height: 20px;
+}
+
 
 /* .no-docs {
   color: #666;
@@ -97,3 +156,4 @@
 .docs-table tr:hover {
   background-color: #fafafa;
 } */
+
