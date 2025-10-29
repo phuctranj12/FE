@@ -26,13 +26,13 @@ const AddOrganizationPanel = ({ onClose, onSave, organizations = [] }) => {
 
     const handleSave = () => {
         // Validate required fields
-        if (!formData.name || !formData.code || !formData.parentOrg) {
+        if (!formData.name || !formData.code) {
             alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
             return;
         }
         
         onSave && onSave(formData);
-        onClose && onClose();
+        // Don't close here - let parent handle closing after successful save
     };
 
     return (
@@ -114,7 +114,7 @@ const AddOrganizationPanel = ({ onClose, onSave, organizations = [] }) => {
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Tổ chức cấp trên <span className="required">*</span></label>
+                            <label>Tổ chức cấp trên</label>
                             <OrganizationSelect
                                 organizations={organizations}
                                 value={formData.parentOrg}

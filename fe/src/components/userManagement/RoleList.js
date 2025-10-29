@@ -5,6 +5,7 @@ import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
 import Pagination from '../common/Pagination';
 import AddNewRolePanel from './AddNewRolePanel';
+import customerService from '../../api/customerService';
 
 const RoleList = ({ onAddNew }) => {
     const [roles, setRoles] = useState([]);
@@ -14,53 +15,57 @@ const RoleList = ({ onAddNew }) => {
     const [searchName, setSearchName] = useState('');
     const [searchCode, setSearchCode] = useState('');
     const [showAddRole, setShowAddRole] = useState(false);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Sample data
+    const fetchRoles = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const textSearch = (searchName || searchCode || '').trim();
+            const response = await customerService.getAllRoles({
+                textSearch,
+                page: currentPage - 1,
+                size: itemsPerPage
+            });
+            if (response.code === 'SUCCESS') {
+                console.log('response.data', response.data);
+                const { content = [], totalPages = 0, totalElements = 0 } = response.data || {};
+                setRoles(content);
+                setFilteredRoles(content);
+                setTotalPages(totalPages);
+                setTotalElements(totalElements);
+            } else {
+                setError(response.message || 'Không thể tải danh sách vai trò');
+            }
+        } catch (e) {
+            setError(e.message || 'Đã xảy ra lỗi khi tải danh sách vai trò');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const sampleData = [
-            { id: 1, name: 'aadmin 2', code: 'admin2' },
-            { id: 2, name: 'Admin', code: 'ADMIN' },
-            { id: 3, name: 'admin123', code: 'admin123' },
-            { id: 4, name: 'AdminLite', code: 'adminlite' },
-            { id: 5, name: 'Automation tạo tên vai trò rdoume', code: 'rbjrak' },
-            { id: 6, name: 'Automation tạo tên vai trò syxpmu', code: 'fctxvw' },
-            { id: 7, name: 'BGĐ', code: 'BGD' },
-            { id: 8, name: 'BUTEST', code: 'BUTEST' },
-            { id: 9, name: 'CHECKCOPYTEMPLATE', code: 'CHECKCOPYTEMPLATE' },
-            { id: 10, name: 'ChinhNhun', code: '123' },
-            { id: 11, name: 'e', code: 'e' },
-            { id: 12, name: 'Member', code: 'MEMBER' },
-            { id: 13, name: 'NEW VT', code: 'NEWVT' },
-            { id: 14, name: 'NLĐ', code: 'NLD' },
-            { id: 15, name: 'NOTAD', code: 'NOTAD' }
-        ];
-        setRoles(sampleData);
-        setFilteredRoles(sampleData);
-    }, []);
+        fetchRoles();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage]);
 
     const handleSearch = () => {
-        const filtered = roles.filter(role => {
-            const matchesName = searchName === '' || role.name.toLowerCase().includes(searchName.toLowerCase());
-            const matchesCode = searchCode === '' || role.code.toLowerCase().includes(searchCode.toLowerCase());
-            return matchesName && matchesCode;
-        });
-        setFilteredRoles(filtered);
         setCurrentPage(1);
+        // fetch with new search terms
+        fetchRoles();
     };
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
     };
 
-    const getPaginatedData = () => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return filteredRoles.slice(startIndex, endIndex);
-    };
+    const getPaginatedData = () => filteredRoles;
 
-    const totalPages = Math.ceil(filteredRoles.length / itemsPerPage);
-    const startItem = (currentPage - 1) * itemsPerPage + 1;
-    const endItem = Math.min(currentPage * itemsPerPage, filteredRoles.length);
+    const startItem = filteredRoles.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalElements);
 
     const handleEdit = (roleId) => {
         console.log('Edit role:', roleId);
@@ -89,11 +94,17 @@ const RoleList = ({ onAddNew }) => {
                         <SearchBar placeholder="Mã vai trò" value={searchCode} onChange={setSearchCode} />
                     </div>
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
-                        <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
+                        <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" onClick={handleSearch} />
                         <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => setShowAddRole(true)} />
                     </div>
                 </div>
                 <div className="template-link template-right"></div>
+                {loading && (
+                    <div style={{ padding: '12px' }}>Đang tải...</div>
+                )}
+                {error && (
+                    <div style={{ padding: '12px', color: 'red' }}>{error}</div>
+                )}
                 <BaseTable
                     columns={[ 'Tên vai trò', 'Mã vai trò', 'Quản lý' ]}
                     data={getPaginatedData().map(role => ([
@@ -123,7 +134,7 @@ const RoleList = ({ onAddNew }) => {
                 <div className="pagination-container">
                     <Pagination currentPage={currentPage} totalPages={totalPages} onChange={handlePageChange} />
                     <div className="pagination-info">
-                        Số lượng {startItem} - {endItem} / {filteredRoles.length}
+                        Số lượng {startItem} - {endItem} / {totalElements}
                     </div>
                 </div>
             </div>
