@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/userManagement.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
@@ -8,6 +9,7 @@ import OrganizationDropDown from '../common/OrganizationDropDown';
 import customerService from '../../api/customerService';
 
 const UserList = ({ onAddNew, onEdit }) => {
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -102,7 +104,7 @@ const UserList = ({ onAddNew, onEdit }) => {
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" onClick={handleSearch} />
-                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={onAddNew} />
+                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => onAddNew ? onAddNew() : navigate('/main/form-user/add')} />
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Import file" icon={<span style={{fontWeight:700}}>☁️</span>} />
                 </div>
             </div>
@@ -124,7 +126,13 @@ const UserList = ({ onAddNew, onEdit }) => {
                     'Quản lý'
                 ]}
                 data={getPaginatedData().map(user => ([
-                    user.name,
+                    (<span 
+                        key={`name-${user.id}`}
+                        onClick={() => navigate(`/main/user-detail/${user.id}`)}
+                        style={{ cursor: 'pointer', color: '#0B57D0' }}
+                    >
+                        {user.name}
+                    </span>),
                     user.email,
                     user.phone,
                     user.organization,
@@ -135,7 +143,7 @@ const UserList = ({ onAddNew, onEdit }) => {
                         key={`edit-${user.id}`} 
                         className="edit-btn" 
                         title="Chỉnh sửa" 
-                        onClick={() => onEdit && onEdit(user)}
+                        onClick={() => onEdit ? onEdit(user) : navigate(`/main/form-user/edit/${user.id}`)}
                     >
                         ✏️
                     </button>)

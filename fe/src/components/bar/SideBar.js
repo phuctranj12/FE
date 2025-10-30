@@ -100,9 +100,9 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 </div>
                 {activeMenu === "nguoidung" && (
                     <div className="submenu">
-                        <div className="subitem" onClick={() => handleSelect("to-chuc")}>Tổ chức</div>
-                        <div className="subitem" onClick={() => handleSelect("nguoi-dung")}>Người dùng</div>
-                        <div className="subitem" onClick={() => handleSelect("vai-tro")}>Vai trò</div>
+                        <div className="subitem" onClick={() => handleNavigation("/main/org")}>Tổ chức</div>
+                        <div className="subitem" onClick={() => handleNavigation("/main/user")}>Người dùng</div>
+                        <div className="subitem" onClick={() => handleNavigation("/main/role")}>Vai trò</div>
                     </div>
                 )}
 

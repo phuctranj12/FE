@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import '../../styles/addNewUser.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
@@ -7,6 +7,7 @@ import OrganizationSelect from '../common/OrganizationSelect';
 import customerService from '../../api/customerService';
 
 const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
+    const { id } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         id: null,
@@ -57,22 +58,57 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
 
     const didInit = useRef(false);
 
-    // Prefill when in edit mode
+    // Prefill when in edit mode - from initialUser or fetch by ID
     useEffect(() => {
-        if (mode !== 'edit' || !initialUser) return;
-        setFormData(prev => ({
-            ...prev,
-            id: initialUser.id ?? null,
-            fullName: initialUser.name ?? '',
-            email: initialUser.email ?? '',
-            birthDate: initialUser.birthday ?? '',
-            phone: initialUser.phone ?? '',
-            organization: initialUser.organizationId ?? initialUser.organization?.id ?? null,
-            role: initialUser.roleId ?? initialUser.role?.id ?? null,
-            loginMethod: initialUser.loginMethod ?? 'email',
-            accountStatus: initialUser.status ?? 1
-        }));
-    }, [mode, initialUser]);
+        if (mode !== 'edit') return;
+        
+        const loadUserData = async () => {
+            if (id && !initialUser) {
+                // Fetch user data by ID from route params
+                try {
+                    setLoading(true);
+                    const res = await customerService.getCustomerById(id);
+                    if (res.code === 'SUCCESS') {
+                        const user = res.data;
+                        setFormData(prev => ({
+                            ...prev,
+                            id: user.id ?? null,
+                            fullName: user.name ?? '',
+                            email: user.email ?? '',
+                            birthDate: user.birthday ?? '',
+                            phone: user.phone ?? '',
+                            organization: user.organizationId ?? user.organization?.id ?? null,
+                            role: user.roleId ?? user.role?.id ?? null,
+                            loginMethod: user.loginMethod ?? 'email',
+                            accountStatus: user.status ?? 1
+                        }));
+                    } else {
+                        showToast('Không thể tải thông tin người dùng');
+                    }
+                } catch (e) {
+                    showToast(e.message || 'Lỗi tải dữ liệu người dùng');
+                } finally {
+                    setLoading(false);
+                }
+            } else if (initialUser) {
+                // Use provided initialUser
+                setFormData(prev => ({
+                    ...prev,
+                    id: initialUser.id ?? null,
+                    fullName: initialUser.name ?? '',
+                    email: initialUser.email ?? '',
+                    birthDate: initialUser.birthday ?? '',
+                    phone: initialUser.phone ?? '',
+                    organization: initialUser.organizationId ?? initialUser.organization?.id ?? null,
+                    role: initialUser.roleId ?? initialUser.role?.id ?? null,
+                    loginMethod: initialUser.loginMethod ?? 'email',
+                    accountStatus: initialUser.status ?? 1
+                }));
+            }
+        };
+        
+        loadUserData();
+    }, [mode, initialUser, id]);
 
     useEffect(() => {
         if (didInit.current) return; // Prevent double call in React StrictMode (dev)
