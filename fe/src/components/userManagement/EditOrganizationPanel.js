@@ -1,24 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/addOrganizationPanel.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import OrganizationSelect from '../common/OrganizationSelect';
 
-const AddOrganizationPanel = ({ onClose, onSave, organizations = [] }) => {
+const EditOrganizationPanel = ({ organization, onClose, onSave, organizations = [] }) => {
     const [formData, setFormData] = useState({
-        name: '',
         id: '',
-        phone: '',
-        code: '',
-        parentOrg: null,
+        name: '',
         abbreviation: '',
+        phone: '',
         email: '',
+        code: '',
         taxId: '',
+        parentOrg: null,
         fax: '',
-        status: 1 // 1 = Hoạt động, 0 = Không hoạt động
+        status: 1
     });
 
-    // Use organizations from props instead of hardcoded sample data
+    useEffect(() => {
+        if (organization) {
+            setFormData({
+                id: organization.id || '',
+                name: organization.name || '',
+                abbreviation: organization.abbreviation || '',
+                phone: organization.phone || '',
+                email: organization.email || '',
+                code: organization.code || '',
+                taxId: organization.taxId || organization.taxCode || '',
+                parentOrg: organization.parent_id || organization.parentId || null,
+                fax: organization.fax || '',
+                status: organization.status !== undefined ? organization.status : 1
+            });
+        }
+    }, [organization]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -32,14 +47,33 @@ const AddOrganizationPanel = ({ onClose, onSave, organizations = [] }) => {
         }
         
         onSave && onSave(formData);
-        // Don't close here - let parent handle closing after successful save
+    };
+
+    // Filter out current organization and its descendants from parent options
+    const getAvailableParentOrgs = () => {
+        if (!formData.id) return organizations;
+        
+        const descendants = new Set([formData.id]);
+        let changed = true;
+        
+        while (changed) {
+            changed = false;
+            organizations.forEach(org => {
+                if (!descendants.has(org.id) && descendants.has(org.parent_id)) {
+                    descendants.add(org.id);
+                    changed = true;
+                }
+            });
+        }
+        
+        return organizations.filter(org => !descendants.has(org.id));
     };
 
     return (
         <div className="add-org-overlay">
             <div className="add-org-panel">
                 <div className="add-org-header">
-                    <h2>THÊM MỚI TỔ CHỨC</h2>
+                    <h2>CẬP NHẬT THÔNG TIN TỔ CHỨC</h2>
                 </div>
 
                 <div className="add-org-form">
@@ -61,7 +95,7 @@ const AddOrganizationPanel = ({ onClose, onSave, organizations = [] }) => {
                                 placeholder="Nhập ID" 
                                 value={formData.id} 
                                 onChange={(value) => handleInputChange('id', value)}
-                                disabled
+                                disabled={!!formData.id}
                             />
                         </div>
                         <div className="form-group">
@@ -108,19 +142,21 @@ const AddOrganizationPanel = ({ onClose, onSave, organizations = [] }) => {
                             <SearchBar 
                                 placeholder="Nhập mã số thuế/CMT/CCCD" 
                                 value={formData.taxId} 
-                                onChange={(value) => handleInputChange('taxId', value)} 
+                                onChange={(value) => handleInputChange('taxId', value)}
+                                disabled={!!formData.taxId}
                             />
                         </div>
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Tổ chức cấp trên</label>
+                            <label>Tổ chức cấp trên <span className="required">*</span></label>
                             <OrganizationSelect
-                                organizations={organizations}
+                                organizations={getAvailableParentOrgs()}
                                 value={formData.parentOrg}
                                 onChange={(org) => handleInputChange('parentOrg', org?.id)}
                                 placeholder="Chọn tổ chức cấp trên"
+                                disabled={formData.parentOrg !== null}
                             />
                         </div>
                         <div className="form-group">
@@ -182,4 +218,5 @@ const AddOrganizationPanel = ({ onClose, onSave, organizations = [] }) => {
     );
 };
 
-export default AddOrganizationPanel;
+export default EditOrganizationPanel;
+

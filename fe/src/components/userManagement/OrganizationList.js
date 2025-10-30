@@ -4,6 +4,9 @@ import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
 import AddOrganizationPanel from './AddOrganizationPanel';
+import ViewOrganizationPanel from './ViewOrganizationPanel';
+import EditOrganizationPanel from './EditOrganizationPanel';
+import customerService from '../../api/customerService';
 
 const OrganizationList = () => {
     const [organizations, setOrganizations] = useState([]); // flat list from backend
@@ -12,26 +15,79 @@ const OrganizationList = () => {
     const [searchName, setSearchName] = useState('');
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [showAddPanel, setShowAddPanel] = useState(false);
+    const [showEditPanel, setShowEditPanel] = useState(false);
+    const [editingOrg, setEditingOrg] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [showViewPanel, setShowViewPanel] = useState(false);
+    const [viewingOrg, setViewingOrg] = useState(null);
 
-    // Sample data (mô phỏng backend trả về dạng phẳng với parent_id)
+    // Fetch organizations from API
+    const fetchOrganizations = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await customerService.getAllOrganizations({
+                page: 0,
+                size: 1000 // Get all organizations
+            });
+            
+            if (response.code === 'SUCCESS') {
+                // Backend trả flat list: map về cấu trúc UI, dựa trên parentId/parent_id
+                const items = Array.isArray(response.data?.content) ? response.data.content : (Array.isArray(response.data) ? response.data : []);
+                const flatList = items.map(org => ({
+                    id: org.id,
+                    name: org.name,
+                    abbreviation: org.abbreviation || '',
+                    code: org.code || '',
+                    status: org.status,
+                    // giữ thêm dữ liệu để hiển thị ở ViewOrganizationPanel mà không cần gọi lại API
+                    email: org.email || '',
+                    phone: org.phone || '',
+                    taxCode: org.taxCode || org.taxId || '',
+                    fax: org.fax || '',
+                    parent_id: (org.parentId !== undefined ? org.parentId : (org.parent_id !== undefined ? org.parent_id : null)),
+                    type: (org.parentId ?? org.parent_id ?? null) === null ? 'Tổ chức cha' : 'Tổ chức con'
+                }));
+                setOrganizations(flatList);
+                setFilteredOrganizations(flatList);
+            } else {
+                setError(response.message || 'Failed to fetch organizations');
+            }
+        } catch (err) {
+            console.error('Error fetching organizations:', err);
+            setError('Không thể tải danh sách tổ chức. Vui lòng thử lại.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Convert nested structure to flat structure with parent_id
+    const flattenOrganizations = (orgs, parentId = null) => {
+        let flatList = [];
+        orgs.forEach(org => {
+            const flatOrg = {
+                id: org.id,
+                name: org.name,
+                abbreviation: org.abbreviation || '',
+                code: org.code || '',
+                status: org.status,
+                parent_id: parentId,
+                type: parentId === null ? 'Tổ chức cha' : 'Tổ chức con'
+            };
+            flatList.push(flatOrg);
+            
+            // Recursively flatten children
+            if (org.children && org.children.length > 0) {
+                const children = flattenOrganizations(org.children, org.id);
+                flatList = flatList.concat(children);
+            }
+        });
+        return flatList;
+    };
+
     useEffect(() => {
-        const flat = [
-            { id: 226, name: 'Trung tâm công nghệ thông tin MobiFone', abbreviation: 'TT.CNTT MBF1', code: 'TTCNTT', status: 1, parent_id: null, type: 'Tổ chức cha' },
-            { id: 1215, name: 'TC230301', abbreviation: 'TC230301', code: 'TC230301', status: 1, parent_id: 226, type: 'Tổ chức con' },
-            { id: 1216, name: 'haitest1231', abbreviation: 'haitest', code: '', status: 1, parent_id: 226, type: 'Tổ chức con' },
-            { id: 1242, name: 'Công ty Dịch vụ MobiFone Khu vực 8', abbreviation: 'MBF8', code: 'MBF8', status: 1, parent_id: 226, type: 'Tổ chức con' },
-            { id: 1288, name: 'CÔNG TY DỊCH VỤ MOBIFONE KHU VỰC 9', abbreviation: 'CTKV9', code: '', status: 1, parent_id: 226, type: 'Tổ chức con' },
-            { id: 1849, name: 'Thêm mới tên TC 01', abbreviation: '123456', code: '123456', status: 0, parent_id: 226, type: 'Tổ chức con' },
-            { id: 1850, name: 'Thêm mới tên TC 02', abbreviation: '123', code: '123', status: 0, parent_id: 226, type: 'Tổ chức con' },
-            // cấp 2 (con của 1215)
-            { id: 3001, name: 'Phòng Kinh doanh', abbreviation: 'PKD', code: 'PKD01', status: 1, parent_id: 1215, type: 'Tổ chức con' },
-            { id: 3002, name: 'Phòng Kỹ thuật', abbreviation: 'PKT', code: 'PKT01', status: 1, parent_id: 1215, type: 'Tổ chức con' },
-            // cấp 3 (con của 3001)
-            { id: 4001, name: 'Tổ Bán hàng 1', abbreviation: 'TBH1', code: 'BH1', status: 1, parent_id: 3001, type: 'Tổ chức con' },
-            { id: 4002, name: 'Tổ Bán hàng 2', abbreviation: 'TBH2', code: 'BH2', status: 1, parent_id: 3001, type: 'Tổ chức con' },
-        ];
-        setOrganizations(flat);
-        setFilteredOrganizations(flat);
+        fetchOrganizations();
     }, []);
 
     const handleSearch = () => {
@@ -53,29 +109,99 @@ const OrganizationList = () => {
         setExpandedRows(newExpanded);
     };
 
+    const handleViewClick = (orgId) => {
+        const org = organizations.find(o => o.id === orgId);
+        if (org) {
+            setViewingOrg(org);
+            setShowViewPanel(true);
+        } else {
+            setError('Không tìm thấy dữ liệu tổ chức trong danh sách hiện có');
+        }
+    };
+
     const statusLabel = (s) => (s === 1 ? 'Hoạt động' : 'Không hoạt động');
 
-    const handleAddOrganization = (newOrgData) => {
-        // Generate new ID
-        const newId = Math.max(...organizations.map(o => o.id)) + 1;
-        
-        // Create new organization object
-        const newOrg = {
-            id: newId,
-            name: newOrgData.name,
-            abbreviation: newOrgData.abbreviation || '',
-            code: newOrgData.code,
-            status: newOrgData.status,
-            parent_id: newOrgData.parentOrg,
-            type: 'Tổ chức con'
-        };
-        
-        // Add to organizations list
-        const updatedOrgs = [...organizations, newOrg];
-        setOrganizations(updatedOrgs);
-        setFilteredOrganizations(updatedOrgs);
-        
-        console.log('Added new organization:', newOrg);
+    const handleAddOrganization = async (newOrgData) => {
+        try {
+            // Build the organization data object with conditional parentId
+            const orgData = {
+                name: newOrgData.name,
+                email: newOrgData.email || '',
+                taxCode: newOrgData.taxId || '', // Map taxId to taxCode
+                code: newOrgData.code,
+                ...(newOrgData.parentOrg && { parentId: newOrgData.parentOrg })
+            };
+            
+            console.log('Sending organization data:', orgData);
+            
+            const response = await customerService.createOrganization(orgData);
+            
+            console.log('Full API response:', response);
+            
+            if (response.code === 'SUCCESS') {
+                // Refresh the list after successful creation
+                await fetchOrganizations();
+                setShowAddPanel(false);
+                console.log('Added new organization:', response.data);
+                alert('Thêm tổ chức thành công!');
+            } else {
+                console.error('Failed to add organization:', response);
+                alert('Không thể thêm tổ chức mới: ' + (response.message || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Error adding organization:', err);
+            // Log detailed error information
+            if (err.response) {
+                console.error('Error response:', err.response);
+                console.error('Error status:', err.response.status);
+                console.error('Error data:', err.response.data);
+            }
+            
+            const errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi thêm tổ chức mới.';
+            alert('Lỗi: ' + errorMessage);
+        }
+    };
+
+    const handleEditClick = (orgId) => {
+        const org = organizations.find(o => o.id === orgId);
+        if (org) {
+            setEditingOrg(org);
+            setShowEditPanel(true);
+        }
+    };
+
+    const handleUpdateOrganization = async (updatedData) => {
+        try {
+            const orgId = updatedData.id;
+            const payload = {
+                name: updatedData.name,
+                abbreviation: updatedData.abbreviation || '',
+                email: updatedData.email || '',
+                taxCode: updatedData.taxId || '',
+                code: updatedData.code,
+                phone: updatedData.phone || '',
+                fax: updatedData.fax || '',
+                status: updatedData.status,
+                ...(updatedData.parentOrg !== null ? { parentId: updatedData.parentOrg } : {})
+            };
+            
+            console.log('Updating organization:', orgId, payload);
+            
+            const response = await customerService.updateOrganization(orgId, payload);
+            
+            if (response.code === 'SUCCESS') {
+                await fetchOrganizations();
+                setShowEditPanel(false);
+                setEditingOrg(null);
+                alert('Cập nhật tổ chức thành công!');
+            } else {
+                alert('Không thể cập nhật tổ chức: ' + (response.message || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Error updating organization:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi cập nhật tổ chức.';
+            alert('Lỗi: ' + errorMessage);
+        }
     };
 
     // Tạo map parent -> children cho dữ liệu phẳng
@@ -93,13 +219,21 @@ const OrganizationList = () => {
         <div className="user-management-container">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'baseline' }}>
                 <div style={{ flex: '1 1 320px', minWidth: 220 }}>
-                    <SearchBar placeholder="Nhập mã tổ chức" value={searchCode} onChange={setSearchCode} />
+                    <SearchBar 
+                        placeholder="Nhập mã tổ chức" 
+                        value={searchCode} 
+                        onChange={setSearchCode}
+                    />
                 </div>
                 <div style={{ flex: '1 1 320px', minWidth: 220 }}>
-                    <SearchBar placeholder="Nhập tên tổ chức" value={searchName} onChange={setSearchName} />
+                    <SearchBar 
+                        placeholder="Nhập tên tổ chức" 
+                        value={searchName} 
+                        onChange={setSearchName}
+                    />
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
-                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
+                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" onClick={handleSearch} />
                     <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => setShowAddPanel(true)} />
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Import file" icon={<span style={{fontWeight:700}}>☁️</span>} />
                 </div>
@@ -110,7 +244,23 @@ const OrganizationList = () => {
                 <a href="#!" className="template-download">Tải file mẫu</a>
             </div>
 
-            <BaseTable
+            {loading && (
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <p>Đang tải dữ liệu...</p>
+                </div>
+            )}
+
+            {error && (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
+                    <p>{error}</p>
+                    <button onClick={fetchOrganizations} style={{ marginTop: '10px', padding: '8px 16px' }}>
+                        Thử lại
+                    </button>
+                </div>
+            )}
+
+            {!loading && !error && (
+                <BaseTable
                 columns={["Tên tổ chức", "ID", "Mã tổ chức", "Trạng thái", "Loại tổ chức", "Quản lý"]}
                 data={(function(){
                     const map = buildChildrenMap(filteredOrganizations);
@@ -127,13 +277,19 @@ const OrganizationList = () => {
                                         {expandedRows.has(node.id) ? '▼' : '▶'}
                                     </button>
                                 )}
-                                <span className="tree-name">{node.name}</span>
+                                <span 
+                                    className="tree-name"
+                                    style={{ cursor: 'pointer', color: '#0B57D0' }}
+                                    onClick={() => handleViewClick(node.id)}
+                                >
+                                    {node.name}
+                                </span>
                             </>),
                             node.id,
                             node.code,
                             statusLabel(node.status),
                             node.type,
-                            (<button className="edit-btn" title="Chỉnh sửa">✏️</button>)
+                            (<button className="edit-btn" title="Chỉnh sửa" onClick={() => handleEditClick(node.id)}>✏️</button>)
                         ]);
 
                         if (expandedRows.has(node.id)) {
@@ -145,13 +301,34 @@ const OrganizationList = () => {
                     roots.forEach((root) => addRows(root, 0));
                     return rows;
                 })()}
-            />
+                />
+            )}
             
             {showAddPanel && (
                 <AddOrganizationPanel 
                     onClose={() => setShowAddPanel(false)}
                     onSave={handleAddOrganization}
                     organizations={organizations}
+                />
+            )}
+
+            {showViewPanel && viewingOrg && (
+                <ViewOrganizationPanel 
+                    organization={viewingOrg}
+                    organizations={organizations}
+                    onClose={() => { setShowViewPanel(false); setViewingOrg(null); }}
+                />
+            )}
+            
+            {showEditPanel && editingOrg && (
+                <EditOrganizationPanel 
+                    organization={editingOrg}
+                    organizations={organizations}
+                    onClose={() => {
+                        setShowEditPanel(false);
+                        setEditingOrg(null);
+                    }}
+                    onSave={handleUpdateOrganization}
                 />
             )}
         </div>

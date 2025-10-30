@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import "../styles/MainContent.css";
 import Header from "../components/bar/Header";
 import Sidebar from "../components/bar/SideBar";
@@ -10,10 +11,20 @@ import DocumentForm from "../components/createContract/DocumentForm";
 import Footer from "../components/bar/Footer";
 
 function MainContent() {
+    const location = useLocation();
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
 
     const getBreadcrumb = () => {
+        // Check URL-based routes first
+        if (location.pathname.startsWith('/main/org')) return "Quản lý người dùng > Danh sách tổ chức";
+        if (location.pathname.startsWith('/main/user-detail')) return "Quản lý người dùng > Chi tiết người dùng";
+        if (location.pathname.startsWith('/main/form-user/add')) return "Quản lý người dùng > Thêm người dùng";
+        if (location.pathname.startsWith('/main/form-user/edit')) return "Quản lý người dùng > Sửa người dùng";
+        if (location.pathname.startsWith('/main/user')) return "Quản lý người dùng > Danh sách người dùng";
+        if (location.pathname.startsWith('/main/role')) return "Quản lý người dùng > Danh sách vai trò";
+        
+        // Fallback to state-based logic for old components
         if (menuStatus === "user-management") {
             if (selectedStatus === "to-chuc") return "Quản lý người dùng > Danh sách tổ chức";
             if (selectedStatus === "nguoi-dung") return "Quản lý người dùng > Danh sách người dùng";
@@ -143,7 +154,9 @@ function MainContent() {
                 />
 
                 <div className="content-right">
-                    {menuStatus === "home" ? (
+                    {location.pathname.startsWith('/main/') ? (
+                        <Outlet />
+                    ) : menuStatus === "home" ? (
                         <HomeComponent />
                     ) : menuStatus === "create-document" ? (
                         <DocumentForm />

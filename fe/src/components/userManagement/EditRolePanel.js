@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../../styles/addNewRolePanel.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import customerService from '../../api/customerService';
 
-const AddNewRolePanel = ({ onCancel, allPermissions }) => {
+const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
     const [formData, setFormData] = useState({
         roleName: '',
         roleCode: '',
@@ -18,11 +18,27 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        if (role) {
+            const permissionIds = Array.isArray(role.permissionIds)
+                ? role.permissionIds
+                : Array.isArray(role.permissions)
+                  ? role.permissions.map(p => p.id)
+                  : [];
+            setFormData({
+                roleName: role.name || '',
+                roleCode: role.code || '',
+                note: role.note || '',
+                permissions: permissionIds
+            });
+        }
+    }, [role]);
+
+    useEffect(() => {
         if (allPermissions && allPermissions.length > 0) {
             setPermissions(allPermissions);
             return;
         }
-        // Nếu không có allPermissions, fetch như cũ
+        // Nếu không có truyền vào, fetch lại
         const loadPermissions = async () => {
             setLoading(true);
             setError(null);
@@ -50,16 +66,19 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
     const handlePermissionChange = (permissionId, checked) => {
         setFormData(prev => ({
             ...prev,
-            permissions: checked 
+            permissions: checked
                 ? [...prev.permissions, permissionId]
                 : prev.permissions.filter(id => id !== permissionId)
         }));
     };
 
     const handleSave = async () => {
-        // Validate required fields
-        if (!formData.roleName || !formData.roleCode || formData.permissions.length === 0) {
-            alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
+        if (!role?.id) {
+            alert('Thiếu ID vai trò');
+            return;
+        }
+        if (formData.permissions.length === 0) {
+            alert('Vui lòng chọn ít nhất một phân quyền');
             return;
         }
         try {
@@ -70,12 +89,11 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
                 note: formData.note,
                 permissionIds: formData.permissions
             };
-            const res = await customerService.createRole(payload);
+            const res = await customerService.updateRole(role.id, payload);
             if (res.code === 'SUCCESS') {
-                alert('Tạo vai trò thành công');
-                onCancel && onCancel();
+                onSaved && onSaved();
             } else {
-                alert('Không thể tạo vai trò: ' + (res.message || 'Unknown error'));
+                alert('Không thể cập nhật vai trò: ' + (res.message || 'Unknown error'));
             }
         } catch (e) {
             alert(e.response?.data?.message || e.message || 'Đã xảy ra lỗi');
@@ -84,22 +102,14 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
         }
     };
 
-    const handleCancel = () => {
-        onCancel && onCancel();
-    };
-
-    // Filter permissions based on search term
     const filteredPermissions = permissions.filter(permission =>
         permission.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        permission.category.toLowerCase().includes(searchTerm.toLowerCase())
+        (permission.category || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Group permissions by category
     const groupedPermissions = filteredPermissions.reduce((groups, permission) => {
-        const category = permission.category;
-        if (!groups[category]) {
-            groups[category] = [];
-        }
+        const category = permission.category || 'Khác';
+        if (!groups[category]) groups[category] = [];
         groups[category].push(permission);
         return groups;
     }, {});
@@ -108,50 +118,48 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
         <div className="add-role-overlay">
             <div className="add-role-panel">
                 <div className="add-role-header">
-                    <h2>THÊM MỚI VAI TRÒ</h2>
+                    <h2>CẬP NHẬT THÔNG TIN VAI TRÒ</h2>
                 </div>
 
                 <div className="add-role-content">
-                    {/* Left Column - Form Fields */}
                     <div className="role-form-column">
                         <div className="form-group">
                             <label>Tên vai trò <span className="required">*</span></label>
-                            <SearchBar 
-                                placeholder="Nhập tên vai trò" 
-                                value={formData.roleName} 
-                                onChange={(value) => handleInputChange('roleName', value)} 
+                            <SearchBar
+                                placeholder="Tên vai trò"
+                                value={formData.roleName}
+                                onChange={(value) => handleInputChange('roleName', value)}
+                                disabled
                             />
                         </div>
-                        
                         <div className="form-group">
                             <label>Mã vai trò <span className="required">*</span></label>
-                            <SearchBar 
-                                placeholder="Nhập mã vai trò" 
-                                value={formData.roleCode} 
-                                onChange={(value) => handleInputChange('roleCode', value)} 
+                            <SearchBar
+                                placeholder="Mã vai trò"
+                                value={formData.roleCode}
+                                onChange={(value) => handleInputChange('roleCode', value)}
+                                disabled
                             />
                         </div>
-                        
                         <div className="form-group">
                             <label>Ghi chú</label>
-                            <SearchBar 
-                                placeholder="Nhập ghi chú" 
-                                value={formData.note} 
-                                onChange={(value) => handleInputChange('note', value)} 
+                            <SearchBar
+                                placeholder="Nhập ghi chú"
+                                value={formData.note}
+                                onChange={(value) => handleInputChange('note', value)}
                             />
                         </div>
                     </div>
 
-                    {/* Right Column - Permissions */}
                     <div className="role-permissions-column">
                         <div className="form-group">
-                            <label>Phân quyền <span className="required">*</span></label>
+                            <label>Phân quyền</label>
                             <div className="permissions-container">
                                 <div className="permissions-search">
-                                    <SearchBar 
-                                        placeholder="Tìm kiếm quyền..." 
-                                        value={searchTerm} 
-                                        onChange={setSearchTerm} 
+                                    <SearchBar
+                                        placeholder="Tìm kiếm quyền..."
+                                        value={searchTerm}
+                                        onChange={setSearchTerm}
                                     />
                                 </div>
                                 <div className="permissions-list">
@@ -164,8 +172,8 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
                                             <div className="category-permissions">
                                                 {categoryPermissions.map(permission => (
                                                     <label key={permission.id} className="permission-item">
-                                                        <input 
-                                                            type="checkbox" 
+                                                        <input
+                                                            type="checkbox"
                                                             checked={formData.permissions.includes(permission.id)}
                                                             onChange={e => handlePermissionChange(permission.id, e.target.checked)}
                                                         />
@@ -182,17 +190,18 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
                 </div>
 
                 <div className="add-role-actions">
-                    <Button 
-                        outlineColor="#6c757d" 
-                        backgroundColor="transparent" 
-                        text="Hủy bỏ" 
-                        onClick={handleCancel}
+                    <Button
+                        outlineColor="#6c757d"
+                        backgroundColor="transparent"
+                        text="Hủy bỏ"
+                        onClick={onCancel}
                     />
-                    <Button 
-                        outlineColor="#0B57D0" 
-                        backgroundColor="#0B57D0" 
-                        text={loading ? 'Đang lưu...' : 'Lưu lại'} 
+                    <Button
+                        outlineColor="#0B57D0"
+                        backgroundColor="#0B57D0"
+                        text={loading ? 'Đang lưu...' : 'Lưu lại'}
                         onClick={handleSave}
+                        disabled={loading}
                     />
                 </div>
             </div>
@@ -200,4 +209,6 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
     );
 };
 
-export default AddNewRolePanel;
+export default EditRolePanel;
+
+

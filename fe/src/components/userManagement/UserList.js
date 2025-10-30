@@ -1,21 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/userManagement.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
 import Pagination from '../common/Pagination';
 import OrganizationDropDown from '../common/OrganizationDropDown';
+import customerService from '../../api/customerService';
 
-const UserList = ({ onAddNew }) => {
+const UserList = ({ onAddNew, onEdit }) => {
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(15);
+    const [itemsPerPage] = useState(10);
     const [searchName, setSearchName] = useState('');
     const [searchEmail, setSearchEmail] = useState('');
     const [searchPhone, setSearchPhone] = useState('');
     const [searchOrganization, setSearchOrganization] = useState('');
     const [selectedOrgId, setSelectedOrgId] = useState(null);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     // Sample organizations (flat with parent_id) for dropdown demo
     const organizations = useMemo(() => ([
@@ -34,239 +41,52 @@ const UserList = ({ onAddNew }) => {
         { id: 4002, name: 'Tổ Bán hàng 2', abbreviation: 'TBH2', code: 'BH2', status: 1, parent_id: 3001, type: 'Tổ chức con' },
     ]), []);
 
-    // Sample data
-    useEffect(() => {
-        const sampleData = [
-            {
-                id: 1,
-                name: 'A1',
-                email: 'hunhun28@yopmail.com',
-                phone: '033654313',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 2,
-                name: 'Admin',
-                email: 'nguyendoha34@gmail.com',
-                phone: '0934516891',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 3,
-                name: 'AdminATus',
-                email: 'atusadmin@gmail.com',
-                phone: '0376242908',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 4,
-                name: 'atessttuuuuu',
-                email: 'test@example.com',
-                phone: '0123456789',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Member',
-                loginMethod: 'Số điện thoại'
-            },
-            {
-                id: 5,
-                name: 'A1',
-                email: 'hunhun28@yopmail.com',
-                phone: '033654313',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 6,
-                name: 'Admin',
-                email: 'nguyendoha34@gmail.com',
-                phone: '0934516891',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 7,
-                name: 'AdminATus',
-                email: 'atusadmin@gmail.com',
-                phone: '0376242908',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 8,
-                name: 'atessttuuuuu',
-                email: 'test@example.com',
-                phone: '0123456789',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Member',
-                loginMethod: 'Số điện thoại'
-            },
-            {
-                id: 9,
-                name: 'A1',
-                email: 'hunhun28@yopmail.com',
-                phone: '033654313',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 10,
-                name: 'Admin',
-                email: 'nguyendoha34@gmail.com',
-                phone: '0934516891',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 11,
-                name: 'AdminATus',
-                email: 'atusadmin@gmail.com',
-                phone: '0376242908',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 12,
-                name: 'atessttuuuuu',
-                email: 'test@example.com',
-                phone: '0123456789',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Member',
-                loginMethod: 'Số điện thoại'
-            },
-            {
-                id: 13,
-                name: 'A1',
-                email: 'hunhun28@yopmail.com',
-                phone: '033654313',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 14,
-                name: 'Admin',
-                email: 'nguyendoha34@gmail.com',
-                phone: '0934516891',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 15,
-                name: 'AdminATus',
-                email: 'atusadmin@gmail.com',
-                phone: '0376242908',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 16,
-                name: 'atessttuuuuu',
-                email: 'test@example.com',
-                phone: '0123456789',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Member',
-                loginMethod: 'Số điện thoại'
-            },
-            {
-                id: 17,
-                name: 'A1',
-                email: 'hunhun28@yopmail.com',
-                phone: '033654313',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 18,
-                name: 'Admin',
-                email: 'nguyendoha34@gmail.com',
-                phone: '0934516891',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 19,
-                name: 'AdminATus',
-                email: 'atusadmin@gmail.com',
-                phone: '0376242908',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Admin',
-                loginMethod: 'Email'
-            },
-            {
-                id: 20,
-                name: 'atessttuuuuu',
-                email: 'test@example.com',
-                phone: '0123456789',
-                organization: 'Trung tâm công nghệ thông tin MobiFone',
-                status: 'Hoạt động',
-                role: 'Member',
-                loginMethod: 'Số điện thoại'
+    const fetchUsers = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const textSearch = (searchName || searchEmail || searchPhone || '').trim();
+            const apiPage = Math.max(0, (currentPage || 0) - 1);
+            const response = await customerService.getAllCustomers({
+                textSearch,
+                organizationId: selectedOrgId || '',
+                page: apiPage,
+                size: itemsPerPage
+            });
+            if (response.code === 'SUCCESS') {
+                const { content = [], totalPages = 0, totalElements = 0 } = response.data || {};
+                setUsers(content);
+                setFilteredUsers(content);
+                setTotalPages(totalPages);
+                setTotalElements(totalElements);
+            } else {
+                setError(response.message || 'Không thể tải danh sách người dùng');
             }
-        ];
-        setUsers(sampleData);
-        setFilteredUsers(sampleData);
-    }, []);
+        } catch (e) {
+            setError(e.message || 'Đã xảy ra lỗi khi tải danh sách người dùng');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, selectedOrgId]);
 
     const handleSearch = () => {
-        const filtered = users.filter(user => {
-            const matchesName = searchName === '' || user.name.toLowerCase().includes(searchName.toLowerCase());
-            const matchesEmail = searchEmail === '' || user.email.toLowerCase().includes(searchEmail.toLowerCase());
-            const matchesPhone = searchPhone === '' || user.phone.includes(searchPhone);
-            const matchesOrg = searchOrganization === '' || user.organization.toLowerCase().includes(searchOrganization.toLowerCase());
-            return matchesName && matchesEmail && matchesPhone && matchesOrg;
-        });
-        setFilteredUsers(filtered);
         setCurrentPage(1);
+        fetchUsers();
     };
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
     };
 
-    const getPaginatedData = () => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return filteredUsers.slice(startIndex, endIndex);
-    };
+    const getPaginatedData = () => filteredUsers;
 
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-    const startItem = (currentPage - 1) * itemsPerPage + 1;
-    const endItem = Math.min(currentPage * itemsPerPage, filteredUsers.length);
+    const startItem = filteredUsers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalElements);
 
     return (
         <div className="user-management-container">
@@ -283,8 +103,8 @@ const UserList = ({ onAddNew }) => {
                     <SearchBar placeholder="Địa chỉ email/Họ tên/Số điện thoại" value={searchName || searchEmail || searchPhone} onChange={(v) => { setSearchName(v); setSearchEmail(v); setSearchPhone(v); }} />
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
-                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" />
-                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={onAddNew} />
+                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" onClick={handleSearch} />
+                    <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => onAddNew ? onAddNew() : navigate('/main/form-user/add')} />
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Import file" icon={<span style={{fontWeight:700}}>☁️</span>} />
                 </div>
             </div>
@@ -306,14 +126,27 @@ const UserList = ({ onAddNew }) => {
                     'Quản lý'
                 ]}
                 data={getPaginatedData().map(user => ([
-                    user.name,
+                    (<span 
+                        key={`name-${user.id}`}
+                        onClick={() => navigate(`/main/user-detail/${user.id}`)}
+                        style={{ cursor: 'pointer', color: '#0B57D0' }}
+                    >
+                        {user.name}
+                    </span>),
                     user.email,
                     user.phone,
                     user.organization,
                     user.status,
                     user.role,
                     user.loginMethod,
-                    (<button key={`edit-${user.id}`} className="edit-btn" title="Chỉnh sửa">✏️</button>)
+                    (<button 
+                        key={`edit-${user.id}`} 
+                        className="edit-btn" 
+                        title="Chỉnh sửa" 
+                        onClick={() => onEdit ? onEdit(user) : navigate(`/main/form-user/edit/${user.id}`)}
+                    >
+                        ✏️
+                    </button>)
                 ]))}
             />
 

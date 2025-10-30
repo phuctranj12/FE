@@ -6,7 +6,7 @@ const customerService = {
     // 2.1. Tạo mới user
     createCustomer: async (customerData) => {
         try {
-            const response = await apiClient.post('/customers/create-customer', customerData);
+            const response = await apiClient.post('/customers/customers/create-customer', customerData);
             return response;
         } catch (error) {
             throw error;

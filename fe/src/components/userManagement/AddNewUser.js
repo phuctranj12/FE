@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import '../../styles/addNewUser.css';
 import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import OrganizationSelect from '../common/OrganizationSelect';
+import customerService from '../../api/customerService';
 
-const AddNewUser = ({ onCancel }) => {
+const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
+    const { id } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
+        id: null,
         // Thông tin cá nhân
         fullName: '',
         email: '',
@@ -28,19 +31,135 @@ const AddNewUser = ({ onCancel }) => {
         hsmUuid: ''
     });
 
-    // Sample data
-    const organizations = [
-        { id: 226, name: 'Trung tâm công nghệ thông tin MobiFone' },
-        { id: 1215, name: 'TC230301' },
-        { id: 1216, name: 'haitest1231' },
-        { id: 1242, name: 'Công ty Dịch vụ MobiFone Khu vực 8' },
-    ];
+    const [organizations, setOrganizations] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [toasts, setToasts] = useState([]);
 
-    const roles = [
-        { id: 1, name: 'Admin' },
-        { id: 2, name: 'Member' },
-        { id: 3, name: 'Viewer' },
-    ];
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, durationMs);
+    };
+
+    const flattenOrganizations = (orgs, acc = []) => {
+        if (!Array.isArray(orgs)) return acc;
+        orgs.forEach((org) => {
+            acc.push({ id: org.id, name: org.name });
+            if (org.children && org.children.length) {
+                flattenOrganizations(org.children, acc);
+            }
+        });
+        return acc;
+    };
+
+    const didInit = useRef(false);
+
+    // Prefill when in edit mode - from initialUser or fetch by ID
+    useEffect(() => {
+        if (mode !== 'edit') return;
+        
+        const loadUserData = async () => {
+            if (id && !initialUser) {
+                // Fetch user data by ID from route params
+                try {
+                    setLoading(true);
+                    const res = await customerService.getCustomerById(id);
+                    if (res.code === 'SUCCESS') {
+                        const user = res.data;
+                        setFormData(prev => ({
+                            ...prev,
+                            id: user.id ?? null,
+                            fullName: user.name ?? '',
+                            email: user.email ?? '',
+                            birthDate: user.birthday ?? '',
+                            phone: user.phone ?? '',
+                            organization: user.organizationId ?? user.organization?.id ?? null,
+                            role: user.roleId ?? user.role?.id ?? null,
+                            loginMethod: user.loginMethod ?? 'email',
+                            accountStatus: user.status ?? 1
+                        }));
+                    } else {
+                        showToast('Không thể tải thông tin người dùng');
+                    }
+                } catch (e) {
+                    showToast(e.message || 'Lỗi tải dữ liệu người dùng');
+                } finally {
+                    setLoading(false);
+                }
+            } else if (initialUser) {
+                // Use provided initialUser
+                setFormData(prev => ({
+                    ...prev,
+                    id: initialUser.id ?? null,
+                    fullName: initialUser.name ?? '',
+                    email: initialUser.email ?? '',
+                    birthDate: initialUser.birthday ?? '',
+                    phone: initialUser.phone ?? '',
+                    organization: initialUser.organizationId ?? initialUser.organization?.id ?? null,
+                    role: initialUser.roleId ?? initialUser.role?.id ?? null,
+                    loginMethod: initialUser.loginMethod ?? 'email',
+                    accountStatus: initialUser.status ?? 1
+                }));
+            }
+        };
+        
+        loadUserData();
+    }, [mode, initialUser, id]);
+
+    useEffect(() => {
+        if (didInit.current) return; // Prevent double call in React StrictMode (dev)
+        didInit.current = true;
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const [orgSettled, roleSettled] = await Promise.allSettled([
+                    customerService.getAllOrganizations({ page: 0, size: 1000 }),
+                    customerService.getAllRoles({ page: 0, size: 1000 })
+                ]);
+
+                // Organizations
+                if (orgSettled.status === 'fulfilled') {
+                    const orgRes = orgSettled.value;
+                    if (orgRes.code === 'SUCCESS') {
+                        const flatOrgs = flattenOrganizations(orgRes.data?.content || []);
+                        setOrganizations(flatOrgs);
+                    } else {
+                        console.error('Load organizations failed:', orgRes.message);
+                        showToast(orgRes.message || 'Không thể tải danh sách tổ chức');
+                    }
+                } else {
+                    console.error('Load organizations error:', orgSettled.reason);
+                    showToast('Không thể tải danh sách tổ chức');
+                }
+
+                // Roles
+                if (roleSettled.status === 'fulfilled') {
+                    const roleRes = roleSettled.value;
+                    if (roleRes.code === 'SUCCESS') {
+                        const rolesContent = roleRes.data?.content || [];
+                        setRoles(rolesContent.map(r => ({ id: r.id, name: r.name })));
+                    } else {
+                        console.error('Load roles failed:', roleRes.message);
+                        showToast(roleRes.message || 'Không thể tải danh sách vai trò');
+                    }
+                } else {
+                    console.error('Load roles error:', roleSettled.reason);
+                    showToast('Không thể tải danh sách vai trò');
+                }
+            } catch (e) {
+                console.error('Fetch data error:', e);
+                showToast(e.message || 'Lỗi tải dữ liệu');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const networks = [
         { id: 1, name: 'Viettel' },
@@ -64,16 +183,42 @@ const AddNewUser = ({ onCancel }) => {
         setFormData(prev => ({ ...prev, [field]: file }));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Validate required fields
-        if (!formData.fullName || !formData.email || !formData.phone || !formData.organization || !formData.role) {
-            alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
+        const requireEmail = mode !== 'edit';
+        if (!formData.fullName || (requireEmail && !formData.email) || !formData.phone || !formData.organization || !formData.role) {
+            showToast('Vui lòng điền đầy đủ các trường bắt buộc (*)');
             return;
         }
-        
-        console.log('Saving user:', formData);
-        // Implement save logic here
-        onCancel && onCancel();
+
+        const payload = {
+            name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+            birthday: formData.birthDate || '',
+            organizationId: formData.organization,
+            status: formData.accountStatus,
+            roleId: formData.role,
+            // Some backends may require taxCode; send empty if not available
+            taxCode: ''
+        };
+
+        try {
+            setLoading(true);
+            const res = mode === 'edit' && formData.id
+                ? await customerService.updateCustomer(formData.id, payload)
+                : await customerService.createCustomer(payload);
+            if (res.code === 'SUCCESS') {
+                showToast(mode === 'edit' ? 'Cập nhật người dùng thành công' : 'Tạo người dùng thành công', 'success');
+                onCancel && onCancel();
+            } else {
+                showToast((mode === 'edit' ? 'Không thể cập nhật người dùng: ' : 'Không thể tạo người dùng: ') + (res.message || 'Unknown error'));
+            }
+        } catch (e) {
+            showToast(e.response?.data?.message || e.message || 'Đã xảy ra lỗi');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCancel = () => {
@@ -82,6 +227,23 @@ const AddNewUser = ({ onCancel }) => {
 
     return (
         <div className="user-management-container">
+            {!!toasts.length && (
+                <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {toasts.map((t) => (
+                        <div key={t.id} style={{
+                            minWidth: 260,
+                            maxWidth: 420,
+                            padding: '10px 12px',
+                            borderRadius: 8,
+                            color: t.variant === 'success' ? '#0a3622' : '#842029',
+                            background: t.variant === 'success' ? '#d1e7dd' : '#f8d7da',
+                            border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : '#f5c2c7'}`
+                        }}>
+                            {t.message}
+                        </div>
+                    ))}
+                </div>
+            )}
             
 
             <div className="add-user-content">
@@ -106,6 +268,7 @@ const AddNewUser = ({ onCancel }) => {
                                 value={formData.email} 
                                 onChange={(value) => handleInputChange('email', value)} 
                                 type="email"
+                                disabled={mode === 'edit'}
                             />
                         </div>
                         

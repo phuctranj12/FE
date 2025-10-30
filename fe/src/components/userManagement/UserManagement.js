@@ -7,22 +7,37 @@ import AddNewUser from './AddNewUser';
 
 const UserManagement = ({ selectedStatus }) => {
     const [showAddUser, setShowAddUser] = useState(false);
+    const [editUser, setEditUser] = useState(null);
+    const [mode, setMode] = useState('create');
 
     // Reset showAddUser when selectedStatus changes
     useEffect(() => {
         setShowAddUser(false);
+        setEditUser(null);
+        setMode('create');
     }, [selectedStatus]);
 
     const renderComponent = () => {
         if (showAddUser) {
-            return <AddNewUser onCancel={() => setShowAddUser(false)} />;
+            return (
+                <AddNewUser 
+                    onCancel={() => { setShowAddUser(false); setEditUser(null); setMode('create'); }}
+                    mode={mode}
+                    initialUser={editUser}
+                />
+            );
         }
         
         switch (selectedStatus) {
             case 'to-chuc':
                 return <OrganizationList />;
             case 'nguoi-dung':
-                return <UserList onAddNew={() => setShowAddUser(true)} />;
+                return (
+                    <UserList 
+                        onAddNew={() => { setMode('create'); setEditUser(null); setShowAddUser(true); }}
+                        onEdit={(user) => { setMode('edit'); setEditUser(user); setShowAddUser(true); }}
+                    />
+                );
             case 'vai-tro':
                 return <RoleList />;
             default:
