@@ -7,7 +7,7 @@ import Pagination from '../common/Pagination';
 import OrganizationDropDown from '../common/OrganizationDropDown';
 import customerService from '../../api/customerService';
 
-const UserList = ({ onAddNew }) => {
+const UserList = ({ onAddNew, onEdit }) => {
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -131,7 +131,14 @@ const UserList = ({ onAddNew }) => {
                     user.status,
                     user.role,
                     user.loginMethod,
-                    (<button key={`edit-${user.id}`} className="edit-btn" title="Chỉnh sửa">✏️</button>)
+                    (<button 
+                        key={`edit-${user.id}`} 
+                        className="edit-btn" 
+                        title="Chỉnh sửa" 
+                        onClick={() => onEdit && onEdit(user)}
+                    >
+                        ✏️
+                    </button>)
                 ]))}
             />
 

@@ -9,8 +9,9 @@ import '../../styles/orgSelect.css';
   - searchPlaceholder?: string           // placeholder for search input
   - value?: number|string|null           // selected organization id
   - onChange?: (org: any|null) => void   // return selected org object (or null)
+  - disabled?: boolean
 */
-export default function OrganizationSelect({ organizations = [], placeholder = 'Chọn tổ chức', searchPlaceholder = 'Tìm kiếm tổ chức...', value = null, onChange }) {
+export default function OrganizationSelect({ organizations = [], placeholder = 'Chọn tổ chức', searchPlaceholder = 'Tìm kiếm tổ chức...', value = null, onChange, disabled = false }) {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -50,6 +51,7 @@ export default function OrganizationSelect({ organizations = [], placeholder = '
     };
 
     const handleOpen = () => {
+        if (disabled) return;
         if (boxRef.current) {
             const rect = boxRef.current.getBoundingClientRect();
             setPosition({
@@ -62,10 +64,16 @@ export default function OrganizationSelect({ organizations = [], placeholder = '
 
     return (
         <div className="org-select-container" ref={boxRef}>
-            <button type="button" className="org-select-input" onClick={handleOpen}>
+            <button 
+                type="button" 
+                className="org-select-input" 
+                onClick={handleOpen}
+                disabled={disabled}
+                style={disabled ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed', color: '#999' } : {}}
+            >
                 <span className="org-select-text">{selected ? selected.name : placeholder}</span>
                 <div className="org-select-actions">
-                    {selected && (
+                    {selected && !disabled && (
                         <button 
                             type="button" 
                             className="org-clear-btn" 

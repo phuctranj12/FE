@@ -6,9 +6,10 @@ import Button from '../common/Button';
 import OrganizationSelect from '../common/OrganizationSelect';
 import customerService from '../../api/customerService';
 
-const AddNewUser = ({ onCancel }) => {
+const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
+        id: null,
         // Thông tin cá nhân
         fullName: '',
         email: '',
@@ -55,6 +56,23 @@ const AddNewUser = ({ onCancel }) => {
     };
 
     const didInit = useRef(false);
+
+    // Prefill when in edit mode
+    useEffect(() => {
+        if (mode !== 'edit' || !initialUser) return;
+        setFormData(prev => ({
+            ...prev,
+            id: initialUser.id ?? null,
+            fullName: initialUser.name ?? '',
+            email: initialUser.email ?? '',
+            birthDate: initialUser.birthday ?? '',
+            phone: initialUser.phone ?? '',
+            organization: initialUser.organizationId ?? initialUser.organization?.id ?? null,
+            role: initialUser.roleId ?? initialUser.role?.id ?? null,
+            loginMethod: initialUser.loginMethod ?? 'email',
+            accountStatus: initialUser.status ?? 1
+        }));
+    }, [mode, initialUser]);
 
     useEffect(() => {
         if (didInit.current) return; // Prevent double call in React StrictMode (dev)
@@ -131,7 +149,8 @@ const AddNewUser = ({ onCancel }) => {
 
     const handleSave = async () => {
         // Validate required fields
-        if (!formData.fullName || !formData.email || !formData.phone || !formData.organization || !formData.role) {
+        const requireEmail = mode !== 'edit';
+        if (!formData.fullName || (requireEmail && !formData.email) || !formData.phone || !formData.organization || !formData.role) {
             showToast('Vui lòng điền đầy đủ các trường bắt buộc (*)');
             return;
         }
@@ -150,12 +169,14 @@ const AddNewUser = ({ onCancel }) => {
 
         try {
             setLoading(true);
-            const res = await customerService.createCustomer(payload);
+            const res = mode === 'edit' && formData.id
+                ? await customerService.updateCustomer(formData.id, payload)
+                : await customerService.createCustomer(payload);
             if (res.code === 'SUCCESS') {
-                showToast('Tạo người dùng thành công', 'success');
+                showToast(mode === 'edit' ? 'Cập nhật người dùng thành công' : 'Tạo người dùng thành công', 'success');
                 onCancel && onCancel();
             } else {
-                showToast('Không thể tạo người dùng: ' + (res.message || 'Unknown error'));
+                showToast((mode === 'edit' ? 'Không thể cập nhật người dùng: ' : 'Không thể tạo người dùng: ') + (res.message || 'Unknown error'));
             }
         } catch (e) {
             showToast(e.response?.data?.message || e.message || 'Đã xảy ra lỗi');
@@ -211,6 +232,7 @@ const AddNewUser = ({ onCancel }) => {
                                 value={formData.email} 
                                 onChange={(value) => handleInputChange('email', value)} 
                                 type="email"
+                                disabled={mode === 'edit'}
                             />
                         </div>
                         

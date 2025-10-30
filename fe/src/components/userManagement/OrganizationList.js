@@ -4,6 +4,7 @@ import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
 import AddOrganizationPanel from './AddOrganizationPanel';
+import EditOrganizationPanel from './EditOrganizationPanel';
 import customerService from '../../api/customerService';
 
 const OrganizationList = () => {
@@ -13,6 +14,8 @@ const OrganizationList = () => {
     const [searchName, setSearchName] = useState('');
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [showAddPanel, setShowAddPanel] = useState(false);
+    const [showEditPanel, setShowEditPanel] = useState(false);
+    const [editingOrg, setEditingOrg] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -22,13 +25,22 @@ const OrganizationList = () => {
         setError(null);
         try {
             const response = await customerService.getAllOrganizations({
-                page: 1,
+                page: 0,
                 size: 1000 // Get all organizations
             });
             
             if (response.code === 'SUCCESS') {
-                // Transform nested structure to flat structure with parent_id
-                const flatList = flattenOrganizations(response.data.content);
+                // Backend trả flat list: map về cấu trúc UI, dựa trên parentId/parent_id
+                const items = Array.isArray(response.data?.content) ? response.data.content : (Array.isArray(response.data) ? response.data : []);
+                const flatList = items.map(org => ({
+                    id: org.id,
+                    name: org.name,
+                    abbreviation: org.abbreviation || '',
+                    code: org.code || '',
+                    status: org.status,
+                    parent_id: (org.parentId !== undefined ? org.parentId : (org.parent_id !== undefined ? org.parent_id : null)),
+                    type: (org.parentId ?? org.parent_id ?? null) === null ? 'Tổ chức cha' : 'Tổ chức con'
+                }));
                 setOrganizations(flatList);
                 setFilteredOrganizations(flatList);
             } else {
@@ -132,6 +144,48 @@ const OrganizationList = () => {
         }
     };
 
+    const handleEditClick = (orgId) => {
+        const org = organizations.find(o => o.id === orgId);
+        if (org) {
+            setEditingOrg(org);
+            setShowEditPanel(true);
+        }
+    };
+
+    const handleUpdateOrganization = async (updatedData) => {
+        try {
+            const orgId = updatedData.id;
+            const payload = {
+                name: updatedData.name,
+                abbreviation: updatedData.abbreviation || '',
+                email: updatedData.email || '',
+                taxCode: updatedData.taxId || '',
+                code: updatedData.code,
+                phone: updatedData.phone || '',
+                fax: updatedData.fax || '',
+                status: updatedData.status,
+                ...(updatedData.parentOrg !== null ? { parentId: updatedData.parentOrg } : {})
+            };
+            
+            console.log('Updating organization:', orgId, payload);
+            
+            const response = await customerService.updateOrganization(orgId, payload);
+            
+            if (response.code === 'SUCCESS') {
+                await fetchOrganizations();
+                setShowEditPanel(false);
+                setEditingOrg(null);
+                alert('Cập nhật tổ chức thành công!');
+            } else {
+                alert('Không thể cập nhật tổ chức: ' + (response.message || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Error updating organization:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi cập nhật tổ chức.';
+            alert('Lỗi: ' + errorMessage);
+        }
+    };
+
     // Tạo map parent -> children cho dữ liệu phẳng
     const buildChildrenMap = (list) => {
         const map = new Map();
@@ -211,7 +265,7 @@ const OrganizationList = () => {
                             node.code,
                             statusLabel(node.status),
                             node.type,
-                            (<button className="edit-btn" title="Chỉnh sửa">✏️</button>)
+                            (<button className="edit-btn" title="Chỉnh sửa" onClick={() => handleEditClick(node.id)}>✏️</button>)
                         ]);
 
                         if (expandedRows.has(node.id)) {
@@ -231,6 +285,18 @@ const OrganizationList = () => {
                     onClose={() => setShowAddPanel(false)}
                     onSave={handleAddOrganization}
                     organizations={organizations}
+                />
+            )}
+            
+            {showEditPanel && editingOrg && (
+                <EditOrganizationPanel 
+                    organization={editingOrg}
+                    organizations={organizations}
+                    onClose={() => {
+                        setShowEditPanel(false);
+                        setEditingOrg(null);
+                    }}
+                    onSave={handleUpdateOrganization}
                 />
             )}
         </div>

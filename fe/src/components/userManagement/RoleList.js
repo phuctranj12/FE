@@ -5,6 +5,7 @@ import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
 import Pagination from '../common/Pagination';
 import AddNewRolePanel from './AddNewRolePanel';
+import EditRolePanel from './EditRolePanel';
 import customerService from '../../api/customerService';
 
 const RoleList = ({ onAddNew }) => {
@@ -19,6 +20,8 @@ const RoleList = ({ onAddNew }) => {
     const [totalElements, setTotalElements] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showEditRole, setShowEditRole] = useState(false);
+    const [editingRole, setEditingRole] = useState(null);
 
     const fetchRoles = async () => {
         setLoading(true);
@@ -67,9 +70,21 @@ const RoleList = ({ onAddNew }) => {
     const startItem = filteredRoles.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, totalElements);
 
-    const handleEdit = (roleId) => {
-        console.log('Edit role:', roleId);
-        // Implement edit functionality
+    const handleEdit = async (roleId) => {
+        try {
+            setLoading(true);
+            const res = await customerService.getRoleById(roleId);
+            if (res.code === 'SUCCESS') {
+                setEditingRole(res.data);
+                setShowEditRole(true);
+            } else {
+                alert('Không thể tải chi tiết vai trò: ' + (res.message || 'Unknown error'));
+            }
+        } catch (e) {
+            alert(e.response?.data?.message || e.message || 'Đã xảy ra lỗi khi tải chi tiết vai trò');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDelete = async (roleId) => {
@@ -93,6 +108,13 @@ const RoleList = ({ onAddNew }) => {
         <>
             {showAddRole && (
                 <AddNewRolePanel onCancel={() => { setShowAddRole(false); fetchRoles(); }} />
+            )}
+            {showEditRole && editingRole && (
+                <EditRolePanel 
+                    role={editingRole}
+                    onCancel={() => { setShowEditRole(false); setEditingRole(null); }}
+                    onSaved={async () => { setShowEditRole(false); setEditingRole(null); await fetchRoles(); }}
+                />
             )}
             
             <div className="user-management-container">
