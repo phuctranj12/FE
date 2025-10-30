@@ -6,6 +6,7 @@ import BaseTable from '../common/BaseTable';
 import Pagination from '../common/Pagination';
 import AddNewRolePanel from './AddNewRolePanel';
 import EditRolePanel from './EditRolePanel';
+import ViewRolePanel from './ViewRolePanel';
 import customerService from '../../api/customerService';
 
 const RoleList = ({ onAddNew }) => {
@@ -22,6 +23,22 @@ const RoleList = ({ onAddNew }) => {
     const [error, setError] = useState(null);
     const [showEditRole, setShowEditRole] = useState(false);
     const [editingRole, setEditingRole] = useState(null);
+    const [showViewRole, setShowViewRole] = useState(false);
+    const [viewingRole, setViewingRole] = useState(null);
+    const [allPermissions, setAllPermissions] = useState([]);
+
+    useEffect(() => {
+        const fetchPermissions = async () => {
+            try {
+                const res = await customerService.getAllPermissions({ page: 0, size: 1000 });
+                if (res.code === 'SUCCESS') {
+                    const list = Array.isArray(res.data?.content) ? res.data.content : [];
+                    setAllPermissions(list.map(p => ({ id: p.id, name: p.name, category: p.category || 'Khác' })));
+                }
+            } catch {}
+        };
+        fetchPermissions();
+    }, []);
 
     const fetchRoles = async () => {
         setLoading(true);
@@ -34,7 +51,6 @@ const RoleList = ({ onAddNew }) => {
                 size: itemsPerPage
             });
             if (response.code === 'SUCCESS') {
-                console.log('response.data', response.data);
                 const { content = [], totalPages = 0, totalElements = 0 } = response.data || {};
                 setRoles(content);
                 setFilteredRoles(content);
@@ -52,12 +68,10 @@ const RoleList = ({ onAddNew }) => {
 
     useEffect(() => {
         fetchRoles();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage]);
 
     const handleSearch = () => {
         setCurrentPage(1);
-        // fetch with new search terms
         fetchRoles();
     };
 
@@ -70,20 +84,23 @@ const RoleList = ({ onAddNew }) => {
     const startItem = filteredRoles.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, totalElements);
 
-    const handleEdit = async (roleId) => {
-        try {
-            setLoading(true);
-            const res = await customerService.getRoleById(roleId);
-            if (res.code === 'SUCCESS') {
-                setEditingRole(res.data);
-                setShowEditRole(true);
-            } else {
-                alert('Không thể tải chi tiết vai trò: ' + (res.message || 'Unknown error'));
-            }
-        } catch (e) {
-            alert(e.response?.data?.message || e.message || 'Đã xảy ra lỗi khi tải chi tiết vai trò');
-        } finally {
-            setLoading(false);
+    const handleEdit = (roleId) => {
+        const role = roles.find(r => r.id === roleId);
+        if (role) {
+            setEditingRole(role);
+            setShowEditRole(true);
+        } else {
+            alert('Không tìm thấy dữ liệu vai trò trong danh sách.');
+        }
+    };
+
+    const handleView = (roleId) => {
+        const role = roles.find(r => r.id === roleId);
+        if (role) {
+            setViewingRole(role);
+            setShowViewRole(true);
+        } else {
+            alert('Không tìm thấy dữ liệu vai trò trong danh sách.');
         }
     };
 
@@ -107,16 +124,23 @@ const RoleList = ({ onAddNew }) => {
     return (
         <>
             {showAddRole && (
-                <AddNewRolePanel onCancel={() => { setShowAddRole(false); fetchRoles(); }} />
+                <AddNewRolePanel allPermissions={allPermissions} onCancel={() => { setShowAddRole(false); }} />
             )}
             {showEditRole && editingRole && (
                 <EditRolePanel 
                     role={editingRole}
+                    allPermissions={allPermissions}
                     onCancel={() => { setShowEditRole(false); setEditingRole(null); }}
                     onSaved={async () => { setShowEditRole(false); setEditingRole(null); await fetchRoles(); }}
                 />
             )}
-            
+            {showViewRole && viewingRole && (
+                <ViewRolePanel 
+                    role={viewingRole}
+                    allPermissions={allPermissions}
+                    onCancel={() => { setShowViewRole(false); setViewingRole(null); }}
+                />
+            )}
             <div className="user-management-container">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'baseline' }}>
                     <div style={{ flex: '1 1 320px', minWidth: 220 }}>
@@ -140,7 +164,13 @@ const RoleList = ({ onAddNew }) => {
                 <BaseTable
                     columns={[ 'Tên vai trò', 'Mã vai trò', 'Quản lý' ]}
                     data={getPaginatedData().map(role => ([
-                        role.name,
+                        (<span 
+                            key={`name-${role.id}`}
+                            onClick={() => handleView(role.id)}
+                            style={{ cursor: 'pointer', color: '#0B57D0' }}
+                        >
+                            {role.name}
+                        </span>),
                         role.code,
                         (
                             <div key={`actions-${role.id}`} className="action-buttons-cell">
@@ -164,7 +194,7 @@ const RoleList = ({ onAddNew }) => {
                 />
 
                 <div className="pagination-container">
-                    <Pagination currentPage={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+                    <Pagination currentPage={currentPage} totalPages={totalPages} onChange={setCurrentPage} />
                     <div className="pagination-info">
                         Số lượng {startItem} - {endItem} / {totalElements}
                     </div>

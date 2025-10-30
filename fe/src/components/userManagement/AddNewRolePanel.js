@@ -4,7 +4,7 @@ import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import customerService from '../../api/customerService';
 
-const AddNewRolePanel = ({ onCancel }) => {
+const AddNewRolePanel = ({ onCancel, allPermissions }) => {
     const [formData, setFormData] = useState({
         roleName: '',
         roleCode: '',
@@ -13,11 +13,16 @@ const AddNewRolePanel = ({ onCancel }) => {
     });
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [permissions, setPermissions] = useState([]);
+    const [permissions, setPermissions] = useState(allPermissions || []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        if (allPermissions && allPermissions.length > 0) {
+            setPermissions(allPermissions);
+            return;
+        }
+        // Nếu không có allPermissions, fetch như cũ
         const loadPermissions = async () => {
             setLoading(true);
             setError(null);
@@ -36,7 +41,7 @@ const AddNewRolePanel = ({ onCancel }) => {
             }
         };
         loadPermissions();
-    }, []);
+    }, [allPermissions]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -149,7 +154,6 @@ const AddNewRolePanel = ({ onCancel }) => {
                                         onChange={setSearchTerm} 
                                     />
                                 </div>
-                                
                                 <div className="permissions-list">
                                     {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
                                         <div key={category} className="permission-category">
@@ -163,7 +167,7 @@ const AddNewRolePanel = ({ onCancel }) => {
                                                         <input 
                                                             type="checkbox" 
                                                             checked={formData.permissions.includes(permission.id)}
-                                                            onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
+                                                            onChange={e => handlePermissionChange(permission.id, e.target.checked)}
                                                         />
                                                         <span className="permission-text">{permission.name}</span>
                                                     </label>
@@ -189,7 +193,6 @@ const AddNewRolePanel = ({ onCancel }) => {
                         backgroundColor="#0B57D0" 
                         text={loading ? 'Đang lưu...' : 'Lưu lại'} 
                         onClick={handleSave}
-                        disabled={loading}
                     />
                 </div>
             </div>

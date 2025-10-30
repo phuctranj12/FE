@@ -4,6 +4,7 @@ import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import BaseTable from '../common/BaseTable';
 import AddOrganizationPanel from './AddOrganizationPanel';
+import ViewOrganizationPanel from './ViewOrganizationPanel';
 import EditOrganizationPanel from './EditOrganizationPanel';
 import customerService from '../../api/customerService';
 
@@ -18,6 +19,8 @@ const OrganizationList = () => {
     const [editingOrg, setEditingOrg] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showViewPanel, setShowViewPanel] = useState(false);
+    const [viewingOrg, setViewingOrg] = useState(null);
 
     // Fetch organizations from API
     const fetchOrganizations = async () => {
@@ -38,6 +41,11 @@ const OrganizationList = () => {
                     abbreviation: org.abbreviation || '',
                     code: org.code || '',
                     status: org.status,
+                    // giữ thêm dữ liệu để hiển thị ở ViewOrganizationPanel mà không cần gọi lại API
+                    email: org.email || '',
+                    phone: org.phone || '',
+                    taxCode: org.taxCode || org.taxId || '',
+                    fax: org.fax || '',
                     parent_id: (org.parentId !== undefined ? org.parentId : (org.parent_id !== undefined ? org.parent_id : null)),
                     type: (org.parentId ?? org.parent_id ?? null) === null ? 'Tổ chức cha' : 'Tổ chức con'
                 }));
@@ -99,6 +107,16 @@ const OrganizationList = () => {
             newExpanded.add(id);
         }
         setExpandedRows(newExpanded);
+    };
+
+    const handleViewClick = (orgId) => {
+        const org = organizations.find(o => o.id === orgId);
+        if (org) {
+            setViewingOrg(org);
+            setShowViewPanel(true);
+        } else {
+            setError('Không tìm thấy dữ liệu tổ chức trong danh sách hiện có');
+        }
     };
 
     const statusLabel = (s) => (s === 1 ? 'Hoạt động' : 'Không hoạt động');
@@ -259,7 +277,13 @@ const OrganizationList = () => {
                                         {expandedRows.has(node.id) ? '▼' : '▶'}
                                     </button>
                                 )}
-                                <span className="tree-name">{node.name}</span>
+                                <span 
+                                    className="tree-name"
+                                    style={{ cursor: 'pointer', color: '#0B57D0' }}
+                                    onClick={() => handleViewClick(node.id)}
+                                >
+                                    {node.name}
+                                </span>
                             </>),
                             node.id,
                             node.code,
@@ -285,6 +309,14 @@ const OrganizationList = () => {
                     onClose={() => setShowAddPanel(false)}
                     onSave={handleAddOrganization}
                     organizations={organizations}
+                />
+            )}
+
+            {showViewPanel && viewingOrg && (
+                <ViewOrganizationPanel 
+                    organization={viewingOrg}
+                    organizations={organizations}
+                    onClose={() => { setShowViewPanel(false); setViewingOrg(null); }}
                 />
             )}
             

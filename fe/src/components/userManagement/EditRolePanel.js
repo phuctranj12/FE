@@ -4,7 +4,7 @@ import SearchBar from '../common/SearchBar';
 import Button from '../common/Button';
 import customerService from '../../api/customerService';
 
-const EditRolePanel = ({ role, onCancel, onSaved }) => {
+const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
     const [formData, setFormData] = useState({
         roleName: '',
         roleCode: '',
@@ -13,11 +13,32 @@ const EditRolePanel = ({ role, onCancel, onSaved }) => {
     });
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [permissions, setPermissions] = useState([]);
+    const [permissions, setPermissions] = useState(allPermissions || []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        if (role) {
+            const permissionIds = Array.isArray(role.permissionIds)
+                ? role.permissionIds
+                : Array.isArray(role.permissions)
+                  ? role.permissions.map(p => p.id)
+                  : [];
+            setFormData({
+                roleName: role.name || '',
+                roleCode: role.code || '',
+                note: role.note || '',
+                permissions: permissionIds
+            });
+        }
+    }, [role]);
+
+    useEffect(() => {
+        if (allPermissions && allPermissions.length > 0) {
+            setPermissions(allPermissions);
+            return;
+        }
+        // Nếu không có truyền vào, fetch lại
         const loadPermissions = async () => {
             setLoading(true);
             setError(null);
@@ -36,22 +57,7 @@ const EditRolePanel = ({ role, onCancel, onSaved }) => {
             }
         };
         loadPermissions();
-    }, []);
-
-    useEffect(() => {
-        if (!role) return;
-        const permissionIds = Array.isArray(role.permissionIds)
-            ? role.permissionIds
-            : Array.isArray(role.permissions)
-                ? role.permissions.map(p => p.id)
-                : [];
-        setFormData({
-            roleName: role.name || '',
-            roleCode: role.code || '',
-            note: role.note || '',
-            permissions: permissionIds
-        });
-    }, [role]);
+    }, [allPermissions]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -98,11 +104,11 @@ const EditRolePanel = ({ role, onCancel, onSaved }) => {
 
     const filteredPermissions = permissions.filter(permission =>
         permission.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        permission.category.toLowerCase().includes(searchTerm.toLowerCase())
+        (permission.category || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const groupedPermissions = filteredPermissions.reduce((groups, permission) => {
-        const category = permission.category;
+        const category = permission.category || 'Khác';
         if (!groups[category]) groups[category] = [];
         groups[category].push(permission);
         return groups;
@@ -112,7 +118,7 @@ const EditRolePanel = ({ role, onCancel, onSaved }) => {
         <div className="add-role-overlay">
             <div className="add-role-panel">
                 <div className="add-role-header">
-                    <h2>CẬP NHẬT VAI TRÒ</h2>
+                    <h2>CẬP NHẬT THÔNG TIN VAI TRÒ</h2>
                 </div>
 
                 <div className="add-role-content">
@@ -147,7 +153,7 @@ const EditRolePanel = ({ role, onCancel, onSaved }) => {
 
                     <div className="role-permissions-column">
                         <div className="form-group">
-                            <label>Phân quyền <span className="required">*</span></label>
+                            <label>Phân quyền</label>
                             <div className="permissions-container">
                                 <div className="permissions-search">
                                     <SearchBar
@@ -169,7 +175,7 @@ const EditRolePanel = ({ role, onCancel, onSaved }) => {
                                                         <input
                                                             type="checkbox"
                                                             checked={formData.permissions.includes(permission.id)}
-                                                            onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
+                                                            onChange={e => handlePermissionChange(permission.id, e.target.checked)}
                                                         />
                                                         <span className="permission-text">{permission.name}</span>
                                                     </label>
