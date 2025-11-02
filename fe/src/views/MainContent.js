@@ -10,6 +10,7 @@ import DocumentTemplates from "../components/templateContract/DocumentTemplates"
 import DocumentForm from "../components/createContract/DocumentForm";
 import Footer from "../components/bar/Footer";
 import { getDocuments } from "../api/documentService";
+import ServerCertificateList from "../components/certificate/ServerCertificateList";
 function MainContent() {
     const location = useLocation();
     const [selectedStatus, setSelectedStatus] = useState("");
@@ -79,6 +80,8 @@ function MainContent() {
                         <DocumentTemplates />
                     ) : menuStatus === "user-management" ? (
                         <UserManagement selectedStatus={selectedStatus} />
+                    ) : menuStatus === "certificate" ? (
+                        <ServerCertificateList />
                     ) : null}
                 </div>
             </div>

@@ -122,7 +122,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                         <div className="subitem" onClick={() => handleSelect("gui-sms-email")}>
                             Cấu hình gửi SMS/Email
                         </div>
-                        <div className="subitem" onClick={() => handleSelect("chung-thu-so")}>
+                        <div className="subitem" onClick={() => handleSelectMenu("certificate")}>
                             Danh sách chứng thư số Server
                         </div>
                         <div className="subitem" onClick={() => handleSelect("webhook")}>Cấu hình WebHook</div>
