@@ -32,7 +32,7 @@ apiClient.interceptors.request.use(
     (config) => {
         // Only add token if endpoint is not public
         if (!isPublicEndpoint(config.url)) {
-            let token = localStorage.getItem('token'); // or sessionStorage
+            let token = sessionStorage.getItem('token'); 
             if(token === null){
                 token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIlVTRVIiXSwicGVybWlzc2lvbnMiOltdLCJjdXN0b21lcklkIjoyMiwiZW1haWwiOiJtaW5oQGdtYWlsLmNvbSIsInN1YiI6Im1pbmhAZ21haWwuY29tIiwiaWF0IjoxNzYxNzkyOTA2LCJleHAiOjE3NjE4NzkzMDZ9.lwHVFwJj07CxivpQ2Vyg6wa40cHcGrx0HmqYDAXrJUI9Ax2RWhn7CWrR1XToHwwOXlh4eqL5YQb1uF_xmWBuZw"
             }
