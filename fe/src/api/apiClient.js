@@ -32,9 +32,9 @@ apiClient.interceptors.request.use(
     (config) => {
         // Only add token if endpoint is not public
         if (!isPublicEndpoint(config.url)) {
-            let token = localStorage.getItem('token'); // or sessionStorage
+            let token = sessionStorage.getItem('token'); 
             if(token === null){
-                token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIlVTRVIiXSwicGVybWlzc2lvbnMiOltdLCJjdXN0b21lcklkIjoyMiwiZW1haWwiOiJtaW5oQGdtYWlsLmNvbSIsInN1YiI6Im1pbmhAZ21haWwuY29tIiwiaWF0IjoxNzYxNzkyOTA2LCJleHAiOjE3NjE4NzkzMDZ9.lwHVFwJj07CxivpQ2Vyg6wa40cHcGrx0HmqYDAXrJUI9Ax2RWhn7CWrR1XToHwwOXlh4eqL5YQb1uF_xmWBuZw"
+                token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIkFETUlOIl0sInBlcm1pc3Npb25zIjpbIkNSRUFURV9DVVNUT01FUiIsIlZJRVdfQ1VTVE9NRVIiLCJVUERBVEVfQ1VTVE9NRVIiLCJERUxFVEVfQ1VTVE9NRVIiLCJNQU5BR0VfUk9MRSJdLCJjdXN0b21lcklkIjoyMiwiaWQiOjIyLCJlbWFpbCI6Im1pbmhAZ21haWwuY29tIiwic3ViIjoibWluaEBnbWFpbC5jb20iLCJpYXQiOjE3NjIzMTU1OTksImV4cCI6MTc2MjQwMTk5OX0.Q0dryc0H3vzR015M1jO0iSElACTz_IMYifjvittE_I-wFfZa-ChMhMWwXxxPiDKMhwM4COdZxGmycMnY9K2DBA"
             }
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;

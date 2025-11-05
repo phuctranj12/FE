@@ -34,6 +34,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 <div className="menu-item" onClick={() => {
                     handleSelectMenu("home");
                     toggleMenu(null);
+                    handleNavigation('/main/dashboard');
                 }} >
                     Trang chủ
                 </div>

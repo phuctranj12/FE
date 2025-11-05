@@ -4,7 +4,7 @@ import Login from './components/login/login';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Register from './components/register/register';
 import MainContent from './views/MainContent';
-import HomeComponent from './components/document/Home';
+import DashboardHome from './components/dashboard/DashboardHome';
 import OrganizationList from './components/userManagement/OrganizationList';
 import UserList from './components/userManagement/UserList';
 import UserDetail from './components/userManagement/UserDetail';
@@ -17,6 +17,7 @@ function App() {
       <Route path="/Login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<MainContent />}>
+        <Route path="main/dashboard" element={<DashboardHome />} />
         <Route path="main/org" element={<OrganizationList />} />
         <Route path="main/user" element={<UserList />} />
         <Route path="main/user-detail/:id" element={<UserDetail />} />

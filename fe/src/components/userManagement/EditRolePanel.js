@@ -16,6 +16,19 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
     const [permissions, setPermissions] = useState(allPermissions || []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    };
 
     useEffect(() => {
         if (role) {
@@ -48,10 +61,10 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
                     const list = Array.isArray(res.data?.content) ? res.data.content : [];
                     setPermissions(list.map(p => ({ id: p.id, name: p.name, category: p.category || 'Khác' })));
                 } else {
-                    setError(res.message || 'Không thể tải danh sách phân quyền');
+                    showToast(res.message || 'Không thể tải danh sách phân quyền', 'error');
                 }
             } catch (e) {
-                setError(e.response?.data?.message || e.message || 'Lỗi tải phân quyền');
+                showToast(e.response?.data?.message || e.message || 'Lỗi tải phân quyền', 'error');
             } finally {
                 setLoading(false);
             }
@@ -74,11 +87,11 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
 
     const handleSave = async () => {
         if (!role?.id) {
-            alert('Thiếu ID vai trò');
+            showToast('Thiếu ID vai trò', 'error');
             return;
         }
         if (formData.permissions.length === 0) {
-            alert('Vui lòng chọn ít nhất một phân quyền');
+            showToast('Vui lòng chọn ít nhất một phân quyền', 'warning');
             return;
         }
         try {
@@ -91,12 +104,16 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
             };
             const res = await customerService.updateRole(role.id, payload);
             if (res.code === 'SUCCESS') {
-                onSaved && onSaved();
+                showToast('Cập nhật vai trò thành công', 'success', 3000);
+                // Delay đóng form để user có thể thấy toast
+                setTimeout(() => {
+                    onSaved && onSaved();
+                }, 500);
             } else {
-                alert('Không thể cập nhật vai trò: ' + (res.message || 'Unknown error'));
+                showToast('Không thể cập nhật vai trò: ' + (res.message || 'Unknown error'), 'error');
             }
         } catch (e) {
-            alert(e.response?.data?.message || e.message || 'Đã xảy ra lỗi');
+            showToast(e.response?.data?.message || e.message || 'Đã xảy ra lỗi', 'error');
         } finally {
             setLoading(false);
         }
@@ -116,6 +133,47 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
 
     return (
         <div className="add-role-overlay">
+            {!!toasts.length && (
+                <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 10001, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {toasts.map((t) => (
+                        <div 
+                            key={t.id} 
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    marginLeft: 12,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className="add-role-panel">
                 <div className="add-role-header">
                     <h2>CẬP NHẬT THÔNG TIN VAI TRÒ</h2>
