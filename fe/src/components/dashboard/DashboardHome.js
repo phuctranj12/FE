@@ -1,25 +1,20 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import WelcomeBanner from '../dashboard/WelcomeBanner';
-import ReceivedDocumentsStats from '../dashboard/ReceivedDocumentsStats';
-import RightSummaryPanel from '../dashboard/RightSummaryPanel';
-import CreatedDocumentsChart from '../dashboard/CreatedDocumentsChart';
+import WelcomeBanner from './WelcomeBanner';
+import ReceivedDocumentsStats from './ReceivedDocumentsStats';
+import RightSummaryPanel from './RightSummaryPanel';
+import CreatedDocumentsChart from './CreatedDocumentsChart';
+import DocumentPackage from './DocumentPackage';
 import '../../styles/dashboardLayout.css';
 
-function HomeComponent() {
+function DashboardHome() {
     const navigate = useNavigate();
 
     const handleDraftClick = () => {
-        // Navigate to create document page (bản nháp/draft)
-        // Có thể thay đổi route này nếu có route riêng cho bản nháp
-        // navigate('/drafts') hoặc setMenuStatus('create-document')
         window.location.hash = '#create-document';
-        // Hoặc nếu có route: navigate('/create-document');
     };
 
-    // Lấy tên user từ localStorage hoặc context (nếu có)
     const getUserName = () => {
-        // Có thể lấy từ user context hoặc localStorage
         const user = localStorage.getItem('user');
         if (user) {
             try {
@@ -34,7 +29,6 @@ function HomeComponent() {
 
     return (
         <div className="home-content">
-            {/* Row 1: Right panel matches height of WelcomeBanner + ReceivedDocumentsStats */}
             <div className="dashboard-row">
                 <div className="dashboard-left">
                     <WelcomeBanner 
@@ -42,16 +36,17 @@ function HomeComponent() {
                         onDraftClick={handleDraftClick}
                     />
                     <ReceivedDocumentsStats />
+                    <CreatedDocumentsChart />
                 </div>
                 <div className="dashboard-right">
                     <RightSummaryPanel />
+                    <DocumentPackage />
                 </div>
             </div>
-
-            {/* Row 2: Chart below, same width as left column components */}
-            <CreatedDocumentsChart />
         </div>
     );
 }
 
-export default HomeComponent;
+export default DashboardHome;
+
+

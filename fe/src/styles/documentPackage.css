@@ -1,0 +1,168 @@
+.document-package-container {
+    background: #FFFFFF;
+    border: 1px solid #E3ECFF;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-top: 25px;
+}
+
+.document-package-header {
+    margin-bottom: 16px;
+}
+
+.document-package-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #000000;
+    margin: 0;
+}
+
+.document-package-content {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex: 1;
+    min-height: 200px;
+}
+
+/* Donut Chart Styles */
+.donut-chart-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+}
+
+.donut-chart {
+    width: 100%;
+    height: 100%;
+}
+
+.donut-segment {
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.donut-segment.used {
+    stroke: #0B57D0;
+}
+
+.donut-segment.unused {
+    stroke: #E8E0FF;
+}
+
+.donut-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.donut-used-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #0B57D0;
+    line-height: 1;
+}
+
+.donut-total-text {
+    font-size: 12px;
+    color: #0B57D0;
+    font-weight: 400;
+}
+
+/* Legend Styles */
+.donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.legend-color.used {
+    background: #0B57D0;
+}
+
+.legend-color.unused {
+    background: #E8E0FF;
+}
+
+.legend-label {
+    font-size: 14px;
+    color: #000000;
+}
+
+/* Footer Styles */
+.document-package-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    position: relative;
+}
+
+.footer-separator {
+    height: 1px;
+    background: #E3ECFF;
+    margin-bottom: 12px;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.footer-label {
+    font-size: 13px;
+    color: #000000;
+}
+
+.footer-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: #FF0000;
+}
+
+.footer-icon {
+    position: absolute;
+    bottom: 12px;
+    right: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .document-package-content {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .donut-legend {
+        flex-direction: row;
+        justify-content: center;
+        width: 100%;
+    }
+}

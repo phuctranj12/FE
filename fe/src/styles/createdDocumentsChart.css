@@ -74,7 +74,5 @@
     .created-chart-container { width: 100%; max-width: none; }
 }
 
-/* Align with dashboard-left width override */
-.dashboard-left .created-chart-container { width: 100%; max-width: none; }
 
 

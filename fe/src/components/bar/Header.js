@@ -66,7 +66,13 @@ function Header({ breadcrumb }) {
         <header className="header">
             {/* --- Bên trái --- */}
             <div className="header-left">
-                <img alt="Logo" className="logo" src="https://www.chemetal.com/wp-content/uploads/press-logo-contract.png" />
+                <img
+                    alt="Logo"
+                    className="logo"
+                    src="https://www.chemetal.com/wp-content/uploads/press-logo-contract.png"
+                    onClick={() => navigate('/main/dashboard')}
+                    style={{ cursor: 'pointer' }}
+                />
                 <div className="divider">
                     {(() => {
                         const text = breadcrumb || "Hệ thống quản lý hợp đồng điện tử";
@@ -75,7 +81,17 @@ function Header({ breadcrumb }) {
                             <div className="breadcrumb-inline">
                                 {parts.map((p, idx) => (
                                     <React.Fragment key={idx}>
-                                        <span className={`crumb ${idx === parts.length - 1 ? 'crumb-current' : ''}`}>{p}</span>
+                                        <span
+                                            className={`crumb ${idx === parts.length - 1 ? 'crumb-current' : ''}`}
+                                            onClick={() => {
+                                                if (idx === 0) {
+                                                    navigate('/main/dashboard');
+                                                }
+                                            }}
+                                            style={idx === 0 ? { cursor: 'pointer' } : undefined}
+                                        >
+                                            {p}
+                                        </span>
                                         {idx < parts.length - 1 && (
                                             <svg className="chev" viewBox="0 0 8 12" aria-hidden="true">
                                                 <path d="M2 1l4 5-4 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

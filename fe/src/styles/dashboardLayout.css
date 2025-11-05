@@ -13,21 +13,27 @@
 
 .dashboard-right {
     flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 /* Ensure left children fill column width */
 .dashboard-left .welcome-banner,
-.dashboard-left .received-stats-container {
+.dashboard-left .received-stats-container,
+.dashboard-left .created-chart-container {
     width: 100%;
     max-width: none;
 }
 
 .right-summary-panel {
-    height: 100%;
+    flex: 1;
     background: #FFFFFF;
     border: 1px solid #E3ECFF;
     border-radius: 12px;
     padding: 16px;
+    display: flex;
+    flex-direction: column;
 }
 
 .right-summary-header {

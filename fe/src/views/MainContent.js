@@ -4,7 +4,7 @@ import "../styles/MainContent.css";
 import Header from "../components/bar/Header";
 import Sidebar from "../components/bar/SideBar";
 import Document from "../components/document/document";
-import HomeComponent from "../components/document/Home";
+import DashboardHome from "../components/dashboard/DashboardHome";
 import UserManagement from "../components/userManagement/UserManagement";
 import DocumentTemplates from "../components/templateContract/DocumentTemplates";
 import DocumentForm from "../components/createContract/DocumentForm";
@@ -71,7 +71,7 @@ function MainContent() {
                     {location.pathname.startsWith('/main/') ? (
                         <Outlet />
                     ) : menuStatus === "home" ? (
-                        <HomeComponent />
+                        <DashboardHome />
                     ) : menuStatus === "create-document" ? (
                         <DocumentForm />
                     ) : menuStatus === "document" ? (
