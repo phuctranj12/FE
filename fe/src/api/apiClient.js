@@ -34,7 +34,7 @@ apiClient.interceptors.request.use(
         if (!isPublicEndpoint(config.url)) {
             let token = sessionStorage.getItem('token'); 
             if(token === null){
-                token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIkFETUlOIl0sInBlcm1pc3Npb25zIjpbXSwiY3VzdG9tZXJJZCI6MSwiZW1haWwiOiJwaGFtdmFudHUud29ya0BnbWFpbC5jb20iLCJzdWIiOiJwaGFtdmFudHUud29ya0BnbWFpbC5jb20iLCJpYXQiOjE3NjIxNzg2MDgsImV4cCI6MTc2MjI2NTAwOH0.zkUTbFs3iRmSFgOxYThv21bb98rg4Zt5l7IcfwdTeGGGFJ8rvE94_bmsUDZnerKbkcKlJIsEikwXeV5M4EXS0A"
+                token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIlVTRVIiXSwicGVybWlzc2lvbnMiOltdLCJjdXN0b21lcklkIjoyMiwiZW1haWwiOiJtaW5oQGdtYWlsLmNvbSIsInN1YiI6Im1pbmhAZ21haWwuY29tIiwiaWF0IjoxNzYxNzkyOTA2LCJleHAiOjE3NjE4NzkzMDZ9.lwHVFwJj07CxivpQ2Vyg6wa40cHcGrx0HmqYDAXrJUI9Ax2RWhn7CWrR1XToHwwOXlh4eqL5YQb1uF_xmWBuZw"
             }
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
