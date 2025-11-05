@@ -23,6 +23,8 @@ function MainContent() {
 
     const getBreadcrumb = () => {
         // Check URL-based routes first
+        if (location.pathname.startsWith('/main/contract-template')) return "Tài liệu mẫu";
+        if (location.pathname.startsWith('/main/contract-type')) return "Cấu hình > Loại tài liệu";
         if (location.pathname.startsWith('/main/org')) return "Quản lý người dùng > Danh sách tổ chức";
         if (location.pathname.startsWith('/main/user-detail')) return "Quản lý người dùng > Chi tiết người dùng";
         if (location.pathname.startsWith('/main/form-user/add')) return "Quản lý người dùng > Thêm người dùng";
