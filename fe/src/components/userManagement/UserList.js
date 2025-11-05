@@ -24,6 +24,19 @@ const UserList = ({ onAddNew, onEdit }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [organizations, setOrganizations] = useState([]);
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    };
 
     // Fetch organizations from API
     useEffect(() => {
@@ -45,12 +58,16 @@ const UserList = ({ onAddNew, onEdit }) => {
                         type: (org.parentId ?? org.parent_id ?? null) === null ? 'Tổ chức cha' : 'Tổ chức con'
                     }));
                     setOrganizations(flatList);
+                } else {
+                    showToast(response.message || 'Không thể tải danh sách tổ chức', 'error');
                 }
             } catch (err) {
                 console.error('Error fetching organizations:', err);
+                showToast('Không thể tải danh sách tổ chức. Vui lòng thử lại.', 'error');
             }
         };
         fetchOrganizations();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchUsers = async () => {
@@ -72,10 +89,14 @@ const UserList = ({ onAddNew, onEdit }) => {
                 setTotalPages(totalPages);
                 setTotalElements(totalElements);
             } else {
-                setError(response.message || 'Không thể tải danh sách người dùng');
+                const errorMsg = response.message || 'Không thể tải danh sách người dùng';
+                setError(errorMsg);
+                showToast(errorMsg, 'error');
             }
         } catch (e) {
-            setError(e.message || 'Đã xảy ra lỗi khi tải danh sách người dùng');
+            const errorMsg = e.message || 'Đã xảy ra lỗi khi tải danh sách người dùng';
+            setError(errorMsg);
+            showToast('Không thể tải danh sách người dùng. Vui lòng thử lại.', 'error');
         } finally {
             setLoading(false);
         }
@@ -121,6 +142,50 @@ const UserList = ({ onAddNew, onEdit }) => {
     };
 
     return (
+        <>
+            {/* Toast notifications */}
+            {toasts.length > 0 && (
+                <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 10000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {toasts.map((t) => (
+                        <div 
+                            key={t.id} 
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                background: t.variant === 'success' ? '#d4edda' : '#f8d7da',
+                                color: t.variant === 'success' ? '#155724' : '#721c24',
+                                border: `1px solid ${t.variant === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+                                borderRadius: 8,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: 14,
+                                fontWeight: 500,
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    color: t.variant === 'success' ? '#155724' : '#721c24',
+                                    marginLeft: 8,
+                                    padding: 0,
+                                    lineHeight: 1,
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
         <div className="user-management-container">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'baseline' }}>
                 <div style={{ flex: '1 1 320px', minWidth: 220 }}>
@@ -190,6 +255,7 @@ const UserList = ({ onAddNew, onEdit }) => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
