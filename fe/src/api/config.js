@@ -1,9 +1,7 @@
 // API Configuration
 const API_CONFIG = {
-    // Base URL - Change this to your actual API endpoint
-    // In development, use relative path (proxy will forward to backend)
-    // In production, use full URL
-    BASE_URL: process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'http://localhost:8080/api' : '/api'),
+    
+    BASE_URL: 'http://localhost:8080/api',
     
     // API Version (no version for this API)
     VERSION: '',
