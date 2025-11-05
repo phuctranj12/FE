@@ -45,6 +45,10 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
         }, durationMs);
     };
 
+    const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    };
+
     const flattenOrganizations = (orgs, acc = []) => {
         if (!Array.isArray(orgs)) return acc;
         orgs.forEach((org) => {
@@ -70,6 +74,9 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
                     const res = await customerService.getCustomerById(id);
                     if (res.code === 'SUCCESS') {
                         const user = res.data;
+                        // Get role ID from roles array (take first role if multiple)
+                        const roleId = user.roleId ?? user.role?.id ?? 
+                            (Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0].id : null);
                         setFormData(prev => ({
                             ...prev,
                             id: user.id ?? null,
@@ -78,7 +85,7 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
                             birthDate: user.birthday ?? '',
                             phone: user.phone ?? '',
                             organization: user.organizationId ?? user.organization?.id ?? null,
-                            role: user.roleId ?? user.role?.id ?? null,
+                            role: roleId,
                             loginMethod: user.loginMethod ?? 'email',
                             accountStatus: user.status ?? 1
                         }));
@@ -92,6 +99,9 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
                 }
             } else if (initialUser) {
                 // Use provided initialUser
+                // Get role ID from roles array (take first role if multiple)
+                const roleId = initialUser.roleId ?? initialUser.role?.id ?? 
+                    (Array.isArray(initialUser.roles) && initialUser.roles.length > 0 ? initialUser.roles[0].id : null);
                 setFormData(prev => ({
                     ...prev,
                     id: initialUser.id ?? null,
@@ -100,7 +110,7 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
                     birthDate: initialUser.birthday ?? '',
                     phone: initialUser.phone ?? '',
                     organization: initialUser.organizationId ?? initialUser.organization?.id ?? null,
-                    role: initialUser.roleId ?? initialUser.role?.id ?? null,
+                    role: roleId,
                     loginMethod: initialUser.loginMethod ?? 'email',
                     accountStatus: initialUser.status ?? 1
                 }));
@@ -187,7 +197,7 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
         // Validate required fields
         const requireEmail = mode !== 'edit';
         if (!formData.fullName || (requireEmail && !formData.email) || !formData.phone || !formData.organization || !formData.role) {
-            showToast('Vui lòng điền đầy đủ các trường bắt buộc (*)');
+            showToast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'warning');
             return;
         }
 
@@ -209,13 +219,20 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
                 ? await customerService.updateCustomer(formData.id, payload)
                 : await customerService.createCustomer(payload);
             if (res.code === 'SUCCESS') {
-                showToast(mode === 'edit' ? 'Cập nhật người dùng thành công' : 'Tạo người dùng thành công', 'success');
-                onCancel && onCancel();
+                showToast(
+                    mode === 'edit' ? 'Cập nhật người dùng thành công' : 'Tạo người dùng thành công', 
+                    'success',
+                    3000 // Hiển thị 3 giây để user thấy toast
+                );
+                // Delay đóng form để user có thể thấy toast
+                setTimeout(() => {
+                    onCancel && onCancel();
+                }, 500);
             } else {
-                showToast((mode === 'edit' ? 'Không thể cập nhật người dùng: ' : 'Không thể tạo người dùng: ') + (res.message || 'Unknown error'));
+                showToast((mode === 'edit' ? 'Không thể cập nhật người dùng: ' : 'Không thể tạo người dùng: ') + (res.message || 'Unknown error'), 'error');
             }
         } catch (e) {
-            showToast(e.response?.data?.message || e.message || 'Đã xảy ra lỗi');
+            showToast(e.response?.data?.message || e.message || 'Đã xảy ra lỗi', 'error');
         } finally {
             setLoading(false);
         }
@@ -230,16 +247,40 @@ const AddNewUser = ({ onCancel, mode = 'create', initialUser = null }) => {
             {!!toasts.length && (
                 <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {toasts.map((t) => (
-                        <div key={t.id} style={{
-                            minWidth: 260,
-                            maxWidth: 420,
-                            padding: '10px 12px',
-                            borderRadius: 8,
-                            color: t.variant === 'success' ? '#0a3622' : '#842029',
-                            background: t.variant === 'success' ? '#d1e7dd' : '#f8d7da',
-                            border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : '#f5c2c7'}`
-                        }}>
-                            {t.message}
+                        <div 
+                            key={t.id} 
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    marginLeft: 12,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
                         </div>
                     ))}
                 </div>

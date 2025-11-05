@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/userManagement.css';
 import SearchBar from '../common/SearchBar';
@@ -23,23 +23,35 @@ const UserList = ({ onAddNew, onEdit }) => {
     const [totalElements, setTotalElements] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [organizations, setOrganizations] = useState([]);
 
-    // Sample organizations (flat with parent_id) for dropdown demo
-    const organizations = useMemo(() => ([
-        { id: 226, name: 'Trung tâm công nghệ thông tin MobiFone', abbreviation: 'TT.CNTT MBF1', code: 'TTCNTT', status: 1, parent_id: null, type: 'Tổ chức cha' },
-        { id: 1215, name: 'TC230301', abbreviation: 'TC230301', code: 'TC230301', status: 1, parent_id: 226, type: 'Tổ chức con' },
-        { id: 1216, name: 'haitest1231', abbreviation: 'haitest', code: '', status: 1, parent_id: 226, type: 'Tổ chức con' },
-        { id: 1242, name: 'Công ty Dịch vụ MobiFone Khu vực 8', abbreviation: 'MBF8', code: 'MBF8', status: 1, parent_id: 226, type: 'Tổ chức con' },
-        { id: 1288, name: 'CÔNG TY DỊCH VỤ MOBIFONE KHU VỰC 9', abbreviation: 'CTKV9', code: '', status: 1, parent_id: 226, type: 'Tổ chức con' },
-        { id: 1849, name: 'Thêm mới tên TC 01', abbreviation: '123456', code: '123456', status: 0, parent_id: 226, type: 'Tổ chức con' },
-        { id: 1850, name: 'Thêm mới tên TC 02', abbreviation: '123', code: '123', status: 0, parent_id: 226, type: 'Tổ chức con' },
-        // cấp 2 (con của 1215)
-        { id: 3001, name: 'Phòng Kinh doanh', abbreviation: 'PKD', code: 'PKD01', status: 1, parent_id: 1215, type: 'Tổ chức con' },
-        { id: 3002, name: 'Phòng Kỹ thuật', abbreviation: 'PKT', code: 'PKT01', status: 1, parent_id: 1215, type: 'Tổ chức con' },
-        // cấp 3 (con của 3001)
-        { id: 4001, name: 'Tổ Bán hàng 1', abbreviation: 'TBH1', code: 'BH1', status: 1, parent_id: 3001, type: 'Tổ chức con' },
-        { id: 4002, name: 'Tổ Bán hàng 2', abbreviation: 'TBH2', code: 'BH2', status: 1, parent_id: 3001, type: 'Tổ chức con' },
-    ]), []);
+    // Fetch organizations from API
+    useEffect(() => {
+        const fetchOrganizations = async () => {
+            try {
+                const response = await customerService.getAllOrganizations({
+                    page: 0,
+                    size: 1000 // Get all organizations
+                });
+                if (response.code === 'SUCCESS') {
+                    const items = Array.isArray(response.data?.content) ? response.data.content : [];
+                    const flatList = items.map(org => ({
+                        id: org.id,
+                        name: org.name,
+                        abbreviation: org.abbreviation || '',
+                        code: org.code || '',
+                        status: org.status,
+                        parent_id: org.parentId !== undefined ? org.parentId : (org.parent_id !== undefined ? org.parent_id : null),
+                        type: (org.parentId ?? org.parent_id ?? null) === null ? 'Tổ chức cha' : 'Tổ chức con'
+                    }));
+                    setOrganizations(flatList);
+                }
+            } catch (err) {
+                console.error('Error fetching organizations:', err);
+            }
+        };
+        fetchOrganizations();
+    }, []);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -88,6 +100,26 @@ const UserList = ({ onAddNew, onEdit }) => {
     const startItem = filteredUsers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, totalElements);
 
+    // Helper function to get organization name by ID
+    const getOrganizationName = (organizationId) => {
+        if (!organizationId) return 'N/A';
+        const org = organizations.find(o => o.id === organizationId);
+        return org ? org.name : 'N/A';
+    };
+
+    // Helper function to format roles
+    const formatRoles = (roles) => {
+        if (!roles || !Array.isArray(roles) || roles.length === 0) return 'N/A';
+        return roles.map(role => role.name).join(', ');
+    };
+
+    // Helper function to format status
+    const formatStatus = (status) => {
+        if (status === 1) return 'Hoạt động';
+        if (status === 0) return 'Không hoạt động';
+        return status?.toString() || 'N/A';
+    };
+
     return (
         <div className="user-management-container">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'baseline' }}>
@@ -131,14 +163,14 @@ const UserList = ({ onAddNew, onEdit }) => {
                         onClick={() => navigate(`/main/user-detail/${user.id}`)}
                         style={{ cursor: 'pointer', color: '#0B57D0' }}
                     >
-                        {user.name}
+                        {user.name || 'N/A'}
                     </span>),
-                    user.email,
-                    user.phone,
-                    user.organization,
-                    user.status,
-                    user.role,
-                    user.loginMethod,
+                    user.email || 'N/A',
+                    user.phone || 'N/A',
+                    getOrganizationName(user.organizationId),
+                    formatStatus(user.status),
+                    formatRoles(user.roles),
+                    user.loginMethod || 'N/A',
                     (<button 
                         key={`edit-${user.id}`} 
                         className="edit-btn" 

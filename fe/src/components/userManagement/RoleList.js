@@ -20,12 +20,24 @@ const RoleList = ({ onAddNew }) => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
     const [showEditRole, setShowEditRole] = useState(false);
     const [editingRole, setEditingRole] = useState(null);
     const [showViewRole, setShowViewRole] = useState(false);
     const [viewingRole, setViewingRole] = useState(null);
     const [allPermissions, setAllPermissions] = useState([]);
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    };
 
     useEffect(() => {
         const fetchPermissions = async () => {
@@ -42,7 +54,6 @@ const RoleList = ({ onAddNew }) => {
 
     const fetchRoles = async () => {
         setLoading(true);
-        setError(null);
         try {
             const textSearch = (searchName || searchCode || '').trim();
             const response = await customerService.getAllRoles({
@@ -57,10 +68,10 @@ const RoleList = ({ onAddNew }) => {
                 setTotalPages(totalPages);
                 setTotalElements(totalElements);
             } else {
-                setError(response.message || 'Không thể tải danh sách vai trò');
+                showToast(response.message || 'Không thể tải danh sách vai trò', 'error');
             }
         } catch (e) {
-            setError(e.message || 'Đã xảy ra lỗi khi tải danh sách vai trò');
+            showToast(e.message || 'Đã xảy ra lỗi khi tải danh sách vai trò', 'error');
         } finally {
             setLoading(false);
         }
@@ -90,7 +101,7 @@ const RoleList = ({ onAddNew }) => {
             setEditingRole(role);
             setShowEditRole(true);
         } else {
-            alert('Không tìm thấy dữ liệu vai trò trong danh sách.');
+            showToast('Không tìm thấy dữ liệu vai trò trong danh sách', 'error');
         }
     };
 
@@ -100,7 +111,7 @@ const RoleList = ({ onAddNew }) => {
             setViewingRole(role);
             setShowViewRole(true);
         } else {
-            alert('Không tìm thấy dữ liệu vai trò trong danh sách.');
+            showToast('Không tìm thấy dữ liệu vai trò trong danh sách', 'error');
         }
     };
 
@@ -110,12 +121,13 @@ const RoleList = ({ onAddNew }) => {
             setLoading(true);
             const res = await customerService.deleteRole(roleId);
             if (res.code === 'SUCCESS') {
+                showToast('Xóa vai trò thành công', 'success', 3000);
                 await fetchRoles();
             } else {
-                alert('Không thể xóa vai trò: ' + (res.message || 'Unknown error'));
+                showToast('Không thể xóa vai trò: ' + (res.message || 'Unknown error'), 'error');
             }
         } catch (e) {
-            alert(e.response?.data?.message || e.message || 'Đã xảy ra lỗi khi xóa vai trò');
+            showToast(e.response?.data?.message || e.message || 'Đã xảy ra lỗi khi xóa vai trò', 'error');
         } finally {
             setLoading(false);
         }
@@ -123,6 +135,47 @@ const RoleList = ({ onAddNew }) => {
 
     return (
         <>
+            {!!toasts.length && (
+                <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 10000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {toasts.map((t) => (
+                        <div 
+                            key={t.id} 
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    marginLeft: 12,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
             {showAddRole && (
                 <AddNewRolePanel allPermissions={allPermissions} onCancel={() => { setShowAddRole(false); }} />
             )}
@@ -157,9 +210,6 @@ const RoleList = ({ onAddNew }) => {
                 <div className="template-link template-right"></div>
                 {loading && (
                     <div style={{ padding: '12px' }}>Đang tải...</div>
-                )}
-                {error && (
-                    <div style={{ padding: '12px', color: 'red' }}>{error}</div>
                 )}
                 <BaseTable
                     columns={[ 'Tên vai trò', 'Mã vai trò', 'Quản lý' ]}

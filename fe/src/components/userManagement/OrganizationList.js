@@ -18,14 +18,25 @@ const OrganizationList = () => {
     const [showEditPanel, setShowEditPanel] = useState(false);
     const [editingOrg, setEditingOrg] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
     const [showViewPanel, setShowViewPanel] = useState(false);
     const [viewingOrg, setViewingOrg] = useState(null);
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    };
 
     // Fetch organizations from API
     const fetchOrganizations = async () => {
         setLoading(true);
-        setError(null);
         try {
             const response = await customerService.getAllOrganizations({
                 page: 0,
@@ -52,11 +63,11 @@ const OrganizationList = () => {
                 setOrganizations(flatList);
                 setFilteredOrganizations(flatList);
             } else {
-                setError(response.message || 'Failed to fetch organizations');
+                showToast(response.message || 'Không thể tải danh sách tổ chức', 'error');
             }
         } catch (err) {
             console.error('Error fetching organizations:', err);
-            setError('Không thể tải danh sách tổ chức. Vui lòng thử lại.');
+            showToast('Không thể tải danh sách tổ chức. Vui lòng thử lại.', 'error');
         } finally {
             setLoading(false);
         }
@@ -115,7 +126,7 @@ const OrganizationList = () => {
             setViewingOrg(org);
             setShowViewPanel(true);
         } else {
-            setError('Không tìm thấy dữ liệu tổ chức trong danh sách hiện có');
+            showToast('Không tìm thấy dữ liệu tổ chức trong danh sách hiện có', 'error');
         }
     };
 
@@ -143,10 +154,10 @@ const OrganizationList = () => {
                 await fetchOrganizations();
                 setShowAddPanel(false);
                 console.log('Added new organization:', response.data);
-                alert('Thêm tổ chức thành công!');
+                showToast('Thêm tổ chức thành công!', 'success', 3000);
             } else {
                 console.error('Failed to add organization:', response);
-                alert('Không thể thêm tổ chức mới: ' + (response.message || 'Unknown error'));
+                showToast('Không thể thêm tổ chức mới: ' + (response.message || 'Unknown error'), 'error');
             }
         } catch (err) {
             console.error('Error adding organization:', err);
@@ -158,7 +169,7 @@ const OrganizationList = () => {
             }
             
             const errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi thêm tổ chức mới.';
-            alert('Lỗi: ' + errorMessage);
+            showToast('Lỗi: ' + errorMessage, 'error');
         }
     };
 
@@ -193,14 +204,14 @@ const OrganizationList = () => {
                 await fetchOrganizations();
                 setShowEditPanel(false);
                 setEditingOrg(null);
-                alert('Cập nhật tổ chức thành công!');
+                showToast('Cập nhật tổ chức thành công!', 'success', 3000);
             } else {
-                alert('Không thể cập nhật tổ chức: ' + (response.message || 'Unknown error'));
+                showToast('Không thể cập nhật tổ chức: ' + (response.message || 'Unknown error'), 'error');
             }
         } catch (err) {
             console.error('Error updating organization:', err);
             const errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi cập nhật tổ chức.';
-            alert('Lỗi: ' + errorMessage);
+            showToast('Lỗi: ' + errorMessage, 'error');
         }
     };
 
@@ -217,6 +228,47 @@ const OrganizationList = () => {
 
     return (
         <div className="user-management-container">
+            {!!toasts.length && (
+                <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 10000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {toasts.map((t) => (
+                        <div 
+                            key={t.id} 
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    marginLeft: 12,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'baseline' }}>
                 <div style={{ flex: '1 1 320px', minWidth: 220 }}>
                     <SearchBar 
@@ -250,16 +302,7 @@ const OrganizationList = () => {
                 </div>
             )}
 
-            {error && (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
-                    <p>{error}</p>
-                    <button onClick={fetchOrganizations} style={{ marginTop: '10px', padding: '8px 16px' }}>
-                        Thử lại
-                    </button>
-                </div>
-            )}
-
-            {!loading && !error && (
+            {!loading && (
                 <BaseTable
                 columns={["Tên tổ chức", "ID", "Mã tổ chức", "Trạng thái", "Loại tổ chức", "Quản lý"]}
                 data={(function(){
