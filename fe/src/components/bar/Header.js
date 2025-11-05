@@ -66,7 +66,7 @@ function Header({ breadcrumb }) {
         <header className="header">
             {/* --- Bên trái --- */}
             <div className="header-left">
-                <img alt="Logo" className="logo" src="https://econtractdev.mobifone.ai/images/logo_web.png" />
+                <img alt="Logo" className="logo" src="https://www.chemetal.com/wp-content/uploads/press-logo-contract.png" />
                 <div className="divider">
                     {(() => {
                         const text = breadcrumb || "Hệ thống quản lý hợp đồng điện tử";
