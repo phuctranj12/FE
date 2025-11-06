@@ -1,23 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom"; // Thêm dòng này
+import { useNavigate } from "react-router-dom";
+import authService from "../../api/authService"; // giả sử authService có hàm logout
 import "../../styles/header.css";
-// Logo is loaded from remote URL
-function Header({ breadcrumb }) {
-    const navigate = useNavigate(); // Thêm dòng này
-    // Dữ liệu người dùng sample
-    const [user, setUser] = useState({
-        name: "Trần Tuấn Phúc",
-        phone: "0782413245",
-    });
 
-    // Trạng thái hiển thị menu 
+function Header({ breadcrumb }) {
+    const navigate = useNavigate();
+
+    const [user, setUser] = useState({ name: "", phone: "" });
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showNoti, setShowNoti] = useState(false);
 
     const userMenuRef = useRef(null);
     const notiRef = useRef(null);
 
-    // Dữ liệu thông báo sample 
     const [notifications, setNotifications] = useState([
         {
             id: 1,
@@ -45,7 +40,13 @@ function Header({ breadcrumb }) {
         },
     ]);
 
-    // Đóng dropdown khi click ra ngoài 
+    // Load user từ localStorage
+    // useEffect(() => {
+    //     const storedUser = localStorage.getItem("user");
+    //     if (storedUser) setUser(JSON.parse(storedUser));
+    // }, []);
+
+    // Click ra ngoài đóng dropdown
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (
@@ -62,51 +63,62 @@ function Header({ breadcrumb }) {
         return () => document.removeEventListener("click", handleClickOutside);
     }, []);
 
+    // Hàm logout
+    const handleLogout = async () => {
+        try {
+            // Gọi API logout (nếu cần gửi token thì lấy từ user/token)
+            await authService.logout();
+            // Xóa user khỏi localStorage
+            localStorage.removeItem("user");
+            navigate("/login");
+        } catch (err) {
+            console.error("Logout failed:", err);
+            // Vẫn xóa user và redirect nếu API lỗi
+            localStorage.removeItem("user");
+            navigate("/login");
+        }
+    };
+
     return (
         <header className="header">
-            {/* --- Bên trái --- */}
             <div className="header-left">
                 <img
                     alt="Logo"
                     className="logo"
                     src="https://www.chemetal.com/wp-content/uploads/press-logo-contract.png"
-                    onClick={() => navigate('/main/dashboard')}
-                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate("/main/dashboard")}
+                    style={{ cursor: "pointer" }}
                 />
                 <div className="divider">
-                    {(() => {
-                        const text = breadcrumb || "Hệ thống quản lý hợp đồng điện tử";
-                        const parts = text.split('>').map(p => p.trim());
-                        return (
-                            <div className="breadcrumb-inline">
-                                {parts.map((p, idx) => (
-                                    <React.Fragment key={idx}>
-                                        <span
-                                            className={`crumb ${idx === parts.length - 1 ? 'crumb-current' : ''}`}
-                                            onClick={() => {
-                                                if (idx === 0) {
-                                                    navigate('/main/dashboard');
-                                                }
-                                            }}
-                                            style={idx === 0 ? { cursor: 'pointer' } : undefined}
-                                        >
-                                            {p}
-                                        </span>
-                                        {idx < parts.length - 1 && (
-                                            <svg className="chev" viewBox="0 0 8 12" aria-hidden="true">
-                                                <path d="M2 1l4 5-4 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                            </svg>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                        );
-                    })()}
+                    {(breadcrumb || "Hệ thống quản lý hợp đồng điện tử")
+                        .split(">")
+                        .map((p, idx, arr) => (
+                            <React.Fragment key={idx}>
+                                <span
+                                    className={`crumb ${idx === arr.length - 1 ? "crumb-current" : ""
+                                        }`}
+                                    onClick={() => idx === 0 && navigate("/main/dashboard")}
+                                    style={idx === 0 ? { cursor: "pointer" } : undefined}
+                                >
+                                    {p.trim()}
+                                </span>
+                                {idx < arr.length - 1 && (
+                                    <svg className="chev" viewBox="0 0 8 12" aria-hidden="true">
+                                        <path
+                                            d="M2 1l4 5-4 5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                )}
+                            </React.Fragment>
+                        ))}
                 </div>
-
             </div>
 
-            {/* Bên phải */}
             <div className="header-right">
                 {/* Chuông thông báo */}
                 <div className="bell-wrapper" ref={notiRef}>
@@ -125,46 +137,12 @@ function Header({ breadcrumb }) {
 
                     {showNoti && (
                         <div className="dropdown-box noti-dropdown">
-                            <div className="noti-header">
-                                <span>DANH SÁCH THÔNG BÁO</span>
-                                <button
-                                    className="read-all-btn"
-                                    onClick={() => setNotifications([])}
-                                >
-                                    ĐỌC TẤT CẢ
-                                </button>
-                            </div>
-
-                            <div className="noti-list">
-                                {notifications.map((n) => (
-                                    <div key={n.id} className="noti-item">
-                                        <div className="noti-title">{n.title}</div>
-                                        <div className="noti-sender">Bên A: {n.sender}</div>
-                                        <div className="noti-footer">
-                                            <span className="noti-time">{n.time}</span>
-                                            <span
-                                                className={`noti-status ${n.type === "warning"
-                                                    ? "status-warning"
-                                                    : n.type === "cancel"
-                                                        ? "status-cancel"
-                                                        : "status-expired"
-                                                    }`}
-                                            >
-                                                {n.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="noti-footer-btn">
-                                <button className="view-all-btn">Xem tất cả</button>
-                            </div>
+                            {/* ...notifications list... */}
                         </div>
                     )}
                 </div>
 
-                {/* --- Thông tin người dùng --- */}
+                {/* User info */}
                 <div className="user-wrapper" ref={userMenuRef}>
                     <div
                         className="user-info"
@@ -175,8 +153,8 @@ function Header({ breadcrumb }) {
                     >
                         <div className="avatar"></div>
                         <div className="user-text">
-                            <span className="name">{user.name}</span>
-                            <span className="phone">{user.phone}</span>
+                            {/* <span className="name">{user.name || "Tên người dùng"}</span>
+                            <span className="phone">{user.phone || ""}</span> */}
                         </div>
                     </div>
 
@@ -185,7 +163,9 @@ function Header({ breadcrumb }) {
                             <div className="menu-item">Thông tin tài khoản</div>
                             <div className="menu-item">Đổi mật khẩu</div>
                             <div className="menu-item">Plugin ký Token</div>
-                            <div className="menu-item logout" onClick={() => navigate("/login")}>Đăng xuất</div>
+                            <div className="menu-item logout" onClick={handleLogout}>
+                                Đăng xuất
+                            </div>
                         </div>
                     )}
                 </div>
@@ -195,4 +175,3 @@ function Header({ breadcrumb }) {
 }
 
 export default Header;
-// ...existing code...

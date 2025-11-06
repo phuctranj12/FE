@@ -2,29 +2,21 @@ import apiClient from './apiClient';
 
 const authService = {
     // ========== AUTH API ==========
-    
+
     // 1.1. Login
-    login: async (credentials) => {
-        try {
-            const response = await apiClient.post('/auth/login', credentials);
-            // API returns { code, message, data: { access_token } }
-            if (response.data && response.data.access_token) {
-                localStorage.setItem('token', response.data.access_token);
-            }
-            return response;
-        } catch (error) {
-            throw error;
-        }
+    login: async ({ email, password }) => {
+        return apiClient.post('/auth/login', { email, password });
     },
 
-    // 1.2. Register
     register: async (userData) => {
-        try {
-            const response = await apiClient.post('/auth/register', userData);
-            return response;
-        } catch (error) {
-            throw error;
-        }
+        return apiClient.post('/auth/register', userData);
+    },
+
+    logout: async () => {
+        const response = await apiClient.post('/auth/logout');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        return response;
     },
 
     // 1.3. Logout
@@ -42,7 +34,7 @@ const authService = {
     },
 
     // ========== PASSWORD & EMAIL API ==========
-    
+
     // Forgot password (if available)
     forgotPassword: async (email) => {
         try {
