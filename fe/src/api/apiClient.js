@@ -34,7 +34,7 @@ apiClient.interceptors.request.use(
         if (!isPublicEndpoint(config.url)) {
             let token = sessionStorage.getItem('token'); 
             if(token === null){
-                token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIkFETUlOIl0sInBlcm1pc3Npb25zIjpbIkNSRUFURV9DVVNUT01FUiIsIlZJRVdfQ1VTVE9NRVIiLCJVUERBVEVfQ1VTVE9NRVIiLCJERUxFVEVfQ1VTVE9NRVIiLCJNQU5BR0VfUk9MRSJdLCJjdXN0b21lcklkIjoyMiwiaWQiOjIyLCJlbWFpbCI6Im1pbmhAZ21haWwuY29tIiwic3ViIjoibWluaEBnbWFpbC5jb20iLCJpYXQiOjE3NjIzMTU1OTksImV4cCI6MTc2MjQwMTk5OX0.Q0dryc0H3vzR015M1jO0iSElACTz_IMYifjvittE_I-wFfZa-ChMhMWwXxxPiDKMhwM4COdZxGmycMnY9K2DBA"
+                token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIkFETUlOIl0sInBlcm1pc3Npb25zIjpbIkNSRUFURV9DVVNUT01FUiIsIlZJRVdfQ1VTVE9NRVIiLCJVUERBVEVfQ1VTVE9NRVIiLCJERUxFVEVfQ1VTVE9NRVIiLCJNQU5BR0VfUk9MRSJdLCJjdXN0b21lcklkIjoyMiwiaWQiOjIyLCJlbWFpbCI6Im1pbmhAZ21haWwuY29tIiwic3ViIjoibWluaEBnbWFpbC5jb20iLCJpYXQiOjE3NjI0MDA0NjAsImV4cCI6MTc2MjQ4Njg2MH0.xSSDcnWbZgdBrNw4ng-M-TF9A2vx3juuImDNW8it9NZrMrNLKrBvRv8cgYx5qgO4wbobcTcT1uyqu1NkQPm-Uw"
             }
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;

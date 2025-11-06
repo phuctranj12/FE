@@ -7,7 +7,10 @@ function DocumentTypeSelection({
     formData, 
     handleInputChange, 
     handleFileUpload, 
-    handleBatchFileUpload 
+    handleBatchFileUpload,
+    documentTypes = [],
+    relatedContracts = [],
+    loading = false
 }) {
     // Batch document type
     if (documentType === 'batch') {
@@ -298,14 +301,20 @@ function DocumentTypeSelection({
                 <div className="upload-support">Hỗ trợ file docx, pdf</div>
                 <input
                     type="file"
-                    accept=".docx,.pdf"
+                    accept=".pdf"
                     onChange={handleFileUpload}
                     style={{ display: 'none' }}
                     id="file-upload-single"
+                    disabled={loading}
                 />
-                <label htmlFor="file-upload-single" className="file-upload-label">
-                    {formData.attachedFile || 'Chọn file'}
+                <label htmlFor="file-upload-single" className={`file-upload-label ${loading ? 'disabled' : ''}`}>
+                    {loading ? 'Đang xử lý...' : (formData.pdfFileName || formData.attachedFile || 'Chọn file PDF')}
                 </label>
+                {formData.pdfPageCount > 0 && (
+                    <div className="file-info" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                        ✅ File: {formData.pdfFileName} | Số trang: {formData.pdfPageCount}
+                    </div>
+                )}
             </div>
 
             <div className="form-content">
@@ -333,13 +342,19 @@ function DocumentTypeSelection({
                     <div className="form-group">
                         <label>Tài liệu liên quan</label>
                         <div className="dropdown-container">
-                            <input
-                                type="text"
+                            <select
                                 name="relatedDocuments"
                                 value={formData.relatedDocuments}
                                 onChange={handleInputChange}
-                                placeholder="Tài liệu đã hoàn thành hoặc trong menu Quản lý thư mục"
-                            />
+                                disabled={loading}
+                            >
+                                <option value="">-- Chọn tài liệu liên quan --</option>
+                                {relatedContracts.map((contract) => (
+                                    <option key={contract.id} value={contract.id}>
+                                        {contract.name} ({contract.contractNo})
+                                    </option>
+                                ))}
+                            </select>
                             <span className="dropdown-icon">▼</span>
                         </div>
                     </div>
@@ -384,13 +399,19 @@ function DocumentTypeSelection({
                     <div className="form-group">
                         <label>Loại tài liệu</label>
                         <div className="dropdown-container">
-                            <input
-                                type="text"
+                            <select
                                 name="documentType"
                                 value={formData.documentType}
                                 onChange={handleInputChange}
-                                placeholder="Chọn loại tài liệu"
-                            />
+                                disabled={loading}
+                            >
+                                <option value="">-- Chọn loại tài liệu --</option>
+                                {documentTypes.map((type) => (
+                                    <option key={type.id} value={type.id}>
+                                        {type.name}
+                                    </option>
+                                ))}
+                            </select>
                             <span className="dropdown-icon">▼</span>
                         </div>
                     </div>

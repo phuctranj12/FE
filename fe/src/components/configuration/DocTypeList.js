@@ -23,6 +23,7 @@ const DocTypeList = () => {
     const [organizations, setOrganizations] = useState([]);
     const [organizationsMap, setOrganizationsMap] = useState({});
     const [toasts, setToasts] = useState([]);
+    const [organizationId, setOrganizationId] = useState(null);
 
     const showToast = (message, variant = 'error', durationMs = 4000) => {
         const id = Date.now() + Math.random();
@@ -36,13 +37,35 @@ const DocTypeList = () => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
     };
 
+    // Lấy thông tin user từ token và organizationId khi component mount
     useEffect(() => {
+        const fetchUserInfo = async () => {
+            try {
+                const response = await customerService.getCustomerByToken();
+                if (response.code === 'SUCCESS' && response.data) {
+                    const orgId = response.data.organizationId;
+                    if (orgId) {
+                        setOrganizationId(orgId);
+                    } else {
+                        console.error('Không tìm thấy organizationId trong thông tin user');
+                        showToast('Không thể lấy thông tin tổ chức', 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                const errorMsg = error.response?.data?.message || error.message || 'Đã xảy ra lỗi khi lấy thông tin user';
+                showToast(errorMsg, 'error');
+            }
+        };
+        fetchUserInfo();
         fetchOrganizations();
     }, []);
 
     useEffect(() => {
-        fetchDocTypes(currentPage - 1, itemsPerPage, searchText);
-    }, [currentPage]);
+        if (organizationId !== null) {
+            fetchDocTypes(currentPage - 1, itemsPerPage, searchText);
+        }
+    }, [currentPage, organizationId]);
 
     // Refresh doc types when organizationsMap is updated to show organization names
     useEffect(() => {
@@ -78,13 +101,19 @@ const DocTypeList = () => {
     };
 
     const fetchDocTypes = async (page = 0, size = 10, textSearch = '') => {
+        if (organizationId === null) {
+            console.warn('organizationId chưa được lấy, không thể fetch doc types');
+            return;
+        }
+        
         setLoading(true);
         setError(null);
         try {
             const response = await contractService.getAllTypes({
                 page,
                 size,
-                textSearch: textSearch.trim()
+                textSearch: textSearch.trim(),
+                organizationId: organizationId
             });
 
             if (response.code === 'SUCCESS' && response.data) {
@@ -117,6 +146,10 @@ const DocTypeList = () => {
     };
 
     const handleSearch = () => {
+        if (organizationId === null) {
+            showToast('Vui lòng đợi hệ thống tải thông tin...', 'error');
+            return;
+        }
         setCurrentPage(1);
         fetchDocTypes(0, itemsPerPage, searchText);
     };
@@ -271,12 +304,6 @@ const DocTypeList = () => {
                     />
                 </div>
             </div>
-
-            {error && (
-                <div className="error-message">
-                    {error}
-                </div>
-            )}
 
             {loading ? (
                 <div className="loading-message">Đang tải dữ liệu...</div>

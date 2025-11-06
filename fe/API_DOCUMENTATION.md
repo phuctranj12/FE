@@ -300,7 +300,82 @@ Authorization: Bearer {token}
 
 ---
 
-### 2.5. Danh sách user
+### 2.5. Lấy thông tin user từ token
+**Endpoint**: `GET /customers/get-customer-by-token`
+
+**Headers**:
+```
+Content-Type: application/json
+Authorization: Bearer {token}
+```
+
+**Request Body**: Không có
+
+**Path Parameters**: Không có
+
+**Query Parameters**: Không có
+
+**Example**: `http://localhost:8080/api/customers/get-customer-by-token`
+
+**Response Success**:
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "data": {
+    "id": "integer",
+    "name": "string",
+    "email": "string",
+    "phone": "string",
+    "birthday": "string",
+    "gender": "string",
+    "status": "integer",
+    "taxCode": "string",
+    "organizationId": "integer",
+    "roles": [
+      {
+        "id": "integer",
+        "name": "string",
+        "permissions": [
+          {
+            "id": "integer",
+            "name": "string"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Response Error (User không tồn tại)**:
+```json
+{
+  "code": "ERR_404",
+  "message": "Không tìm thấy khách hàng",
+  "data": null
+}
+```
+
+**Response Error (Token không hợp lệ)**:
+```json
+{
+  "code": "ERR_401",
+  "message": "Authentication failed",
+  "data": null
+}
+```
+
+**Mô tả**: Lấy thông tin user hiện tại từ JWT token trong header. Email được extract từ token để tìm user. API này rất hữu ích cho frontend để lấy thông tin user đang đăng nhập mà không cần biết customerId.
+
+**Lưu ý**: 
+- API này chỉ cần JWT token trong header, không cần truyền thêm parameters nào
+- Token được decode tự động để lấy email của user
+- Nếu email trong token không tồn tại trong database, sẽ trả về lỗi 404
+
+---
+
+### 2.6. Danh sách user
 **Endpoint**: `GET /customers/get-all-customer`
 
 **Query Parameters**:
@@ -337,7 +412,44 @@ Authorization: Bearer {token}
 
 ---
 
-### 2.6. Lấy thông tin user theo email (Internal)
+### 2.6. Danh sách user
+**Endpoint**: `GET /customers/get-all-customer`
+
+**Query Parameters**:
+- `page`: integer (default: 0, optional)
+- `size`: integer (default: 10, optional)
+- `textSearch`: string (optional)
+- `organizationId`: integer (optional)
+
+**Example**: `http://localhost:8080/api/customers/get-all-customer?page=0&size=10&textSearch=john&organizationId=1`
+
+**Response**:
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "data": {
+    "content": [
+      {
+        "id": "integer",
+        "name": "string",
+        "email": "string",
+        // ... tương tự CustomerResponseDTO
+      }
+    ],
+    "totalElements": "integer",
+    "totalPages": "integer",
+    "size": "integer",
+    "number": "integer"
+  }
+}
+```
+
+**Mô tả**: Lấy danh sách user có phân trang và tìm kiếm.
+
+---
+
+### 2.7. Lấy thông tin user theo email (Internal)
 **Endpoint**: `GET /customers/internal/get-by-email`
 
 **Query Parameters**:
@@ -351,7 +463,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 2.7. Đăng ký user (Internal)
+### 2.8. Đăng ký user (Internal)
 **Endpoint**: `POST /customers/internal/register`
 
 **Request Body**: Tương tự như 2.1
@@ -2172,13 +2284,14 @@ Gateway cho phép requests từ:
 | POST | `/auth/register` | ❌ | Đăng ký tài khoản |
 | POST | `/auth/logout` | ✅ | Đăng xuất |
 
-### Customer Service (11 endpoints)
+### Customer Service (12 endpoints)
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
 | POST | `/customers/create-customer` | ✅ | Tạo mới user |
 | PUT | `/customers/update-customer/{customerId}` | ✅ | Cập nhật thông tin user |
 | DELETE | `/customers/delete-customer/{customerId}` | ✅ | Xóa user |
 | GET | `/customers/{customerId}` | ✅ | Xem chi tiết user |
+| GET | `/customers/get-customer-by-token` | ✅ | Lấy thông tin user từ token |
 | GET | `/customers/get-all-customer` | ✅ | Danh sách user (phân trang) |
 | GET | `/customers/internal/get-by-email` | ✅ | Lấy user theo email (Internal) |
 | POST | `/customers/internal/register` | ✅ | Đăng ký user (Internal) |
@@ -2290,11 +2403,11 @@ Gateway cho phép requests từ:
 
 ---
 
-**Tổng cộng: 62 API endpoints**
+**Tổng cộng: 63 API endpoints**
 
 **Chi tiết theo service:**
 - Authentication Service: 3 endpoints
-- Customer Service: 11 endpoints
+- Customer Service: 12 endpoints
 - Role Service: 5 endpoints
 - Organization Service: 5 endpoints
 - Permission Service: 1 endpoint

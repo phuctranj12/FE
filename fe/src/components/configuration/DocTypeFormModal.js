@@ -12,41 +12,61 @@ const DocTypeFormModal = ({ docType, onSave, onClose }) => {
     });
 
     const [errors, setErrors] = useState({});
-    const [organizations, setOrganizations] = useState([]);
-    const [loadingOrgs, setLoadingOrgs] = useState(false);
+    const [organizationName, setOrganizationName] = useState('');
+    const [loadingOrg, setLoadingOrg] = useState(true);
 
     useEffect(() => {
-        fetchOrganizations();
-        if (docType) {
-            setFormData({
-                name: docType.name || '',
-                organizationId: docType.organizationId || '',
-                status: docType.status !== undefined ? docType.status : 1
-            });
-        } else {
-            // Reset form when adding new
-            setFormData({
-                name: '',
-                organizationId: '',
-                status: 1
-            });
-        }
-    }, [docType]);
+        fetchUserOrganization();
+    }, []);
 
-    const fetchOrganizations = async () => {
-        setLoadingOrgs(true);
+    useEffect(() => {
+        if (formData.organizationId) {
+            if (docType) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: docType.name || '',
+                    status: docType.status !== undefined ? docType.status : 1
+                }));
+            } else {
+                // Reset form when adding new
+                setFormData(prev => ({
+                    ...prev,
+                    name: '',
+                    status: 1
+                }));
+            }
+        }
+    }, [docType, formData.organizationId]);
+
+    const fetchUserOrganization = async () => {
+        setLoadingOrg(true);
         try {
-            const response = await customerService.getAllOrganizations({
-                page: 0,
-                size: 1000 // Get all organizations
-            });
+            const response = await customerService.getCustomerByToken();
             if (response.code === 'SUCCESS' && response.data) {
-                setOrganizations(response.data.content || []);
+                const orgId = response.data.organizationId;
+                if (orgId) {
+                    setFormData(prev => ({
+                        ...prev,
+                        organizationId: orgId
+                    }));
+                    
+                    // Lấy tên tổ chức để hiển thị
+                    try {
+                        const orgResponse = await customerService.getOrganizationById(orgId);
+                        if (orgResponse.code === 'SUCCESS' && orgResponse.data) {
+                            setOrganizationName(orgResponse.data.name || '');
+                        }
+                    } catch (e) {
+                        console.error('Error fetching organization name:', e);
+                    }
+                } else {
+                    console.error('Không tìm thấy organizationId trong thông tin user');
+                }
             }
         } catch (e) {
-            console.error('Error fetching organizations:', e);
+            console.error('Error fetching user organization:', e);
         } finally {
-            setLoadingOrgs(false);
+            setLoadingOrg(false);
         }
     };
 
@@ -73,8 +93,9 @@ const DocTypeFormModal = ({ docType, onSave, onClose }) => {
             newErrors.name = 'Tên loại tài liệu phải có ít nhất 3 ký tự';
         }
 
+        // organizationId luôn được fix cứng từ user hiện tại, không cần validate
         if (!formData.organizationId || formData.organizationId === '' || formData.organizationId === 0) {
-            newErrors.organizationId = 'Vui lòng chọn tổ chức';
+            newErrors.organizationId = 'Không thể lấy thông tin tổ chức';
         }
 
         setErrors(newErrors);
@@ -122,20 +143,14 @@ const DocTypeFormModal = ({ docType, onSave, onClose }) => {
                         <label htmlFor="organizationId">
                             Tổ chức <span className="required">*</span>
                         </label>
-                        <select
+                        <input
+                            type="text"
                             id="organizationId"
-                            className={`form-select ${errors.organizationId ? 'error' : ''}`}
-                            value={formData.organizationId}
-                            onChange={(e) => handleChange('organizationId', Number(e.target.value))}
-                            disabled={loadingOrgs}
-                        >
-                            <option value="">-- Chọn tổ chức --</option>
-                            {organizations.map((org) => (
-                                <option key={org.id} value={org.id}>
-                                    {org.name}
-                                </option>
-                            ))}
-                        </select>
+                            className={`form-input ${errors.organizationId ? 'error' : ''}`}
+                            value={loadingOrg ? 'Đang tải...' : (organizationName || 'Tổ chức hiện tại')}
+                            disabled={true}
+                            readOnly
+                        />
                         {errors.organizationId && <span className="error-text">{errors.organizationId}</span>}
                     </div>
 
