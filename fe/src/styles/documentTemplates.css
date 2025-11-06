@@ -153,8 +153,9 @@
 /* Full Pagination Container */
 .full-pagination-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* center Pagination */
     align-items: center;
+    position: relative; /* allow absolute info on right */
     gap: 16px;
     flex-wrap: wrap;
     margin-top: 24px;
@@ -165,6 +166,8 @@
     gap: 16px;
     font-size: 14px;
     color: #6b7280;
+    position: absolute;
+    right: 0; /* stick to right side */
 }
 
 .page-count,

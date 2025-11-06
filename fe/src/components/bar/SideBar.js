@@ -82,6 +82,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 <div className={`menu-item${(menuStatus === "tai-lieu-mau") ? " active-menu" : ""}`} onClick={() => {
                     handleSelectMenu("tai-lieu-mau");
                     toggleMenu(null);
+                    handleNavigation('/main/contract-template');
                 }}>
                     Tài liệu mẫu
                 </div>
@@ -119,7 +120,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 </div>
                 {activeMenu === "cauhinh" && (
                     <div className="submenu">
-                        <div className="subitem" onClick={() => handleSelect("loai-tai-lieu")}>Loại tài liệu</div>
+                        <div className="subitem" onClick={() => handleNavigation("/main/contract-type")}>Loại tài liệu</div>
                         <div className="subitem" onClick={() => handleSelect("gui-sms-email")}>
                             Cấu hình gửi SMS/Email
                         </div>
