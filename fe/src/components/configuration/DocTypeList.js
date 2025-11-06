@@ -296,7 +296,6 @@ const DocTypeList = () => {
                                 <div className="auto-sign-cell" key={`status-${docType.id}`}>
                                     <SwitchButton
                                         checked={docType.status === 1}
-                                        onChange={(checked) => handleStatusToggle(docType, checked)}
                                     />
                                 </div>
                             ),
