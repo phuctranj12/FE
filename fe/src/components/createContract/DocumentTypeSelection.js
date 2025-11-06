@@ -10,7 +10,12 @@ function DocumentTypeSelection({
     handleBatchFileUpload,
     documentTypes = [],
     relatedContracts = [],
-    loading = false
+    loading = false,
+    handleDocumentNumberBlur = () => {},
+    isCheckingDocumentNumber = false,
+    isDocumentNumberValid = true,
+    handleAttachedFilesUpload = () => {},
+    removeAttachedFile = () => {}
 }) {
     // Batch document type
     if (documentType === 'batch') {
@@ -336,8 +341,23 @@ function DocumentTypeSelection({
                             name="documentNumber"
                             value={formData.documentNumber}
                             onChange={handleInputChange}
+                            onBlur={handleDocumentNumberBlur}
                             placeholder="Số tài liệu"
+                            style={{
+                                borderColor: !isDocumentNumberValid ? '#f44336' : undefined
+                            }}
+                            disabled={isCheckingDocumentNumber}
                         />
+                        {isCheckingDocumentNumber && (
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                Đang kiểm tra...
+                            </div>
+                        )}
+                        {!isDocumentNumberValid && (
+                            <div style={{ fontSize: '12px', color: '#f44336', marginTop: '4px' }}>
+                                ❌ Mã hợp đồng đã tồn tại
+                            </div>
+                        )}
                     </div>
                     <div className="form-group">
                         <label>Tài liệu liên quan</label>
@@ -387,14 +407,53 @@ function DocumentTypeSelection({
                         <label>File đính kèm</label>
                         <div className="file-input-container">
                             <input
-                                type="text"
-                                name="attachedFile"
-                                value={formData.attachedFile}
-                                onChange={handleInputChange}
-                                placeholder="Chọn file đính kèm (PDF, DOC, DOCX, PNG, JPG, JPEG, ZIP, RAR, TXT, XLS, XLSX)"
+                                type="file"
+                                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar,.txt,.xls,.xlsx"
+                                onChange={handleAttachedFilesUpload}
+                                style={{ display: 'none' }}
+                                id="attached-files-upload"
+                                multiple
+                                disabled={loading}
                             />
-                            <span className="attachment-icon">📎</span>
+                            <label 
+                                htmlFor="attached-files-upload" 
+                                className={`file-upload-label ${loading ? 'disabled' : ''}`}
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    display: 'inline-block', 
+                                    padding: '8px 16px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    background: '#fff'
+                                }}
+                            >
+                                {formData.attachedFiles?.length > 0 
+                                    ? `${formData.attachedFiles.length} file(s) đã chọn` 
+                                    : 'Chọn file đính kèm'}
+                            </label>
                         </div>
+                        {formData.attachedFiles && formData.attachedFiles.length > 0 && (
+                            <div style={{ marginTop: '8px', fontSize: '12px' }}>
+                                {formData.attachedFiles.map((file, index) => (
+                                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <span>📎 {file.name}</span>
+                                        <button 
+                                            type="button"
+                                            onClick={() => removeAttachedFile(index)}
+                                            style={{ 
+                                                background: 'transparent', 
+                                                border: 'none', 
+                                                color: '#f44336', 
+                                                cursor: 'pointer',
+                                                fontSize: '16px'
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="form-group">
                         <label>Loại tài liệu</label>

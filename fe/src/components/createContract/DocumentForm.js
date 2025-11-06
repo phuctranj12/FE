@@ -19,6 +19,12 @@ const DocumentForm = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
+    // Contract and Document IDs (saved after API calls)
+    const [contractId, setContractId] = useState(null);
+    const [documentId, setDocumentId] = useState(null);
+    const [isDocumentNumberValid, setIsDocumentNumberValid] = useState(true);
+    const [isCheckingDocumentNumber, setIsCheckingDocumentNumber] = useState(false);
+    
     const [formData, setFormData] = useState({
         documentName: '',
         documentNumber: '',
@@ -39,7 +45,9 @@ const DocumentForm = () => {
         pdfFile: null,
         pdfFileName: '',
         pdfPageCount: 0,
-        hasSignature: false
+        hasSignature: false,
+        // Thông tin file đính kèm
+        attachedFiles: [] // Array of File objects
     });
 
     const [reviewers, setReviewers] = useState([]);
@@ -139,6 +147,38 @@ const DocumentForm = () => {
         }));
     };
 
+    // API 6: Kiểm tra mã hợp đồng unique
+    const handleDocumentNumberBlur = async () => {
+        const documentNumber = formData.documentNumber?.trim();
+        
+        // Nếu không nhập số tài liệu thì bỏ qua (vì optional)
+        if (!documentNumber) {
+            setIsDocumentNumberValid(true);
+            return;
+        }
+
+        try {
+            setIsCheckingDocumentNumber(true);
+            const response = await contractService.checkCodeUnique(documentNumber);
+            
+            if (response.code === 'SUCCESS') {
+                // API trả về true nếu unique (có thể dùng), false nếu đã tồn tại
+                const isUnique = response.data === true;
+                setIsDocumentNumberValid(isUnique);
+                
+                if (!isUnique) {
+                    alert('Mã hợp đồng đã tồn tại. Vui lòng nhập mã khác.');
+                }
+            }
+        } catch (err) {
+            console.error('Error checking document number:', err);
+            // Nếu lỗi API thì cho phép tiếp tục
+            setIsDocumentNumberValid(true);
+        } finally {
+            setIsCheckingDocumentNumber(false);
+        }
+    };
+
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -218,6 +258,30 @@ const DocumentForm = () => {
         }
     };
 
+    // Handle attached files upload (type = 3)
+    const handleAttachedFilesUpload = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            setFormData(prev => ({
+                ...prev,
+                attachedFiles: [...prev.attachedFiles, ...files],
+                attachedFile: files.map(f => f.name).join(', ')
+            }));
+        }
+    };
+
+    // Remove attached file
+    const removeAttachedFile = (index) => {
+        setFormData(prev => {
+            const newFiles = prev.attachedFiles.filter((_, i) => i !== index);
+            return {
+                ...prev,
+                attachedFiles: newFiles,
+                attachedFile: newFiles.map(f => f.name).join(', ')
+            };
+        });
+    };
+
     const addReviewer = () => {
         const newReviewer = {
             id: Date.now(),
@@ -261,9 +325,170 @@ const DocumentForm = () => {
         }
     };
 
-    const handleNext = () => {
-        if (currentStep < maxStep) {
-            setCurrentStep(currentStep + 1);
+    // Validate Step 1 data
+    const validateStep1 = () => {
+        const errors = [];
+
+        // Required fields
+        if (!formData.documentName?.trim()) {
+            errors.push('Tên tài liệu là bắt buộc');
+        }
+
+        if (!formData.signingExpirationDate) {
+            errors.push('Ngày hết hạn ký là bắt buộc');
+        }
+
+        if (!formData.pdfFile) {
+            errors.push('Vui lòng tải lên file PDF');
+        }
+
+        // Check if document number is valid (if provided)
+        if (formData.documentNumber && !isDocumentNumberValid) {
+            errors.push('Mã hợp đồng đã tồn tại');
+        }
+
+        if (errors.length > 0) {
+            alert('Vui lòng kiểm tra lại:\n' + errors.join('\n'));
+            return false;
+        }
+
+        return true;
+    };
+
+    // Convert date format from DD/MM/YYYY to ISO format
+    const convertToISODate = (dateStr) => {
+        if (!dateStr) return new Date().toISOString();
+        
+        // If already in ISO format, return as is
+        if (dateStr.includes('T')) return dateStr;
+        
+        // Parse DD/MM/YYYY format
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            const [day, month, year] = parts;
+            return new Date(`${year}-${month}-${day}T00:00:00.000Z`).toISOString();
+        }
+        
+        return new Date().toISOString();
+    };
+
+    // Handle Next button - Step 1 needs to create contract and upload documents
+    const handleNext = async () => {
+        // If step 1, validate and create contract + upload documents
+        if (currentStep === 1) {
+            if (!validateStep1()) {
+                return;
+            }
+
+            try {
+                setLoading(true);
+
+                // API 7: Tạo hợp đồng
+                console.log('Creating contract...');
+                const contractData = {
+                    name: formData.documentName.trim(),
+                    contractNo: formData.documentNumber?.trim() || '',
+                    signTime: convertToISODate(formData.signingExpirationDate),
+                    note: formData.message?.trim() || '',
+                    contractRefs: formData.relatedDocuments 
+                        ? [{ refId: parseInt(formData.relatedDocuments) }] 
+                        : [],
+                    typeId: formData.documentType ? parseInt(formData.documentType) : null,
+                    isTemplate: false,
+                    templateContractId: null,
+                    contractExpireTime: formData.expirationDate 
+                        ? convertToISODate(formData.expirationDate) 
+                        : null
+                };
+
+                const contractResponse = await contractService.createContract(contractData);
+                
+                if (contractResponse.code !== 'SUCCESS' || !contractResponse.data?.id) {
+                    throw new Error(contractResponse.message || 'Không thể tạo hợp đồng');
+                }
+
+                const newContractId = contractResponse.data.id;
+                setContractId(newContractId);
+                console.log('Contract created with ID:', newContractId);
+
+                // API 8: Upload file PDF lên MinIO
+                console.log('Uploading PDF to MinIO...');
+                const uploadResponse = await contractService.uploadDocument(formData.pdfFile);
+                
+                if (uploadResponse.code !== 'SUCCESS' || !uploadResponse.data) {
+                    throw new Error(uploadResponse.message || 'Không thể upload file PDF');
+                }
+
+                const { path: uploadedPath, fileName: uploadedFileName } = uploadResponse.data;
+                console.log('PDF uploaded:', uploadedPath);
+
+                // API 9: Lưu thông tin tài liệu vào DB (type = 1: file gốc)
+                console.log('Creating document record...');
+                const documentData = {
+                    name: formData.documentName.trim(),
+                    type: 1, // File gốc
+                    contractId: newContractId,
+                    fileName: uploadedFileName,
+                    path: uploadedPath,
+                    status: 1 // Active
+                };
+
+                const documentResponse = await contractService.createDocument(documentData);
+                
+                if (documentResponse.code !== 'SUCCESS' || !documentResponse.data?.id) {
+                    throw new Error(documentResponse.message || 'Không thể lưu thông tin tài liệu');
+                }
+
+                const newDocumentId = documentResponse.data.id;
+                setDocumentId(newDocumentId);
+                console.log('Document created with ID:', newDocumentId);
+
+                // Upload file đính kèm nếu có (type = 3)
+                if (formData.attachedFiles && formData.attachedFiles.length > 0) {
+                    console.log('Uploading attached files...');
+                    
+                    for (const file of formData.attachedFiles) {
+                        try {
+                            // Upload file to MinIO
+                            const attachUploadResponse = await contractService.uploadDocument(file);
+                            
+                            if (attachUploadResponse.code === 'SUCCESS' && attachUploadResponse.data) {
+                                // Save document record (type = 3: file đính kèm)
+                                const attachDocData = {
+                                    name: file.name,
+                                    type: 3, // File đính kèm
+                                    contractId: newContractId,
+                                    fileName: attachUploadResponse.data.fileName,
+                                    path: attachUploadResponse.data.path,
+                                    status: 1
+                                };
+                                
+                                await contractService.createDocument(attachDocData);
+                                console.log('Attached file uploaded:', file.name);
+                            }
+                        } catch (err) {
+                            console.error('Error uploading attached file:', file.name, err);
+                            // Continue với các file khác nếu 1 file lỗi
+                        }
+                    }
+                }
+
+                alert('✅ Tạo hợp đồng thành công!\nContract ID: ' + newContractId);
+                
+                // Move to next step
+                setCurrentStep(currentStep + 1);
+
+            } catch (err) {
+                console.error('Error in step 1:', err);
+                alert('❌ Lỗi: ' + (err.message || 'Không thể tạo hợp đồng. Vui lòng thử lại.'));
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            // For other steps, just move forward
+            if (currentStep < maxStep) {
+                setCurrentStep(currentStep + 1);
+            }
         }
     };
 
@@ -323,6 +548,11 @@ const DocumentForm = () => {
                 documentTypes={documentTypes}
                 relatedContracts={relatedContracts}
                 loading={loading}
+                handleDocumentNumberBlur={handleDocumentNumberBlur}
+                isCheckingDocumentNumber={isCheckingDocumentNumber}
+                isDocumentNumberValid={isDocumentNumberValid}
+                handleAttachedFilesUpload={handleAttachedFilesUpload}
+                removeAttachedFile={removeAttachedFile}
             />
         );
     };
