@@ -112,6 +112,52 @@
     font-size: 14px;
     transition: border-color 0.2s, box-shadow 0.2s;
     font-family: inherit;
+    background-color: white;
+}
+
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
+/* Style for select dropdown options */
+.form-select option {
+    padding: 10px 12px;
+    cursor: pointer;
+}
+
+.form-select option:hover {
+    background-color: #f8f9fa;
+}
+
+/* Ensure dropdown is scrollable */
+.form-select[size] {
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+/* For better scrollbar appearance in webkit browsers */
+.form-select::-webkit-scrollbar {
+    width: 8px;
+}
+
+.form-select::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.form-select::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.form-select::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .form-input:focus,

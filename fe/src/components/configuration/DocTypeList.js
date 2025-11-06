@@ -6,10 +6,11 @@ import BaseTable from '../common/BaseTable';
 import Pagination from '../common/Pagination';
 import SwitchButton from '../common/SwitchButton';
 import DocTypeFormModal from './DocTypeFormModal';
+import contractService from '../../api/contractService';
+import customerService from '../../api/customerService';
 
 const DocTypeList = () => {
     const [docTypes, setDocTypes] = useState([]);
-    const [filteredDocTypes, setFilteredDocTypes] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [searchText, setSearchText] = useState('');
@@ -17,114 +18,107 @@ const DocTypeList = () => {
     const [editingDocType, setEditingDocType] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalElements, setTotalElements] = useState(0);
+    const [organizations, setOrganizations] = useState([]);
+    const [organizationsMap, setOrganizationsMap] = useState({});
+    const [toasts, setToasts] = useState([]);
 
-    // Mock data - Replace with API call later
-    const mockDocTypes = [
-        {
-            id: 1,
-            code: 'HD-DV',
-            name: 'Hợp đồng dịch vụ',
-            description: 'Hợp đồng cung cấp dịch vụ',
-            autoSign: true,
-            status: 1,
-            createdDate: '2024-01-15',
-            createdBy: 'Admin'
-        },
-        {
-            id: 2,
-            code: 'HD-MH',
-            name: 'Hợp đồng mua hàng',
-            description: 'Hợp đồng mua bán hàng hóa',
-            autoSign: false,
-            status: 1,
-            createdDate: '2024-01-20',
-            createdBy: 'Admin'
-        },
-        {
-            id: 3,
-            code: 'HD-TD',
-            name: 'Hợp đồng thuê đất',
-            description: 'Hợp đồng thuê đất và mặt bằng',
-            autoSign: true,
-            status: 1,
-            createdDate: '2024-02-01',
-            createdBy: 'Admin'
-        },
-        {
-            id: 4,
-            code: 'HD-LD',
-            name: 'Hợp đồng lao động',
-            description: 'Hợp đồng lao động với nhân viên',
-            autoSign: false,
-            status: 1,
-            createdDate: '2024-02-10',
-            createdBy: 'Admin'
-        },
-        {
-            id: 5,
-            code: 'BB-BG',
-            name: 'Biên bản bàn giao',
-            description: 'Biên bản bàn giao tài sản, công việc',
-            autoSign: true,
-            status: 1,
-            createdDate: '2024-02-15',
-            createdBy: 'Admin'
-        },
-        {
-            id: 6,
-            code: 'GN-UQ',
-            name: 'Giấy ủy quyền',
-            description: 'Giấy ủy quyền đại diện',
-            autoSign: false,
-            status: 0,
-            createdDate: '2024-02-20',
-            createdBy: 'Admin'
-        },
-        {
-            id: 7,
-            code: 'HD-TV',
-            name: 'Hợp đồng tư vấn',
-            description: 'Hợp đồng tư vấn dịch vụ',
-            autoSign: true,
-            status: 1,
-            createdDate: '2024-03-01',
-            createdBy: 'Admin'
-        }
-    ];
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    };
 
     useEffect(() => {
-        fetchDocTypes();
+        fetchOrganizations();
     }, []);
 
-    const fetchDocTypes = async () => {
+    useEffect(() => {
+        fetchDocTypes(currentPage - 1, itemsPerPage, searchText);
+    }, [currentPage]);
+
+    // Refresh doc types when organizationsMap is updated to show organization names
+    useEffect(() => {
+        if (Object.keys(organizationsMap).length > 0 && docTypes.length > 0) {
+            const updatedTypes = docTypes.map(docType => ({
+                ...docType,
+                organizationName: organizationsMap[docType.organizationId] || `Tổ chức ID: ${docType.organizationId}`
+            }));
+            setDocTypes(updatedTypes);
+        }
+    }, [organizationsMap]);
+
+    // Fetch organizations to map organizationId to organization name
+    const fetchOrganizations = async () => {
+        try {
+            const response = await customerService.getAllOrganizations({
+                page: 0,
+                size: 1000 // Get all organizations
+            });
+            if (response.code === 'SUCCESS' && response.data) {
+                const orgs = response.data.content || [];
+                setOrganizations(orgs);
+                // Create a map for quick lookup
+                const map = {};
+                orgs.forEach(org => {
+                    map[org.id] = org.name;
+                });
+                setOrganizationsMap(map);
+            }
+        } catch (e) {
+            console.error('Error fetching organizations:', e);
+        }
+    };
+
+    const fetchDocTypes = async (page = 0, size = 10, textSearch = '') => {
         setLoading(true);
         setError(null);
         try {
-            // TODO: Replace with actual API call
-            // const response = await apiService.getDocTypes();
-            setTimeout(() => {
-                setDocTypes(mockDocTypes);
-                setFilteredDocTypes(mockDocTypes);
-                setLoading(false);
-            }, 500);
+            const response = await contractService.getAllTypes({
+                page,
+                size,
+                textSearch: textSearch.trim()
+            });
+
+            if (response.code === 'SUCCESS' && response.data) {
+                const types = response.data.content || [];
+                const mappedTypes = types.map(apiType => ({
+                    id: apiType.id,
+                    name: apiType.name,
+                    status: apiType.status,
+                    organizationId: apiType.organizationId,
+                    organizationName: organizationsMap[apiType.organizationId] || `Tổ chức ID: ${apiType.organizationId}`
+                }));
+                setDocTypes(mappedTypes);
+                setTotalPages(response.data.totalPages || 1);
+                setTotalElements(response.data.totalElements || 0);
+            } else {
+                const errorMsg = response.message || 'Không thể tải danh sách loại tài liệu';
+                setError(errorMsg);
+                showToast(errorMsg, 'error');
+                setDocTypes([]);
+            }
         } catch (e) {
-            setError('Đã xảy ra lỗi khi tải danh sách loại tài liệu');
+            console.error('Error fetching doc types:', e);
+            const errorMsg = e.response?.data?.message || e.message || 'Đã xảy ra lỗi khi tải danh sách loại tài liệu';
+            setError(errorMsg);
+            showToast(errorMsg, 'error');
+            setDocTypes([]);
+        } finally {
             setLoading(false);
         }
     };
 
     const handleSearch = () => {
-        if (!searchText.trim()) {
-            setFilteredDocTypes(docTypes);
-        } else {
-            const filtered = docTypes.filter(doc =>
-                doc.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                doc.code.toLowerCase().includes(searchText.toLowerCase()) ||
-                (doc.description && doc.description.toLowerCase().includes(searchText.toLowerCase()))
-            );
-            setFilteredDocTypes(filtered);
-        }
         setCurrentPage(1);
+        fetchDocTypes(0, itemsPerPage, searchText);
     };
 
     const handlePageChange = (page) => {
@@ -141,37 +135,63 @@ const DocTypeList = () => {
         setShowModal(true);
     };
 
-    const handleDelete = (docType) => {
+    const handleDelete = async (docType) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa loại tài liệu "${docType.name}"?`)) {
-            // TODO: Call API to delete
-            const updated = docTypes.filter(d => d.id !== docType.id);
-            setDocTypes(updated);
-            setFilteredDocTypes(updated);
+            try {
+                await contractService.deleteType(docType.id);
+                showToast('Xóa loại tài liệu thành công', 'success', 3000);
+                // Refresh the list after deletion
+                fetchDocTypes(currentPage - 1, itemsPerPage, searchText);
+            } catch (error) {
+                console.error('Error deleting doc type:', error);
+                const errorMsg = error.response?.data?.message || error.message || 'Đã xảy ra lỗi khi xóa loại tài liệu';
+                setError(errorMsg);
+                showToast(errorMsg, 'error');
+            }
         }
     };
 
-    const handleAutoSignToggle = (docType, newValue) => {
-        // TODO: Call API to update autoSign
-        const updated = docTypes.map(d => 
-            d.id === docType.id ? { ...d, autoSign: newValue } : d
-        );
-        setDocTypes(updated);
-        setFilteredDocTypes(updated);
+    const handleStatusToggle = async (docType, newValue) => {
+        try {
+            // Update status: 1 = active, 0 = inactive
+            const newStatus = newValue ? 1 : 0;
+            await contractService.updateType(docType.id, {
+                id: docType.id,
+                name: docType.name,
+                organizationId: docType.organizationId,
+                status: newStatus
+            });
+            showToast('Cập nhật trạng thái thành công', 'success', 3000);
+            // Refresh the list after update
+            fetchDocTypes(currentPage - 1, itemsPerPage, searchText);
+        } catch (error) {
+            console.error('Error updating status:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Đã xảy ra lỗi khi cập nhật trạng thái';
+            setError(errorMsg);
+            showToast(errorMsg, 'error');
+        }
     };
 
-    const handleSave = (docType) => {
-        if (editingDocType) {
-            // Update existing
-            const updated = docTypes.map(d => d.id === docType.id ? docType : d);
-            setDocTypes(updated);
-            setFilteredDocTypes(updated);
-        } else {
-            // Add new
-            const newDocType = { ...docType, id: Date.now() };
-            setDocTypes([...docTypes, newDocType]);
-            setFilteredDocTypes([...docTypes, newDocType]);
+    const handleSave = async (docType) => {
+        try {
+            if (editingDocType) {
+                // Update existing
+                await contractService.updateType(editingDocType.id, docType);
+                showToast('Cập nhật loại tài liệu thành công', 'success', 3000);
+            } else {
+                // Add new
+                await contractService.createType(docType);
+                showToast('Tạo loại tài liệu thành công', 'success', 3000);
+            }
+            setShowModal(false);
+            // Refresh the list after save
+            fetchDocTypes(currentPage - 1, itemsPerPage, searchText);
+        } catch (error) {
+            console.error('Error saving doc type:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Đã xảy ra lỗi khi lưu loại tài liệu';
+            setError(errorMsg);
+            showToast(errorMsg, 'error');
         }
-        setShowModal(false);
     };
 
     const handleModalClose = () => {
@@ -179,15 +199,57 @@ const DocTypeList = () => {
         setEditingDocType(null);
     };
 
-    const totalPages = Math.ceil(filteredDocTypes.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, filteredDocTypes.length);
-    const currentDocTypes = filteredDocTypes.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + itemsPerPage, totalElements);
 
     return (
-        <div className="doc-type-container">
+        <>
+            {/* Toast notifications */}
+            {toasts.length > 0 && (
+                <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 10000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {toasts.map((t) => (
+                        <div 
+                            key={t.id} 
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                background: t.variant === 'success' ? '#d4edda' : '#f8d7da',
+                                color: t.variant === 'success' ? '#155724' : '#721c24',
+                                border: `1px solid ${t.variant === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+                                borderRadius: 8,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: 14,
+                                fontWeight: 500,
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    color: t.variant === 'success' ? '#155724' : '#721c24',
+                                    marginLeft: 8,
+                                    padding: 0,
+                                    lineHeight: 1,
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="doc-type-container">
             <div className="search-section">
-                <div className="search-inputs">
+                <div className="search-inputs" >
                     <SearchBar
                         placeholder="Tìm kiếm theo tên, mã loại tài liệu..."
                         value={searchText}
@@ -223,18 +285,18 @@ const DocTypeList = () => {
                     <BaseTable
                         columns={[
                             'Tên loại tài liệu',
-                            'Mã loại tài liệu',
-                            'Ký tự động',
+                            'Tên tổ chức',
+                            'Active',
                             'Quản lý'
                         ]}
-                        data={currentDocTypes.map((docType) => ([
+                        data={docTypes.map((docType) => ([
                             <span className="doc-type-name" key={`name-${docType.id}`}>{docType.name}</span>,
-                            docType.code,
+                            docType.organizationName,
                             (
-                                <div className="auto-sign-cell" key={`autosign-${docType.id}`}>
+                                <div className="auto-sign-cell" key={`status-${docType.id}`}>
                                     <SwitchButton
-                                        checked={docType.autoSign}
-                                        onChange={(checked) => handleAutoSignToggle(docType, checked)}
+                                        checked={docType.status === 1}
+                                        onChange={(checked) => handleStatusToggle(docType, checked)}
                                     />
                                 </div>
                             ),
@@ -266,7 +328,7 @@ const DocTypeList = () => {
                             onChange={handlePageChange}
                         />
                         <div className="pagination-info">
-                            Số lượng: {startIndex + 1} - {endIndex} / {filteredDocTypes.length}
+                            Số lượng: {startIndex + 1} - {endIndex} / {totalElements}
                         </div>
                     </div>
                 </>
@@ -280,6 +342,7 @@ const DocTypeList = () => {
                 />
             )}
         </div>
+        </>
     );
 };
 

@@ -2,28 +2,53 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/docTypeFormModal.css';
 import Button from '../common/Button';
 import SwitchButton from '../common/SwitchButton';
+import customerService from '../../api/customerService';
 
 const DocTypeFormModal = ({ docType, onSave, onClose }) => {
     const [formData, setFormData] = useState({
-        code: '',
         name: '',
-        description: '',
-        autoSign: false,
-        status: 1,
-        createdDate: new Date().toISOString().split('T')[0],
-        createdBy: 'Admin' // TODO: Get from auth context
+        organizationId: '',
+        status: 1
     });
 
     const [errors, setErrors] = useState({});
+    const [organizations, setOrganizations] = useState([]);
+    const [loadingOrgs, setLoadingOrgs] = useState(false);
 
     useEffect(() => {
+        fetchOrganizations();
         if (docType) {
             setFormData({
-                ...docType,
-                createdDate: docType.createdDate || new Date().toISOString().split('T')[0]
+                name: docType.name || '',
+                organizationId: docType.organizationId || '',
+                status: docType.status !== undefined ? docType.status : 1
+            });
+        } else {
+            // Reset form when adding new
+            setFormData({
+                name: '',
+                organizationId: '',
+                status: 1
             });
         }
     }, [docType]);
+
+    const fetchOrganizations = async () => {
+        setLoadingOrgs(true);
+        try {
+            const response = await customerService.getAllOrganizations({
+                page: 0,
+                size: 1000 // Get all organizations
+            });
+            if (response.code === 'SUCCESS' && response.data) {
+                setOrganizations(response.data.content || []);
+            }
+        } catch (e) {
+            console.error('Error fetching organizations:', e);
+        } finally {
+            setLoadingOrgs(false);
+        }
+    };
 
     const handleChange = (field, value) => {
         setFormData(prev => ({
@@ -42,16 +67,14 @@ const DocTypeFormModal = ({ docType, onSave, onClose }) => {
     const validate = () => {
         const newErrors = {};
 
-        if (!formData.code.trim()) {
-            newErrors.code = 'Mã loại tài liệu không được để trống';
-        } else if (formData.code.length < 2) {
-            newErrors.code = 'Mã loại tài liệu phải có ít nhất 2 ký tự';
-        }
-
         if (!formData.name.trim()) {
             newErrors.name = 'Tên loại tài liệu không được để trống';
         } else if (formData.name.length < 3) {
             newErrors.name = 'Tên loại tài liệu phải có ít nhất 3 ký tự';
+        }
+
+        if (!formData.organizationId || formData.organizationId === '' || formData.organizationId === 0) {
+            newErrors.organizationId = 'Vui lòng chọn tổ chức';
         }
 
         setErrors(newErrors);
@@ -61,7 +84,13 @@ const DocTypeFormModal = ({ docType, onSave, onClose }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (validate()) {
-            onSave(formData);
+            // Ensure organizationId is a number and status is always 1 (active)
+            const submitData = {
+                name: formData.name.trim(),
+                organizationId: Number(formData.organizationId),
+                status: 1 // Always active when creating or editing
+            };
+            onSave(submitData);
         }
     };
 
@@ -74,22 +103,6 @@ const DocTypeFormModal = ({ docType, onSave, onClose }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-body">
-                    <div className="form-group">
-                        <label htmlFor="code">
-                            Mã loại tài liệu <span className="required">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="code"
-                            className={`form-input ${errors.code ? 'error' : ''}`}
-                            value={formData.code}
-                            onChange={(e) => handleChange('code', e.target.value.toUpperCase())}
-                            placeholder="Ví dụ: HD-DV"
-                            disabled={!!docType} // Disable code edit when editing
-                        />
-                        {errors.code && <span className="error-text">{errors.code}</span>}
-                    </div>
-
                     <div className="form-group">
                         <label htmlFor="name">
                             Tên loại tài liệu <span className="required">*</span>
@@ -106,41 +119,35 @@ const DocTypeFormModal = ({ docType, onSave, onClose }) => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="description">Mô tả</label>
-                        <textarea
-                            id="description"
-                            className="form-textarea"
-                            value={formData.description}
-                            onChange={(e) => handleChange('description', e.target.value)}
-                            placeholder="Nhập mô tả cho loại tài liệu"
-                            rows="3"
-                        />
+                        <label htmlFor="organizationId">
+                            Tổ chức <span className="required">*</span>
+                        </label>
+                        <select
+                            id="organizationId"
+                            className={`form-select ${errors.organizationId ? 'error' : ''}`}
+                            value={formData.organizationId}
+                            onChange={(e) => handleChange('organizationId', Number(e.target.value))}
+                            disabled={loadingOrgs}
+                        >
+                            <option value="">-- Chọn tổ chức --</option>
+                            {organizations.map((org) => (
+                                <option key={org.id} value={org.id}>
+                                    {org.name}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.organizationId && <span className="error-text">{errors.organizationId}</span>}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="autoSign">Ký tự động</label>
+                        <label htmlFor="status">Active</label>
                         <div className="form-switch-wrapper">
                             <SwitchButton
-                                checked={formData.autoSign}
-                                onChange={(checked) => handleChange('autoSign', checked)}
+                                checked={true}
+                                onChange={() => {}} // Disabled, không cho phép thay đổi
+                                disabled={true}
                             />
-                            <span className="form-switch-label">
-                                {formData.autoSign ? 'Bật' : 'Tắt'}
-                            </span>
                         </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status">Trạng thái</label>
-                        <select
-                            id="status"
-                            className="form-select"
-                            value={formData.status}
-                            onChange={(e) => handleChange('status', Number(e.target.value))}
-                        >
-                            <option value={1}>Hoạt động</option>
-                            <option value={0}>Không hoạt động</option>
-                        </select>
                     </div>
 
                     <div className="modal-footer">
