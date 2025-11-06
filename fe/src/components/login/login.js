@@ -1,53 +1,97 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/login.css';
+import authService from '../../api/authService';
+import customerService from '../../api/customerService';
 function Login() {
-    const handleGoogleLoginSuccess = (credentialResponse) => {
-        // Xử lý đăng nhập thành công, credentialResponse chứa token
-        console.log(credentialResponse);
-        // Gọi API backend xác thực hoặc lưu token
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+
+            const response = await authService.login({ email, password });
+
+
+            if (response.data) {
+                // let user = JSON.stringify(customerService.getCustomerByEmail(email));
+                // localStorage.setItem('user', JSON.stringify(user.data));
+                localStorage.setItem('token', JSON.stringify(response.data));
+            }
+
+            console.log('Đăng nhập thành công', response);
+
+
+            navigate('/main/dashboard');
+        } catch (err) {
+            console.error('Login error:', err);
+
+            setError(err.response?.data?.message || 'Login failed');
+        }
     };
+
     return (
-        <div class="main-login-container">
-            <div class="container" id="container">
-                <div class="form-container login-container">
-                    <form action="index.jsp" method="POST">
+        <div className="main-login-container">
+            <div className="container" id="container">
+                <div className="form-container login-container">
+                    <form onSubmit={handleLogin}>
                         <h1>Login</h1>
-                        <input type="text" placeholder="Email" id="email" name="email" required />
-                        <input type="password" placeholder="Password" id="password" name="password" required />
-                        <div class="content">
-                            <div class="checkbox">
+                        {error && <p style={{ color: 'red' }}>{error}</p>}
+                        <input
+                            type="text"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <div className="content">
+                            <div className="checkbox">
                                 <input type="checkbox" name="checkbox" id="checkbox" />
-                                <label for="Remember me">Remember me</label>
+                                <label htmlFor="checkbox">Remember me</label>
                             </div>
-                            <div class="pass-link">
+                            <div className="pass-link">
                                 <a href="#">Forgot Password?</a>
                             </div>
                         </div>
-                        <button name="submitLogin" type="submit">Login</button>
-                        <div className='register-link'>
-                            <div class="pass-link">
-                                <a href="/register">Register </a>
-                                <span>or use your acount</span>
-                            </div>
+                        <button type="submit">Login</button>
 
+                        <div className="register-link">
+                            <div className="pass-link">
+                                <a href="/register">Register</a>
+                                <span> or use your account</span>
+                            </div>
                         </div>
 
-                        <div class="social-container">
-                            <a href="#" class="social"><i class="lni lni-google"></i></a>
+                        <div className="social-container">
+                            <a href="#" className="social">
+                                <i className="lni lni-google"></i>
+                            </a>
                             <a href="#" className="social hover:text-blue-500">
                                 <i className="lni lni-microsoft"></i>
                             </a>
                         </div>
                     </form>
                 </div>
-                <div class="overlay-container">
-                    <div class="overlay">
-                        <div class="overlay-panel overlay-right">
-                        </div>
+                <div className="overlay-container">
+                    <div className="overlay">
+                        <div className="overlay-panel overlay-right"></div>
                     </div>
                 </div>
             </div>
         </div>
-
     );
 }
+
 export default Login;
