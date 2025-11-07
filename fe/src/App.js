@@ -12,6 +12,7 @@ import AddNewUser from './components/userManagement/AddNewUser';
 import RoleList from './components/userManagement/RoleList';
 import DocumentTemplates from './components/templateContract/DocumentTemplates';
 import DocTypeList from './components/configuration/DocTypeList';
+import DocumentForm from './components/createContract/DocumentForm';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="main/dashboard" element={<DashboardHome />} />
         <Route path="main/contract-template" element={<DocumentTemplates />} />
         <Route path="main/contract-type" element={<DocTypeList />} />
+        <Route path="main/form-contract/add" element={<DocumentForm />} />
         <Route path="main/org" element={<OrganizationList />} />
         <Route path="main/user" element={<UserList />} />
         <Route path="main/user-detail/:id" element={<UserDetail />} />

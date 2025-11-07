@@ -19,6 +19,21 @@ const DocumentForm = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
+    // Toast notifications
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    };
+    
     // Contract and Document IDs (saved after API calls)
     const [contractId, setContractId] = useState(null);
     const [documentId, setDocumentId] = useState(null);
@@ -109,9 +124,9 @@ const DocumentForm = () => {
 
             } catch (err) {
                 console.error('Error fetching initial data:', err);
-                setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
-                // Show error notification to user
-                alert(err.message || 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.');
+                const errorMsg = err.message || 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.';
+                setError(errorMsg);
+                showToast(errorMsg, 'error');
             } finally {
                 setLoading(false);
             }
@@ -162,18 +177,44 @@ const DocumentForm = () => {
             const response = await contractService.checkCodeUnique(documentNumber);
             
             if (response.code === 'SUCCESS') {
-                // API trả về true nếu unique (có thể dùng), false nếu đã tồn tại
-                const isUnique = response.data === true;
+                let isUnique = false;
+                
+                // Xử lý 2 format response có thể có:
+                // Format 1: data là boolean (theo API_DOCUMENTATION.md)
+                //   - true: unique (có thể dùng)
+                //   - false: đã tồn tại
+                if (typeof response.data === 'boolean') {
+                    isUnique = response.data === true;
+                }
+                // Format 2: data là object với isExist (theo CreateContractFlow.md)
+                //   - isExist: "false" → unique (chưa tồn tại) → OK
+                //   - isExist: "true" → đã tồn tại → ERROR
+                else if (response.data && typeof response.data === 'object') {
+                    const isExist = response.data.isExist;
+                    // isExist có thể là string "true"/"false" hoặc boolean
+                    if (typeof isExist === 'string') {
+                        isUnique = isExist.toLowerCase() === 'false';
+                    } else {
+                        isUnique = !isExist; // Nếu boolean thì !isExist
+                    }
+                }
+                
                 setIsDocumentNumberValid(isUnique);
                 
                 if (!isUnique) {
-                    alert('Mã hợp đồng đã tồn tại. Vui lòng nhập mã khác.');
+                    showToast('Mã hợp đồng đã tồn tại. Vui lòng nhập mã khác.', 'error');
                 }
+            } else {
+                // Response không thành công
+                showToast(response.message || 'Không thể kiểm tra mã hợp đồng', 'error');
+                setIsDocumentNumberValid(false);
             }
         } catch (err) {
             console.error('Error checking document number:', err);
-            // Nếu lỗi API thì cho phép tiếp tục
-            setIsDocumentNumberValid(true);
+            const errorMsg = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi kiểm tra mã hợp đồng';
+            showToast(errorMsg, 'error');
+            // Nếu lỗi API thì set invalid để user không thể submit
+            setIsDocumentNumberValid(false);
         } finally {
             setIsCheckingDocumentNumber(false);
         }
@@ -185,39 +226,65 @@ const DocumentForm = () => {
 
         // Kiểm tra file type
         if (!file.name.toLowerCase().endsWith('.pdf')) {
-            alert('Chỉ hỗ trợ file PDF');
+            showToast('Chỉ hỗ trợ file PDF', 'error');
             return;
         }
 
         try {
             setLoading(true);
+            console.log('[handleFileUpload] Starting file upload process...');
+            console.log('[handleFileUpload] File selected:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
 
             // 1. Gọi API kiểm tra số trang
+            console.log('[handleFileUpload] Calling getPageSize API...');
             const pageSizeResponse = await contractService.getPageSize(file);
             
+            console.log('[handleFileUpload] getPageSize response:', {
+                code: pageSizeResponse?.code,
+                message: pageSizeResponse?.message,
+                data: pageSizeResponse?.data
+            });
+            
             if (pageSizeResponse.code !== 'SUCCESS') {
+                console.error('[handleFileUpload] getPageSize failed:', pageSizeResponse);
                 throw new Error(pageSizeResponse.message || 'Không thể kiểm tra số trang của file');
             }
 
             const pageCount = pageSizeResponse.data?.numberOfPages || 0;
+            console.log('[handleFileUpload] Page count received:', pageCount);
 
             // 2. Gọi API kiểm tra chữ ký số
+            console.log('[handleFileUpload] Calling checkSignature API...');
             const signatureResponse = await contractService.checkSignature(file);
             
+            console.log('[handleFileUpload] checkSignature response:', {
+                code: signatureResponse?.code,
+                message: signatureResponse?.message,
+                data: signatureResponse?.data
+            });
+            
             if (signatureResponse.code !== 'SUCCESS') {
+                console.error('[handleFileUpload] checkSignature failed:', signatureResponse);
                 throw new Error(signatureResponse.message || 'Không thể kiểm tra chữ ký số');
             }
 
             const hasSignature = signatureResponse.data?.hasSignature || false;
+            console.log('[handleFileUpload] Signature check result:', hasSignature);
 
             // 3. Validate: Nếu có chữ ký số thì báo lỗi
             if (hasSignature) {
-                alert('Tài liệu đã có chữ ký số, vui lòng chọn file khác');
+                console.warn('[handleFileUpload] File has signature, rejecting upload');
+                showToast('Tài liệu đã có chữ ký số, vui lòng chọn file khác', 'error');
                 e.target.value = ''; // Reset input
                 return;
             }
 
             // 4. Cập nhật formData
+            console.log('[handleFileUpload] File validation passed, updating formData');
             setFormData(prev => ({
                 ...prev,
                 pdfFile: file,
@@ -227,14 +294,24 @@ const DocumentForm = () => {
                 attachedFile: file.name
             }));
 
-            console.log(`File uploaded successfully: ${file.name}, Pages: ${pageCount}, Has Signature: ${hasSignature}`);
+            console.log('[handleFileUpload] File uploaded successfully:', {
+                fileName: file.name,
+                pageCount: parseInt(pageCount),
+                hasSignature: hasSignature
+            });
 
         } catch (err) {
-            console.error('Error uploading file:', err);
-            alert(err.message || 'Đã xảy ra lỗi khi tải file. Vui lòng thử lại.');
+            console.error('[handleFileUpload] Error uploading file:', {
+                error: err,
+                message: err.message,
+                response: err.response?.data,
+                status: err.response?.status
+            });
+            showToast(err.message || 'Đã xảy ra lỗi khi tải file. Vui lòng thử lại.', 'error');
             e.target.value = ''; // Reset input
         } finally {
             setLoading(false);
+            console.log('[handleFileUpload] Upload process completed');
         }
     };
 
@@ -348,7 +425,8 @@ const DocumentForm = () => {
         }
 
         if (errors.length > 0) {
-            alert('Vui lòng kiểm tra lại:\n' + errors.join('\n'));
+            // Show first error in toast
+            showToast(errors[0], 'error');
             return false;
         }
 
@@ -473,14 +551,14 @@ const DocumentForm = () => {
                     }
                 }
 
-                alert('✅ Tạo hợp đồng thành công!\nContract ID: ' + newContractId);
+                showToast('Tạo hợp đồng thành công! Contract ID: ' + newContractId, 'success', 3000);
                 
                 // Move to next step
                 setCurrentStep(currentStep + 1);
 
             } catch (err) {
                 console.error('Error in step 1:', err);
-                alert('❌ Lỗi: ' + (err.message || 'Không thể tạo hợp đồng. Vui lòng thử lại.'));
+                showToast(err.message || 'Không thể tạo hợp đồng. Vui lòng thử lại.', 'error');
             } finally {
                 setLoading(false);
             }
@@ -634,9 +712,51 @@ const DocumentForm = () => {
     }
 
     return (
-        <div className="document-form-container">
-            <div className="document-form-wrapper">
-                <div className="form-header">
+        <>
+            {!!toasts.length && (
+                <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 10000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {toasts.map((t) => (
+                        <div 
+                            key={t.id} 
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    marginLeft: 12,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+            <div className="document-form-container">
+                <div className="document-form-wrapper">
+                    <div className="form-header">
                     <div className="step-indicator">
                         {steps.map((step) => (
                             <div key={step.id} className={`step ${step.active ? 'active' : ''}`}>
@@ -673,6 +793,7 @@ const DocumentForm = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
