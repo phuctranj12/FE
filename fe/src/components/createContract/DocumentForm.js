@@ -263,10 +263,10 @@ const DocumentForm = () => {
     // API 6: Kiểm tra mã hợp đồng unique
     const handleDocumentNumberBlur = async () => {
         const documentNumber = formData.documentNumber?.trim();
-        
-        // Nếu không nhập số tài liệu thì bỏ qua (vì optional)
+
+        // Nếu không nhập số tài liệu thì đánh dấu invalid (vì bắt buộc)
         if (!documentNumber) {
-            setIsDocumentNumberValid(true);
+            setIsDocumentNumberValid(false);
             return;
         }
 
@@ -699,9 +699,14 @@ const DocumentForm = () => {
             errors.push('Vui lòng tải lên file PDF');
         }
 
-        // Check if document number is valid (if provided)
-        if (formData.documentNumber && !isDocumentNumberValid) {
-            errors.push('Mã hợp đồng đã tồn tại');
+        // Kiểm tra số tài liệu bắt buộc
+        if (!formData.documentNumber || !formData.documentNumber.trim()) {
+            errors.push('Vui lòng nhập số tài liệu');
+        }
+        
+        // Kiểm tra số tài liệu hợp lệ (đã check unique)
+        if (formData.documentNumber && formData.documentNumber.trim() && !isDocumentNumberValid) {
+            errors.push('Mã hợp đồng đã tồn tại. Vui lòng nhập mã khác.');
         }
 
         if (errors.length > 0) {

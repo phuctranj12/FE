@@ -18,7 +18,6 @@ function DocumentConfirmation({
     onSaveDraft 
 }) {
     const [expirationDate, setExpirationDate] = useState('2025-11-23');
-    const [ccEmails, setCcEmails] = useState('');
     const [currentBatchDoc, setCurrentBatchDoc] = useState(1);
     const totalBatchDocs = 1; // Mock data
     const [currentPage, setCurrentPage] = useState(1);
@@ -49,13 +48,6 @@ function DocumentConfirmation({
         }));
     };
 
-    const handleCcEmailsChange = (e) => {
-        setCcEmails(e.target.value);
-        setFormData(prev => ({
-            ...prev,
-            ccEmails: e.target.value
-        }));
-    };
 
     const formatDateForDisplay = (dateString) => {
         if (!dateString) return '';
@@ -335,19 +327,6 @@ function DocumentConfirmation({
                     </div>
                 </div>
 
-                {/* CC Emails */}
-                <div className="summary-section">
-                    <h4 className="section-title">CC Tài liệu tới</h4>
-                    <div className="form-group">
-                        <input
-                            type="text"
-                            value={ccEmails}
-                            onChange={handleCcEmailsChange}
-                            className="form-input"
-                            placeholder="Nhập email, ngăn cách nhau bởi dấu ','"
-                        />
-                    </div>
-                </div>
             </div>
 
             {/* Footer Buttons */}

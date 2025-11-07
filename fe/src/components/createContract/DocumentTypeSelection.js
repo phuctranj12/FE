@@ -184,14 +184,30 @@ function DocumentTypeSelection({
                             />
                         </div>
                         <div className="form-group">
-                            <label>Số tài liệu</label>
+                            <label>Số tài liệu *</label>
                             <input
                                 type="text"
                                 name="documentNumber"
                                 value={formData.documentNumber}
                                 onChange={handleInputChange}
+                                onBlur={handleDocumentNumberBlur}
                                 placeholder="Nhập số tài liệu"
+                                required
+                                style={{
+                                    borderColor: !isDocumentNumberValid ? '#f44336' : undefined
+                                }}
+                                disabled={isCheckingDocumentNumber}
                             />
+                            {isCheckingDocumentNumber && (
+                                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                    Đang kiểm tra...
+                                </div>
+                            )}
+                            {!isDocumentNumberValid && (
+                                <div style={{ fontSize: '12px', color: '#f44336', marginTop: '4px' }}>
+                                    ❌ Mã hợp đồng đã tồn tại
+                                </div>
+                            )}
                         </div>
                         <div className="form-group">
                             <label>Loại tài liệu</label>
@@ -351,7 +367,7 @@ function DocumentTypeSelection({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Số tài liệu</label>
+                        <label>Số tài liệu *</label>
                         <input
                             type="text"
                             name="documentNumber"
@@ -359,6 +375,7 @@ function DocumentTypeSelection({
                             onChange={handleInputChange}
                             onBlur={handleDocumentNumberBlur}
                             placeholder="Số tài liệu"
+                            required
                             style={{
                                 borderColor: !isDocumentNumberValid ? '#f44336' : undefined
                             }}
