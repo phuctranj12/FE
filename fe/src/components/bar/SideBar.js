@@ -43,7 +43,8 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 <div className={`menu-item${(menuStatus === "document") ? " active-menu" : ""}`} onClick={() => {
                     toggleMenu("tao");
                     handleSelectMenu("document");
-                    handleSelect("all")
+                    handleSelect("all");
+                    handleNavigation('/main/document');
                 }} >
                     Tài liệu đã tạo{" "}
                     <i
@@ -63,7 +64,10 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 )}
 
                 {/* Tài liệu đã nhận */}
-                <div className="menu-item" onClick={() => toggleMenu("nhan")}>
+                <div className="menu-item" onClick={() => {
+                    toggleMenu("nhan");
+                    handleNavigation('/main/created-document');
+                }}>
                     Tài liệu đã nhận{" "}
                     <i
                         className={`lni ${activeMenu === "nhan" ? "lni-chevron-down" : "lni-chevron-right"

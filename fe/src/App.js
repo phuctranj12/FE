@@ -12,6 +12,8 @@ import AddNewUser from './components/userManagement/AddNewUser';
 import RoleList from './components/userManagement/RoleList';
 import DocumentTemplates from './components/templateContract/DocumentTemplates';
 import DocTypeList from './components/configuration/DocTypeList';
+import Document from './components/document/document';
+import CreatedDocument from './components/document/CreatedDocument';
 import DocumentForm from './components/createContract/DocumentForm';
 
 function App() {
@@ -31,6 +33,8 @@ function App() {
         <Route path="form-user/add" element={<AddNewUser onCancel={() => window.history.back()} mode="create" />} />
         <Route path="form-user/edit/:id" element={<AddNewUser onCancel={() => window.history.back()} mode="edit" />} />
         <Route path="role" element={<RoleList />} />
+        <Route path="document" element={<Document />} />
+        <Route path="created-document" element={<CreatedDocument />} />
       </Route>
     </Routes>
   );

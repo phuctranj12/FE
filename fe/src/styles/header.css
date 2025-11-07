@@ -348,3 +348,46 @@
   color: #e74c3c;
   font-weight: 600;
 }
+/* --- Breadcrumb / Divider --- */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.crumb {
+  color: black;
+  font-weight: bold;
+  cursor: default;
+  transition: color 0.2s;
+}
+
+.crumb:hover {
+  color: #0041C4;
+}
+
+.crumb-current {
+  font-weight: 700;
+  color: #0041C4;
+  cursor: default;
+}
+
+.chev {
+  width: 8px;
+  height: 12px;
+  stroke: #8aa0c7;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.divider span:first-child {
+  cursor: pointer; /* phần đầu có thể click */
+}
+
+.divider span:first-child:hover {
+  color: #e2974d;
+}
