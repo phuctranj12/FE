@@ -495,21 +495,27 @@ const DocumentForm = () => {
     };
 
     const updateSigner = (id, field, value) => {
-        setSigners(signers.map(signer => 
-            signer.id === id ? { ...signer, [field]: value } : signer
-        ));
+        setSigners(prevSigners => 
+            prevSigners.map(signer => 
+                signer.id === id ? { ...signer, [field]: value } : signer
+            )
+        );
     };
 
     const updateReviewer = (id, field, value) => {
-        setReviewers(reviewers.map(reviewer =>
-            reviewer.id === id ? { ...reviewer, [field]: value } : reviewer
-        ));
+        setReviewers(prevReviewers => 
+            prevReviewers.map(reviewer =>
+                reviewer.id === id ? { ...reviewer, [field]: value } : reviewer
+            )
+        );
     };
 
     const updateDocumentClerk = (id, field, value) => {
-        setDocumentClerks(documentClerks.map(clerk =>
-            clerk.id === id ? { ...clerk, [field]: value } : clerk
-        ));
+        setDocumentClerks(prevClerks => 
+            prevClerks.map(clerk =>
+                clerk.id === id ? { ...clerk, [field]: value } : clerk
+            )
+        );
     };
 
     const removeSigner = (id) => {
@@ -1001,6 +1007,7 @@ const DocumentForm = () => {
     };
 
     // Helper function for name autocomplete (Step 2)
+    // Returns array of { name, email, phone } objects
     const suggestName = async (textSearch) => {
         try {
             if (!textSearch || textSearch.trim().length < 2) {
@@ -1008,7 +1015,12 @@ const DocumentForm = () => {
             }
             const response = await customerService.suggestListCustomer(textSearch.trim());
             if (response.code === 'SUCCESS' && response.data) {
-                return response.data.map(item => item.name || '').filter(Boolean);
+                // Return full objects with name, email, and phone (if available)
+                return response.data.map(item => ({
+                    name: item.name || '',
+                    email: item.email || '',
+                    phone: item.phone || ''
+                })).filter(item => item.name);
             }
             return [];
         } catch (err) {

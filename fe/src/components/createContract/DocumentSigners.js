@@ -21,18 +21,21 @@ function DocumentSigners({
     suggestName
 }) {
     // State for autocomplete suggestions
-    const [nameSuggestions, setNameSuggestions] = useState([]);
+    const [nameSuggestions, setNameSuggestions] = useState([]); // Array of { name, email }
     const [suggestionLoading, setSuggestionLoading] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [currentInputId, setCurrentInputId] = useState(null); // Track which input is active
     const suggestionTimeoutRef = useRef(null);
 
     // Fetch name suggestions with debounce
-    const fetchSuggestions = async (textSearch) => {
+    const fetchSuggestions = async (textSearch, inputId) => {
         if (suggestionTimeoutRef.current) {
             clearTimeout(suggestionTimeoutRef.current);
         }
 
         if (!textSearch || textSearch.trim().length < 2) {
             setNameSuggestions([]);
+            setShowSuggestions(false);
             return;
         }
 
@@ -42,14 +45,54 @@ function DocumentSigners({
                 try {
                     const suggestions = await suggestName(textSearch);
                     setNameSuggestions(suggestions);
+                    setShowSuggestions(suggestions.length > 0);
+                    setCurrentInputId(inputId);
                 } catch (err) {
                     console.error('Error fetching suggestions:', err);
                     setNameSuggestions([]);
+                    setShowSuggestions(false);
                 } finally {
                     setSuggestionLoading(false);
                 }
             }
         }, 300); // 300ms debounce
+    };
+
+    // Handle suggestion selection
+    const handleSuggestionSelect = (suggestion, signerId, field) => {
+        if (field === 'signer') {
+            const signer = signers.find(s => s.id === signerId);
+            updateSigner(signerId, 'fullName', suggestion.name);
+            // If signer is using phone login, fill phone; otherwise fill email
+            if (signer?.loginByPhone) {
+                if (suggestion.phone) {
+                    updateSigner(signerId, 'phone', suggestion.phone);
+                }
+            } else {
+                if (suggestion.email) {
+                    updateSigner(signerId, 'email', suggestion.email);
+                }
+            }
+        } else if (field === 'reviewer') {
+            updateReviewer(signerId, 'fullName', suggestion.name);
+            if (suggestion.email) {
+                updateReviewer(signerId, 'email', suggestion.email);
+            }
+            if (suggestion.phone) {
+                updateReviewer(signerId, 'phone', suggestion.phone);
+            }
+        } else if (field === 'clerk') {
+            updateDocumentClerk(signerId, 'fullName', suggestion.name);
+            if (suggestion.email) {
+                updateDocumentClerk(signerId, 'email', suggestion.email);
+            }
+            if (suggestion.phone) {
+                updateDocumentClerk(signerId, 'phone', suggestion.phone);
+            }
+        }
+        setNameSuggestions([]);
+        setShowSuggestions(false);
+        setCurrentInputId(null);
     };
 
     // Cleanup timeout on unmount
@@ -167,23 +210,70 @@ function DocumentSigners({
                             </div>
                             <div className="participant-form">
                                 <div className="form-row">
-                                    <div className="form-group">
+                                    <div className="form-group" style={{ position: 'relative' }}>
                                         <label>Họ tên *</label>
                                         <input
                                             type="text"
-                                            list={`name-suggestions-${reviewer.id}`}
                                             value={reviewer.fullName}
                                             onChange={(e) => {
                                                 updateReviewer(reviewer.id, 'fullName', e.target.value);
-                                                fetchSuggestions(e.target.value);
+                                                fetchSuggestions(e.target.value, `reviewer-${reviewer.id}`);
+                                            }}
+                                            onFocus={() => {
+                                                if (nameSuggestions.length > 0) {
+                                                    setShowSuggestions(true);
+                                                    setCurrentInputId(`reviewer-${reviewer.id}`);
+                                                }
+                                            }}
+                                            onBlur={(e) => {
+                                                setTimeout(() => {
+                                                    setShowSuggestions(false);
+                                                    setCurrentInputId(null);
+                                                }, 200);
                                             }}
                                             placeholder="Nhập họ và tên"
                                         />
-                                        <datalist id={`name-suggestions-${reviewer.id}`}>
-                                            {nameSuggestions.map((suggestion, idx) => (
-                                                <option key={idx} value={suggestion} />
-                                            ))}
-                                        </datalist>
+                                        {showSuggestions && currentInputId === `reviewer-${reviewer.id}` && nameSuggestions.length > 0 && (
+                                            <div className="suggestion-dropdown" style={{
+                                                position: 'absolute',
+                                                top: '100%',
+                                                left: 0,
+                                                right: 0,
+                                                backgroundColor: 'white',
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto',
+                                                zIndex: 1000,
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                                marginTop: '4px'
+                                            }}>
+                                                {nameSuggestions.map((suggestion, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        onClick={() => handleSuggestionSelect(suggestion, reviewer.id, 'reviewer')}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            cursor: 'pointer',
+                                                            borderBottom: idx < nameSuggestions.length - 1 ? '1px solid #eee' : 'none'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.target.style.backgroundColor = '#f5f5f5';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.target.style.backgroundColor = 'white';
+                                                        }}
+                                                    >
+                                                        <div style={{ fontWeight: '500' }}>{suggestion.name}</div>
+                                                        {suggestion.email && (
+                                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                                {suggestion.email}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="form-group">
                                         <label>Email *</label>
@@ -251,23 +341,76 @@ function DocumentSigners({
                         </div>
                         <div className="signer-form">
                             <div className="form-row">
-                                <div className="form-group">
+                                <div className="form-group" style={{ position: 'relative' }}>
                                     <label>Họ tên *</label>
                                     <input
                                         type="text"
-                                        list={`name-suggestions-${signer.id}`}
                                         value={signer.fullName}
                                         onChange={(e) => {
                                             updateSigner(signer.id, 'fullName', e.target.value);
-                                            fetchSuggestions(e.target.value);
+                                            fetchSuggestions(e.target.value, `signer-${signer.id}`);
+                                        }}
+                                        onFocus={() => {
+                                            if (nameSuggestions.length > 0) {
+                                                setShowSuggestions(true);
+                                                setCurrentInputId(`signer-${signer.id}`);
+                                            }
+                                        }}
+                                        onBlur={(e) => {
+                                            // Delay to allow click on suggestion
+                                            setTimeout(() => {
+                                                setShowSuggestions(false);
+                                                setCurrentInputId(null);
+                                            }, 200);
                                         }}
                                         placeholder="Nhập họ và tên"
                                     />
-                                    <datalist id={`name-suggestions-${signer.id}`}>
-                                        {nameSuggestions.map((suggestion, idx) => (
-                                            <option key={idx} value={suggestion} />
-                                        ))}
-                                    </datalist>
+                                    {showSuggestions && currentInputId === `signer-${signer.id}` && nameSuggestions.length > 0 && (
+                                        <div className="suggestion-dropdown" style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            right: 0,
+                                            backgroundColor: 'white',
+                                            border: '1px solid #ddd',
+                                            borderRadius: '4px',
+                                            maxHeight: '200px',
+                                            overflowY: 'auto',
+                                            zIndex: 1000,
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                            marginTop: '4px'
+                                        }}>
+                                            {nameSuggestions.map((suggestion, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => handleSuggestionSelect(suggestion, signer.id, 'signer')}
+                                                    style={{
+                                                        padding: '8px 12px',
+                                                        cursor: 'pointer',
+                                                        borderBottom: idx < nameSuggestions.length - 1 ? '1px solid #eee' : 'none'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.target.style.backgroundColor = '#f5f5f5';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.target.style.backgroundColor = 'white';
+                                                    }}
+                                                >
+                                                    <div style={{ fontWeight: '500' }}>{suggestion.name}</div>
+                                                    {suggestion.email && (
+                                                        <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                            📧 {suggestion.email}
+                                                        </div>
+                                                    )}
+                                                    {suggestion.phone && (
+                                                        <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                            📱 {suggestion.phone}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="checkbox-group">
                                     <label className="checkbox-option">
@@ -367,23 +510,70 @@ function DocumentSigners({
                             </div>
                             <div className="participant-form">
                                 <div className="form-row">
-                                    <div className="form-group">
+                                    <div className="form-group" style={{ position: 'relative' }}>
                                         <label>Họ tên *</label>
                                         <input
                                             type="text"
-                                            list={`name-suggestions-${clerk.id}`}
                                             value={clerk.fullName}
                                             onChange={(e) => {
                                                 updateDocumentClerk(clerk.id, 'fullName', e.target.value);
-                                                fetchSuggestions(e.target.value);
+                                                fetchSuggestions(e.target.value, `clerk-${clerk.id}`);
+                                            }}
+                                            onFocus={() => {
+                                                if (nameSuggestions.length > 0) {
+                                                    setShowSuggestions(true);
+                                                    setCurrentInputId(`clerk-${clerk.id}`);
+                                                }
+                                            }}
+                                            onBlur={(e) => {
+                                                setTimeout(() => {
+                                                    setShowSuggestions(false);
+                                                    setCurrentInputId(null);
+                                                }, 200);
                                             }}
                                             placeholder="Nhập họ và tên"
                                         />
-                                        <datalist id={`name-suggestions-${clerk.id}`}>
-                                            {nameSuggestions.map((suggestion, idx) => (
-                                                <option key={idx} value={suggestion} />
-                                            ))}
-                                        </datalist>
+                                        {showSuggestions && currentInputId === `clerk-${clerk.id}` && nameSuggestions.length > 0 && (
+                                            <div className="suggestion-dropdown" style={{
+                                                position: 'absolute',
+                                                top: '100%',
+                                                left: 0,
+                                                right: 0,
+                                                backgroundColor: 'white',
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto',
+                                                zIndex: 1000,
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                                marginTop: '4px'
+                                            }}>
+                                                {nameSuggestions.map((suggestion, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        onClick={() => handleSuggestionSelect(suggestion, clerk.id, 'clerk')}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            cursor: 'pointer',
+                                                            borderBottom: idx < nameSuggestions.length - 1 ? '1px solid #eee' : 'none'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.target.style.backgroundColor = '#f5f5f5';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.target.style.backgroundColor = 'white';
+                                                        }}
+                                                    >
+                                                        <div style={{ fontWeight: '500' }}>{suggestion.name}</div>
+                                                        {suggestion.email && (
+                                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                                {suggestion.email}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="form-group">
                                         <label>Email *</label>
