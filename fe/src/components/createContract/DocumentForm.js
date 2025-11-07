@@ -1008,12 +1008,12 @@ const DocumentForm = () => {
 
     // Helper function for name autocomplete (Step 2)
     // Returns array of { name, email, phone } objects
+    // textSearch có thể rỗng hoặc < 2 ký tự để lấy suggestions
     const suggestName = async (textSearch) => {
         try {
-            if (!textSearch || textSearch.trim().length < 2) {
-                return [];
-            }
-            const response = await customerService.suggestListCustomer(textSearch.trim());
+            // Gọi API ngay cả khi textSearch rỗng hoặc < 2 ký tự
+            const searchText = textSearch?.trim() || '';
+            const response = await customerService.suggestListCustomer(searchText);
             if (response.code === 'SUCCESS' && response.data) {
                 // Return full objects with name, email, and phone (if available)
                 return response.data.map(item => ({

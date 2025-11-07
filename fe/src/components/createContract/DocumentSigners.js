@@ -33,17 +33,14 @@ function DocumentSigners({
             clearTimeout(suggestionTimeoutRef.current);
         }
 
-        if (!textSearch || textSearch.trim().length < 2) {
-            setNameSuggestions([]);
-            setShowSuggestions(false);
-            return;
-        }
-
+        // Gọi API ngay cả khi textSearch rỗng hoặc < 2 ký tự
         suggestionTimeoutRef.current = setTimeout(async () => {
             if (suggestName) {
                 setSuggestionLoading(true);
                 try {
-                    const suggestions = await suggestName(textSearch);
+                    // Gọi API với textSearch (có thể rỗng hoặc < 2 ký tự)
+                    const searchText = textSearch?.trim() || '';
+                    const suggestions = await suggestName(searchText);
                     setNameSuggestions(suggestions);
                     setShowSuggestions(suggestions.length > 0);
                     setCurrentInputId(inputId);

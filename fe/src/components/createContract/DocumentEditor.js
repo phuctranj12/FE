@@ -83,19 +83,15 @@ function DocumentEditor({
             id: 'document-number',
             name: 'SỐ TÀI LIỆU',
             icon: '📄',
-            type: 'field'
+            type: 'field',
+            autoCreate: true // Tự động tạo khi click
         },
         {
             id: 'text',
             name: 'TEXT',
             icon: 'T',
-            type: 'field'
-        },
-        {
-            id: 'image-signature',
-            name: 'CHỮ KÝ ẢNH',
-            icon: '👤',
-            type: 'signature'
+            type: 'field',
+            autoCreate: true // Tự động tạo khi click
         },
         {
             id: 'digital-signature',
@@ -151,20 +147,59 @@ function DocumentEditor({
     };
 
     const handleComponentSelect = (component) => {
-        setSelectedComponent(component);
-        setEditingComponentId(null); // Reset editing mode
-        setRecipientSearchValue(''); // Reset search value
-        setNameSuggestions([]); // Clear suggestions
-        // Reset properties khi chọn component mới
-        setComponentProperties({
-            signer: '',
-            font: 'Times New Roman',
-            size: 13,
-            x: 0,
-            y: 0,
-            width: 0,
-            height: 0
-        });
+        // Nếu component có autoCreate (Số tài liệu hoặc Text), tự động tạo component ở giữa màn hình
+        if (component.autoCreate) {
+            // Tính toán vị trí giữa màn hình (giả sử PDF viewer có width ~800px, height ~600px)
+            // Vị trí giữa: x = 400 - width/2, y = 300 - height/2
+            const defaultWidth = 150;
+            const defaultHeight = 30;
+            const centerX = 400 - defaultWidth / 2;
+            const centerY = 300 - defaultHeight / 2;
+            
+            const ordering = documentComponents.length + 1;
+            
+            const newComponent = {
+                id: Date.now(),
+                type: component.id,
+                name: component.name,
+                page: currentPage,
+                properties: {
+                    signer: '',
+                    recipientId: null,
+                    font: 'Times New Roman',
+                    size: 13,
+                    x: centerX,
+                    y: centerY,
+                    width: defaultWidth,
+                    height: defaultHeight,
+                    page: currentPage,
+                    ordering: ordering,
+                    fieldName: component.id === 'document-number' ? 'Số tài liệu' : ''
+                }
+            };
+            
+            setDocumentComponents(prev => [...prev, newComponent]);
+            setSelectedComponent(component);
+            setEditingComponentId(newComponent.id);
+            setComponentProperties(newComponent.properties);
+            setRecipientSearchValue('');
+            setNameSuggestions([]);
+        } else {
+            // Các component khác (như Chữ ký số) vẫn giữ logic cũ
+            setSelectedComponent(component);
+            setEditingComponentId(null);
+            setRecipientSearchValue('');
+            setNameSuggestions([]);
+            setComponentProperties({
+                signer: '',
+                font: 'Times New Roman',
+                size: 13,
+                x: 0,
+                y: 0,
+                width: 0,
+                height: 0
+            });
+        }
     };
 
     // Handle click outside to close dropdown
@@ -435,10 +470,29 @@ function DocumentEditor({
     }, [isDragging, isResizing]);
 
     const handlePropertyChange = (property, value) => {
-        setComponentProperties(prev => ({
-            ...prev,
+        const newProperties = {
+            ...componentProperties,
             [property]: value
-        }));
+        };
+        
+        // Nếu thay đổi signer, tự động set recipientId
+        if (property === 'signer' && value) {
+            const recipientId = parseInt(value);
+            if (!isNaN(recipientId)) {
+                newProperties.recipientId = recipientId;
+            }
+        }
+        
+        setComponentProperties(newProperties);
+        
+        // Nếu đang edit component (autoCreate), tự động cập nhật component trong documentComponents
+        if (editingComponentId && selectedComponent?.autoCreate) {
+            setDocumentComponents(prev => prev.map(comp => 
+                comp.id === editingComponentId 
+                    ? { ...comp, properties: { ...comp.properties, ...newProperties } }
+                    : comp
+            ));
+        }
     };
 
     const handleAddComponent = () => {
@@ -478,10 +532,12 @@ function DocumentEditor({
         // Set recipient search value khi click vào component
         const recipientName = getRecipientNameById(component.properties.signer || component.properties.recipientId);
         setRecipientSearchValue(recipientName);
+        const foundComponent = availableComponents.find(comp => comp.id === component.type);
         setSelectedComponent({
             id: component.type,
             name: component.name,
-            icon: availableComponents.find(comp => comp.id === component.type)?.icon || '📄'
+            icon: foundComponent?.icon || '📄',
+            autoCreate: foundComponent?.autoCreate || false
         });
     };
 
@@ -1137,16 +1193,19 @@ function DocumentEditor({
                                     </div>
                                 </div>
 
-                                <button 
-                                    className="add-component-btn"
-                                    onClick={editingComponentId ? handleUpdateComponent : handleAddComponent}
-                                    disabled={
-                                        !componentProperties.signer || 
-                                        (selectedComponent.id === 'text' && !componentProperties.fieldName)
-                                    }
-                                >
-                                    {editingComponentId ? 'Cập nhật component' : 'Thêm vào tài liệu'}
-                                </button>
+                                {/* Chỉ hiển thị nút Tạo/Cập nhật nếu không phải autoCreate component hoặc đang edit */}
+                                {(!selectedComponent?.autoCreate || editingComponentId) && (
+                                    <button 
+                                        className="add-component-btn"
+                                        onClick={editingComponentId ? handleUpdateComponent : handleAddComponent}
+                                        disabled={
+                                            !componentProperties.signer || 
+                                            (selectedComponent.id === 'text' && !componentProperties.fieldName)
+                                        }
+                                    >
+                                        {editingComponentId ? 'Cập nhật component' : 'Thêm vào tài liệu'}
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <div className="no-selection">
