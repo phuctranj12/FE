@@ -5,70 +5,67 @@ import Button from "../common/Button";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
 import SearchBar from "../common/SearchBar";
+import documentService from "../../api/documentService";
 
-function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
+function Document({ selectedStatus, onDocumentClick }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState({});
-    const [docs, setDocs] = useState(filteredDocs);
+    const [docs, setDocs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
+    const [totalDocs, setTotalDocs] = useState(0);
+    const [errorMessage, setErrorMessage] = useState(""); // <-- Thông báo lỗi
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentDocs = docs.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(docs.length / itemsPerPage);
+    const totalPages = Math.ceil(totalDocs / itemsPerPage);
+
+    const fetchDocuments = async () => {
+        setErrorMessage(""); // reset lỗi trước khi fetch
+        const filter = {
+            status: selectedStatus === "all" ? 0 : selectedStatus,
+            textSearch: searchTerm,
+            fromDate: advancedFilters.fromDate || "",
+            toDate: advancedFilters.toDate || "",
+            page: currentPage - 1,
+            size: itemsPerPage,
+            organizationId: 0
+        };
+
+        try {
+            const response = await documentService.getMyContracts(filter);
+            setDocs(response.content || []);
+            setTotalDocs(response.total || 0);
+        } catch (error) {
+            // Xử lý lỗi hiển thị cho người dùng
+            if (error.response) {
+                if (error.response.status === 401) {
+                    setErrorMessage("Bạn chưa đăng nhập hoặc token đã hết hạn.");
+                } else {
+                    setErrorMessage(`Lỗi server: ${error.response.status}`);
+                }
+            } else if (error.message === "Network Error") {
+                setErrorMessage("Không thể kết nối tới server. Vui lòng kiểm tra mạng hoặc server.");
+            } else {
+                setErrorMessage("Đã xảy ra lỗi không xác định.");
+            }
+            setDocs([]);
+            setTotalDocs(0);
+        }
+    };
+
+    // Gọi API khi filter/search/page thay đổi
+    useEffect(() => {
+        fetchDocuments();
+    }, [searchTerm, selectedStatus, advancedFilters, currentPage]);
 
     // Reset trang khi filter/search thay đổi
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, selectedStatus, advancedFilters]);
 
-    // Cập nhật khi props thay đổi
-    useEffect(() => {
-        setDocs(filteredDocs);
-    }, [filteredDocs]);
-
-    // Áp dụng lọc nâng cao + search + status
-    useEffect(() => {
-        let filtered = [...filteredDocs];
-
-        if (selectedStatus && selectedStatus !== "all") {
-            filtered = filtered.filter((doc) => doc.status === Number(selectedStatus));
-        }
-
-        if (searchTerm.trim()) {
-            filtered = filtered.filter((doc) =>
-                doc.name?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-
-        if (advancedFilters) {
-            const { name, type, fromDate, toDate } = advancedFilters;
-
-            if (name && name.trim()) {
-                filtered = filtered.filter((doc) =>
-                    doc.name?.toLowerCase().includes(name.toLowerCase())
-                );
-            }
-
-            if (type && type !== "all") {
-                filtered = filtered.filter((doc) => String(doc.type) === String(type));
-            }
-
-            if (fromDate) {
-                filtered = filtered.filter((doc) => new Date(doc.created_at) >= new Date(fromDate));
-            }
-
-            if (toDate) {
-                filtered = filtered.filter((doc) => new Date(doc.created_at) <= new Date(toDate));
-            }
-        }
-
-        setDocs(filtered);
-    }, [searchTerm, selectedStatus, advancedFilters, filteredDocs]);
-
-    // Chuyển status code sang tên
     const getStatusLabel = (status) => {
         switch (status) {
             case 0: return "Bản nháp";
@@ -81,7 +78,6 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
         }
     };
 
-    // Chuyển type code sang tên
     const getTypeLabel = (type) => {
         const typeMap = {
             1: "Tài liệu gốc",
@@ -96,15 +92,11 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
         return typeMap[Number(type)] || "Không xác định";
     };
 
-    const formatDate = (date) => {
-        if (!date) return "";
-        return new Date(date).toLocaleString("vi-VN");
-    };
+    const formatDate = (date) => date ? new Date(date).toLocaleString("vi-VN") : "";
 
     const handleAdvancedSearch = (filters) => {
-        if (!filters || Object.values(filters).every((v) => v === "" || v === "all" || v === null)) {
+        if (!filters || Object.values(filters).every(v => v === "" || v === "all" || v === null)) {
             setAdvancedFilters({});
-            setDocs(filteredDocs);
             return;
         }
         setAdvancedFilters(filters);
@@ -136,7 +128,11 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
                     />
                 </div>
 
-                {docs.length === 0 ? (
+                {errorMessage && (
+                    <p className="error-message">{errorMessage}</p>
+                )}
+
+                {docs.length === 0 && !errorMessage ? (
                     <p className="no-docs">Không có tài liệu nào phù hợp với tìm kiếm.</p>
                 ) : (
                     <>
@@ -153,7 +149,7 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentDocs.map((doc) => (
+                                {currentDocs.map(doc => (
                                     <tr
                                         key={doc.id}
                                         className="document-row"
@@ -170,7 +166,7 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
                                                 onEdit={() => console.log("Sửa", doc.id)}
                                                 onViewFlow={() => console.log("Xem luồng ký", doc.id)}
                                                 onCopy={() => console.log("Sao chép", doc.id)}
-                                                onDelete={(id) => console.log("Xóa tài liệu có id:", id)}
+                                                onDelete={() => console.log("Xóa tài liệu có id:", doc.id)}
                                                 doc={doc}
                                             />
                                         </td>
@@ -179,16 +175,8 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
                             </tbody>
                         </table>
 
-                        {docs.length > itemsPerPage && (
+                        {totalDocs > itemsPerPage && (
                             <div className="pagination">
-                                {/* <button
-                                    className="page-btn"
-                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                >
-                                    ←
-                                </button> */}
-
                                 <div className="page-info">
                                     <span>Trang</span>
                                     <input
@@ -205,14 +193,6 @@ function Document({ filteredDocs = [], selectedStatus, onDocumentClick }) {
                                     />
                                     <span>/ {totalPages}</span>
                                 </div>
-
-                                {/* <button
-                                    className="page-btn"
-                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                >
-                                    →
-                                </button> */}
                             </div>
                         )}
                     </>

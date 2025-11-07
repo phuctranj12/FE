@@ -9,18 +9,12 @@ import UserManagement from "../components/userManagement/UserManagement";
 import DocumentTemplates from "../components/templateContract/DocumentTemplates";
 import DocumentForm from "../components/createContract/DocumentForm";
 import Footer from "../components/bar/Footer";
-import { getDocuments } from "../api/documentService";
 import ServerCertificateList from "../components/certificate/ServerCertificateList";
+import documentService from "../api/documentService";
 function MainContent() {
     const location = useLocation();
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
-    const [documents, setDocuments] = useState([]);
-
-    useEffect(() => {
-        getDocuments().then(setDocuments);
-    }, []);
-
     const getBreadcrumb = () => {
         // Check URL-based routes first
         if (location.pathname.startsWith('/main/contract-template')) return "Tài liệu mẫu";
@@ -48,14 +42,8 @@ function MainContent() {
         return "Hệ thống quản lý hợp đồng điện tử";
     };
 
-    // Dữ liệu mẫu hợp đồng
 
 
-    // ⚙️ Lọc danh sách tài liệu theo trạng thái
-    const filteredDocs =
-        selectedStatus === "all" || selectedStatus === ""
-            ? documents
-            : documents.filter((doc) => doc.status === Number(selectedStatus));
 
     return (
         <div className="main-container">
@@ -77,7 +65,7 @@ function MainContent() {
                     ) : menuStatus === "create-document" ? (
                         <DocumentForm />
                     ) : menuStatus === "document" ? (
-                        <Document filteredDocs={filteredDocs} selectedStatus={selectedStatus} />
+                        <Document selectedStatus={selectedStatus} />
                     ) : menuStatus === "tai-lieu-mau" ? (
                         <DocumentTemplates />
                     ) : menuStatus === "user-management" ? (
