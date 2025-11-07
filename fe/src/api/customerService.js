@@ -217,6 +217,18 @@ const customerService = {
         }
     },
 
+    // 4.6. Gợi ý tên người dùng (Step 2)
+    suggestListCustomer: async (textSearch) => {
+        try {
+            const response = await apiClient.get('/customers/suggest-list-customer', {
+                params: { textSearch: textSearch || '' }
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 👉= PERMISSION API ==========
 
     // 5.1. Danh sách phân quyền

@@ -17,6 +17,26 @@ function DocumentTypeSelection({
     handleAttachedFilesUpload = () => {},
     removeAttachedFile = () => {}
 }) {
+    const formatDateForInput = (value) => {
+        if (!value) return '';
+        if (value.includes('T')) {
+            return value.substring(0, 10);
+        }
+        if (value.includes('/')) {
+            const [day, month, year] = value.split('/');
+            if (day && month && year) {
+                return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+        }
+        return value;
+    };
+
+    const handleDateChange = (event) => {
+        const { name, value } = event.target;
+        const formatted = value ? value.split('-').reverse().join('/') : '';
+        handleInputChange({ target: { name, value: formatted } });
+    };
+
     // Batch document type
     if (documentType === 'batch') {
         return (
@@ -187,13 +207,11 @@ function DocumentTypeSelection({
                             <label>Ngày hết hạn ký *</label>
                             <div className="date-input-container">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="signingExpirationDate"
-                                    value={formData.signingExpirationDate}
-                                    onChange={handleInputChange}
-                                    placeholder="20/11/2025"
+                                    value={formatDateForInput(formData.signingExpirationDate)}
+                                    onChange={handleDateChange}
                                 />
-                                <span className="calendar-icon">📅</span>
                             </div>
                         </div>
                         <div className="form-group">
@@ -245,13 +263,11 @@ function DocumentTypeSelection({
                             <label>Ngày hết hiệu lực tài liệu</label>
                             <div className="date-input-container">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="expirationDate"
-                                    value={formData.expirationDate}
-                                    onChange={handleInputChange}
-                                    placeholder=""
+                                    value={formatDateForInput(formData.expirationDate)}
+                                    onChange={handleDateChange}
                                 />
-                                <span className="calendar-icon">📅</span>
                             </div>
                         </div>
                     </div>
@@ -391,13 +407,11 @@ function DocumentTypeSelection({
                         <label>Ngày hết hiệu lực tài liệu</label>
                         <div className="date-input-container">
                             <input
-                                type="text"
+                                type="date"
                                 name="expirationDate"
-                                value={formData.expirationDate}
-                                onChange={handleInputChange}
-                                placeholder=""
+                                value={formatDateForInput(formData.expirationDate)}
+                                onChange={handleDateChange}
                             />
-                            <span className="calendar-icon">📅</span>
                         </div>
                     </div>
                 </div>
@@ -478,13 +492,11 @@ function DocumentTypeSelection({
                         <label>Ngày hết hạn ký *</label>
                         <div className="date-input-container">
                             <input
-                                type="text"
+                                type="date"
                                 name="signingExpirationDate"
-                                value={formData.signingExpirationDate}
-                                onChange={handleInputChange}
-                                placeholder="20/11/2025"
+                                value={formatDateForInput(formData.signingExpirationDate)}
+                                onChange={handleDateChange}
                             />
-                            <span className="calendar-icon">📅</span>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/documentForm.css';
 
 function DocumentSigners({ 
@@ -7,13 +7,59 @@ function DocumentSigners({
     setFormData,
     reviewers,
     addReviewer,
+    updateReviewer,
+    removeReviewer,
     signers,
     addSigner,
     removeSigner,
     updateSigner,
     documentClerks,
-    addDocumentClerk
+    addDocumentClerk,
+    updateDocumentClerk,
+    removeDocumentClerk,
+    handleOrganizationOrderingChange,
+    suggestName
 }) {
+    // State for autocomplete suggestions
+    const [nameSuggestions, setNameSuggestions] = useState([]);
+    const [suggestionLoading, setSuggestionLoading] = useState(false);
+    const suggestionTimeoutRef = useRef(null);
+
+    // Fetch name suggestions with debounce
+    const fetchSuggestions = async (textSearch) => {
+        if (suggestionTimeoutRef.current) {
+            clearTimeout(suggestionTimeoutRef.current);
+        }
+
+        if (!textSearch || textSearch.trim().length < 2) {
+            setNameSuggestions([]);
+            return;
+        }
+
+        suggestionTimeoutRef.current = setTimeout(async () => {
+            if (suggestName) {
+                setSuggestionLoading(true);
+                try {
+                    const suggestions = await suggestName(textSearch);
+                    setNameSuggestions(suggestions);
+                } catch (err) {
+                    console.error('Error fetching suggestions:', err);
+                    setNameSuggestions([]);
+                } finally {
+                    setSuggestionLoading(false);
+                }
+            }
+        }, 300); // 300ms debounce
+    };
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (suggestionTimeoutRef.current) {
+                clearTimeout(suggestionTimeoutRef.current);
+            }
+        };
+    }, []);
     return (
         <div className="step-content">
             {/* Document Type Selection - Read Only */}
@@ -65,7 +111,17 @@ function DocumentSigners({
             {/* Organization Info */}
             <div className="organization-section">
                 <div className="form-group">
-                    <label>1 Tổ chức của tôi *</label>
+                    <label className="ordering-label">
+                        <div className="order-input-box small">
+                            <input
+                                type="number"
+                                min="1"
+                                value={formData.organizationOrdering ?? ''}
+                                onChange={(e) => handleOrganizationOrderingChange(e.target.value)}
+                            />
+                        </div>
+                        <span>Tổ chức của tôi *</span>
+                    </label>
                     <input
                         type="text"
                         value={formData.organization}
@@ -83,10 +139,85 @@ function DocumentSigners({
                         <span>+</span> Thêm người xem xét
                     </button>
                 </div>
-                {reviewers.length === 0 && (
+                {reviewers.length === 0 ? (
                     <div className="empty-state">
                         <p>Chưa có người xem xét nào</p>
                     </div>
+                ) : (
+                    reviewers.map((reviewer, index) => (
+                        <div key={reviewer.id} className="participant-card">
+                            <div className="participant-header">
+                                <div className="title-with-order">
+                                    <div className="order-input-box tiny">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={reviewer.ordering ?? ''}
+                                            onChange={(e) => updateReviewer(reviewer.id, 'ordering', e.target.value)}
+                                        />
+                                    </div>
+                                    <h4>Người xem xét {index + 1}</h4>
+                                </div>
+                                <button 
+                                    className="remove-btn"
+                                    onClick={() => removeReviewer(reviewer.id)}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="participant-form">
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Họ tên *</label>
+                                        <input
+                                            type="text"
+                                            list={`name-suggestions-${reviewer.id}`}
+                                            value={reviewer.fullName}
+                                            onChange={(e) => {
+                                                updateReviewer(reviewer.id, 'fullName', e.target.value);
+                                                fetchSuggestions(e.target.value);
+                                            }}
+                                            placeholder="Nhập họ và tên"
+                                        />
+                                        <datalist id={`name-suggestions-${reviewer.id}`}>
+                                            {nameSuggestions.map((suggestion, idx) => (
+                                                <option key={idx} value={suggestion} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Email *</label>
+                                        <input
+                                            type="email"
+                                            value={reviewer.email}
+                                            onChange={(e) => updateReviewer(reviewer.id, 'email', e.target.value)}
+                                            placeholder="Nhập email"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Số điện thoại</label>
+                                        <input
+                                            type="text"
+                                            value={reviewer.phone || ''}
+                                            onChange={(e) => updateReviewer(reviewer.id, 'phone', e.target.value)}
+                                            placeholder="Nhập số điện thoại"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>CMND/CCCD</label>
+                                        <input
+                                            type="text"
+                                            value={reviewer.card_id || reviewer.cardId || ''}
+                                            onChange={(e) => updateReviewer(reviewer.id, 'card_id', e.target.value)}
+                                            placeholder="Nhập số CMND/CCCD"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))
                 )}
             </div>
 
@@ -98,7 +229,17 @@ function DocumentSigners({
                 {signers.map((signer, index) => (
                     <div key={signer.id} className="signer-card">
                         <div className="signer-header">
-                            <h4>{index + 1} Người ký {index + 1}</h4>
+                            <div className="title-with-order">
+                                <div className="order-input-box tiny">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={signer.ordering ?? ''}
+                                        onChange={(e) => updateSigner(signer.id, 'ordering', e.target.value)}
+                                    />
+                                </div>
+                                <h4>Người ký {index + 1}</h4>
+                            </div>
                             {signers.length > 1 && (
                                 <button 
                                     className="remove-btn"
@@ -114,10 +255,19 @@ function DocumentSigners({
                                     <label>Họ tên *</label>
                                     <input
                                         type="text"
+                                        list={`name-suggestions-${signer.id}`}
                                         value={signer.fullName}
-                                        onChange={(e) => updateSigner(signer.id, 'fullName', e.target.value)}
+                                        onChange={(e) => {
+                                            updateSigner(signer.id, 'fullName', e.target.value);
+                                            fetchSuggestions(e.target.value);
+                                        }}
                                         placeholder="Nhập họ và tên"
                                     />
+                                    <datalist id={`name-suggestions-${signer.id}`}>
+                                        {nameSuggestions.map((suggestion, idx) => (
+                                            <option key={idx} value={suggestion} />
+                                        ))}
+                                    </datalist>
                                 </div>
                                 <div className="checkbox-group">
                                     <label className="checkbox-option">
@@ -132,25 +282,42 @@ function DocumentSigners({
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Email *</label>
-                                    <input
-                                        type="email"
-                                        value={signer.email}
-                                        onChange={(e) => updateSigner(signer.id, 'email', e.target.value)}
-                                        placeholder="Nhập email"
-                                    />
+                                    <label>{signer.loginByPhone ? 'Số điện thoại *' : 'Email *'}</label>
+                                    {signer.loginByPhone ? (
+                                        <input
+                                            type="tel"
+                                            value={signer.phone || ''}
+                                            onChange={(e) => updateSigner(signer.id, 'phone', e.target.value)}
+                                            placeholder="Nhập số điện thoại"
+                                        />
+                                    ) : (
+                                        <input
+                                            type="email"
+                                            value={signer.email}
+                                            onChange={(e) => updateSigner(signer.id, 'email', e.target.value)}
+                                            placeholder="Nhập email"
+                                        />
+                                    )}
                                 </div>
                                 <div className="form-group">
                                     <label>Loại ký *</label>
-                                    <select
-                                        value={signer.signType}
-                                        onChange={(e) => updateSigner(signer.id, 'signType', e.target.value)}
-                                    >
-                                        <option value="">Chọn</option>
-                                        <option value="ky-so">Ký số</option>
-                                        <option value="ky-tay">Ký tay</option>
-                                        <option value="ky-dien-tu">Ký điện tử</option>
-                                    </select>
+                                    <input
+                                        type="text"
+                                        value="Ký bằng chứng thư số server"
+                                        readOnly
+                                        className="readonly-input"
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>CMND/CCCD</label>
+                                    <input
+                                        type="text"
+                                        value={signer.card_id || signer.cardId || ''}
+                                        onChange={(e) => updateSigner(signer.id, 'card_id', e.target.value)}
+                                        placeholder="Nhập số CMND/CCCD"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -172,10 +339,85 @@ function DocumentSigners({
                 <div className="clerk-actions">
                     <a href="#" className="add-partner-link">Thêm đối tác</a>
                 </div>
-                {documentClerks.length === 0 && (
+                {documentClerks.length === 0 ? (
                     <div className="empty-state">
                         <p>Chưa có văn thư nào</p>
                     </div>
+                ) : (
+                    documentClerks.map((clerk, index) => (
+                        <div key={clerk.id} className="participant-card">
+                            <div className="participant-header">
+                                <div className="title-with-order">
+                                    <div className="order-input-box tiny">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={clerk.ordering ?? ''}
+                                            onChange={(e) => updateDocumentClerk(clerk.id, 'ordering', e.target.value)}
+                                        />
+                                    </div>
+                                    <h4>Văn thư {index + 1}</h4>
+                                </div>
+                                <button 
+                                    className="remove-btn"
+                                    onClick={() => removeDocumentClerk(clerk.id)}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="participant-form">
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Họ tên *</label>
+                                        <input
+                                            type="text"
+                                            list={`name-suggestions-${clerk.id}`}
+                                            value={clerk.fullName}
+                                            onChange={(e) => {
+                                                updateDocumentClerk(clerk.id, 'fullName', e.target.value);
+                                                fetchSuggestions(e.target.value);
+                                            }}
+                                            placeholder="Nhập họ và tên"
+                                        />
+                                        <datalist id={`name-suggestions-${clerk.id}`}>
+                                            {nameSuggestions.map((suggestion, idx) => (
+                                                <option key={idx} value={suggestion} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Email *</label>
+                                        <input
+                                            type="email"
+                                            value={clerk.email}
+                                            onChange={(e) => updateDocumentClerk(clerk.id, 'email', e.target.value)}
+                                            placeholder="Nhập email"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Số điện thoại</label>
+                                        <input
+                                            type="text"
+                                            value={clerk.phone || ''}
+                                            onChange={(e) => updateDocumentClerk(clerk.id, 'phone', e.target.value)}
+                                            placeholder="Nhập số điện thoại"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>CMND/CCCD</label>
+                                        <input
+                                            type="text"
+                                            value={clerk.card_id || clerk.cardId || ''}
+                                            onChange={(e) => updateDocumentClerk(clerk.id, 'card_id', e.target.value)}
+                                            placeholder="Nhập số CMND/CCCD"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))
                 )}
             </div>
         </div>

@@ -146,12 +146,13 @@ const contractService = {
                 value: value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value
             })));
 
-            // Note: Using POST because GET requests cannot have multipart/form-data body
             const response = await apiClient.post('/contracts/documents/get-page-size', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                  'Accept': '*/*',
+                  'Content-Type': 'multipart/form-data',
                 },
-            });
+              }
+            );
 
             console.log('[getPageSize] API Response received:', {
                 code: response?.code,
@@ -183,7 +184,6 @@ const contractService = {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            // Note: Using POST because GET requests cannot have multipart/form-data body
             const response = await apiClient.post('/contracts/documents/check-signature', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',

@@ -37,6 +37,8 @@ const DocumentForm = () => {
     // Contract and Document IDs (saved after API calls)
     const [contractId, setContractId] = useState(null);
     const [documentId, setDocumentId] = useState(null);
+    const [participantsData, setParticipantsData] = useState([]);
+    const [fieldsData, setFieldsData] = useState([]); // Lưu fields data từ bước 3
     const [isDocumentNumberValid, setIsDocumentNumberValid] = useState(true);
     const [isCheckingDocumentNumber, setIsCheckingDocumentNumber] = useState(false);
     
@@ -54,6 +56,7 @@ const DocumentForm = () => {
         templateFile: '',
         batchFile: '',
         organization: '',
+        organizationOrdering: 1,
         printWorkflow: false,
         loginByPhone: false,
         // Thông tin file PDF
@@ -71,8 +74,10 @@ const DocumentForm = () => {
             id: 1,
             fullName: '',
             email: '',
-            signType: '',
-            loginByPhone: false
+            loginByPhone: false,
+            phone: '',
+            card_id: '',
+            ordering: 1
         }
     ]);
     const [documentClerks, setDocumentClerks] = useState([]);
@@ -134,6 +139,99 @@ const DocumentForm = () => {
 
         fetchInitialData();
     }, []);
+
+    // Load organization details and participants data when entering step 2
+    useEffect(() => {
+        const loadStep2Data = async () => {
+            if (currentStep === 2) {
+                // Load organization details if not already loaded
+                if (organizationId && !formData.organization) {
+                    try {
+                        const orgResponse = await customerService.getOrganizationById(organizationId);
+                        if (orgResponse.code === 'SUCCESS' && orgResponse.data) {
+                            setFormData(prev => ({
+                                ...prev,
+                                organization: orgResponse.data.name || currentUser?.organizationName || ''
+                            }));
+                        }
+                    } catch (err) {
+                        console.error('Error loading organization details:', err);
+                        // Fallback to user's organization name if available
+                        if (currentUser?.organizationName) {
+                            setFormData(prev => ({
+                                ...prev,
+                                organization: currentUser.organizationName
+                            }));
+                        }
+                    }
+                }
+
+                // Load existing participants data if available (when returning to step 2)
+                if (participantsData && participantsData.length > 0 && contractId) {
+                    try {
+                        // Parse participantsData to populate reviewers, signers, clerks
+                        const participant = participantsData[0];
+                        if (participant && participant.recipients) {
+                            const newReviewers = [];
+                            const newSigners = [];
+                            const newClerks = [];
+
+                            participant.recipients.forEach((recipient, index) => {
+                                const recipientData = {
+                                    id: Date.now() + index, // Generate new ID for UI
+                                    recipientId: recipient.id, // Keep original ID for API
+                                    fullName: recipient.name || '',
+                                    email: recipient.email || '',
+                                    phone: recipient.phone || '',
+                                    card_id: recipient.card_id || recipient.cardId || '',
+                                    ordering: recipient.ordering || index + 1,
+                                    loginByPhone: recipient.loginByPhone || false
+                                };
+
+                                if (recipient.role === 2) { // Xem xét
+                                    newReviewers.push(recipientData);
+                                } else if (recipient.role === 3) { // Ký
+                                    newSigners.push(recipientData);
+                                } else if (recipient.role === 4) { // Văn thư
+                                    newClerks.push(recipientData);
+                                }
+                            });
+
+                            // Only update if we have data and haven't loaded yet
+                            // Check if signers only have empty default entry
+                            const hasOnlyEmptySigner = signers.length === 1 && 
+                                !signers[0].fullName && !signers[0].email;
+                            const shouldLoad = (newReviewers.length > 0 || newSigners.length > 0 || newClerks.length > 0) &&
+                                (reviewers.length === 0 && hasOnlyEmptySigner && documentClerks.length === 0);
+
+                            if (shouldLoad) {
+                                setReviewers(newReviewers);
+                                if (newSigners.length > 0) {
+                                    setSigners(newSigners);
+                                } else {
+                                    // Keep the default empty signer if no signers from API
+                                    // (This should not happen as at least one signer is required)
+                                }
+                                setDocumentClerks(newClerks);
+                            }
+
+                            // Update organization ordering if available
+                            if (participant.ordering) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    organizationOrdering: participant.ordering
+                                }));
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error loading participants data:', err);
+                    }
+                }
+            }
+        };
+
+        loadStep2Data();
+    }, [currentStep, organizationId, currentUser, contractId]);
 
     // Điều chỉnh số bước dựa trên loại tài liệu
     const getSteps = () => {
@@ -364,7 +462,9 @@ const DocumentForm = () => {
             id: Date.now(),
             fullName: '',
             email: '',
-            phone: ''
+            phone: '',
+            card_id: '',
+            ordering: reviewers.length + 1
         };
         setReviewers([...reviewers, newReviewer]);
     };
@@ -374,8 +474,10 @@ const DocumentForm = () => {
             id: Date.now(),
             fullName: '',
             email: '',
-            signType: '',
-            loginByPhone: false
+            phone: '',
+            loginByPhone: false,
+            card_id: '',
+            ordering: signers.length + 1
         };
         setSigners([...signers, newSigner]);
     };
@@ -385,7 +487,9 @@ const DocumentForm = () => {
             id: Date.now(),
             fullName: '',
             email: '',
-            phone: ''
+            phone: '',
+            card_id: '',
+            ordering: documentClerks.length + 1
         };
         setDocumentClerks([...documentClerks, newClerk]);
     };
@@ -396,10 +500,186 @@ const DocumentForm = () => {
         ));
     };
 
+    const updateReviewer = (id, field, value) => {
+        setReviewers(reviewers.map(reviewer =>
+            reviewer.id === id ? { ...reviewer, [field]: value } : reviewer
+        ));
+    };
+
+    const updateDocumentClerk = (id, field, value) => {
+        setDocumentClerks(documentClerks.map(clerk =>
+            clerk.id === id ? { ...clerk, [field]: value } : clerk
+        ));
+    };
+
     const removeSigner = (id) => {
         if (signers.length > 1) {
             setSigners(signers.filter(signer => signer.id !== id));
         }
+    };
+
+    const removeReviewer = (id) => {
+        setReviewers(reviewers.filter(reviewer => reviewer.id !== id));
+    };
+
+    const removeDocumentClerk = (id) => {
+        setDocumentClerks(documentClerks.filter(clerk => clerk.id !== id));
+    };
+
+    const handleOrganizationOrderingChange = (value) => {
+        const parsed = parseInt(value, 10);
+        setFormData(prev => ({
+            ...prev,
+            organizationOrdering: Number.isNaN(parsed) ? '' : Math.max(1, parsed)
+        }));
+    };
+
+    const validateEmail = (email) => {
+        if (!email) return false;
+        const emailRegex = /^\S+@\S+\.\S+$/;
+        return emailRegex.test(email.trim());
+    };
+
+    const validatePhone = (phone) => {
+        if (!phone) return false;
+        // Vietnamese phone number format: 10-11 digits, may start with 0 or +84
+        const phoneRegex = /^(\+84|0)[1-9][0-9]{8,9}$/;
+        return phoneRegex.test(phone.trim().replace(/\s/g, ''));
+    };
+
+    const validateStep2 = () => {
+        const errors = [];
+
+        if (!contractId) {
+            errors.push('Không tìm thấy thông tin hợp đồng. Vui lòng hoàn thành bước 1 trước.');
+        }
+
+        // Validate signers - check email or phone based on loginByPhone
+        const validSigners = signers.filter((signer) => {
+            const hasName = signer.fullName?.trim();
+            if (!hasName) return false;
+            
+            if (signer.loginByPhone) {
+                return validatePhone(signer.phone);
+            } else {
+                return validateEmail(signer.email);
+            }
+        });
+        
+        if (validSigners.length === 0) {
+            errors.push('Vui lòng thêm ít nhất một người ký với tên và email/số điện thoại hợp lệ.');
+        }
+
+        // Check invalid signers
+        const invalidSigners = signers.filter((signer) => {
+            if (!signer.fullName?.trim()) return false;
+            if (signer.loginByPhone) {
+                return !validatePhone(signer.phone);
+            } else {
+                return !validateEmail(signer.email);
+            }
+        });
+        if (invalidSigners.length > 0) {
+            errors.push('Email hoặc số điện thoại của người ký không hợp lệ.');
+        }
+
+        const invalidReviewers = reviewers.filter((reviewer) => reviewer.fullName && reviewer.email && !validateEmail(reviewer.email));
+        if (invalidReviewers.length > 0) {
+            errors.push('Email của người xem xét không hợp lệ.');
+        }
+
+        const invalidClerks = documentClerks.filter((clerk) => clerk.fullName && clerk.email && !validateEmail(clerk.email));
+        if (invalidClerks.length > 0) {
+            errors.push('Email của văn thư không hợp lệ.');
+        }
+
+        if (errors.length > 0) {
+            showToast(errors[0], 'error');
+            return false;
+        }
+
+        return true;
+    };
+
+    const buildParticipantsPayload = () => {
+        // Group recipients by role and calculate ordering per role
+        // According to CreateContractFlow.md: "Với mỗi participant khác nhau: Mỗi role bắt đầu từ 1"
+        const recipients = [];
+
+        // Helper to add recipients with proper ordering per role
+        const addRecipients = (items, role) => {
+            // Filter valid items first
+            // For signers (role = 3), check phone if loginByPhone = true, otherwise check email
+            const validItems = items.filter(item => {
+                const fullName = item.fullName?.trim();
+                if (!fullName) return false;
+                
+                // For signers, check phone or email based on loginByPhone
+                if (role === 3 && item.loginByPhone) {
+                    const phone = item.phone?.trim();
+                    return phone && validatePhone(phone);
+                } else {
+                    const email = item.email?.trim();
+                    return email && validateEmail(email);
+                }
+            });
+
+            // For each valid item, calculate ordering based on role
+            // If custom ordering is provided, use it; otherwise, use sequential ordering within the role
+            validItems.forEach((item, index) => {
+                const fullName = item.fullName?.trim();
+                
+                // Use custom ordering if provided and valid, otherwise use index + 1 for this role
+                const customOrdering = parseInt(item.ordering, 10);
+                const ordering = (Number.isNaN(customOrdering) || customOrdering <= 0)
+                    ? index + 1  // Sequential ordering within the same role
+                    : customOrdering;
+
+                // For signers with loginByPhone = true, use phone; otherwise use email
+                const email = (role === 3 && item.loginByPhone) ? '' : (item.email?.trim() || '');
+                const phone = (role === 3 && item.loginByPhone) ? (item.phone?.trim() || '') : (item.phone || '');
+
+                // signType luôn = 6 theo CreateContractFlow.md
+                recipients.push({
+                    // Include id if exists (for editing when returning to step 2)
+                    ...(item.recipientId && { id: item.recipientId }),
+                    name: fullName,
+                    email,
+                    phone,
+                    card_id: item.card_id || item.cardId || '',
+                    role,
+                    ordering,
+                    status: 0,
+                    signType: 6  // Always 6 according to CreateContractFlow.md
+                });
+            });
+        };
+
+        addRecipients(reviewers, 2);  // role = 2: Xem xét
+        addRecipients(signers, 3);    // role = 3: Ký
+        addRecipients(documentClerks, 4);  // role = 4: Văn thư
+
+        if (recipients.length === 0) {
+            return [];
+        }
+
+        const participantName = formData.organization?.trim() || 'Tổ chức của tôi';
+        const participantOrdering = parseInt(formData.organizationOrdering, 10);
+        const orderingValue = Number.isNaN(participantOrdering) || participantOrdering <= 0 ? 1 : participantOrdering;
+
+        // Build participant payload
+        // Include id if exists (for editing when returning to step 2)
+        const participantPayload = {
+            ...(participantsData?.[0]?.id && { id: participantsData[0].id }),
+            name: participantName,
+            type: 1,  // Tổ chức của tôi
+            ordering: orderingValue,
+            status: 1,
+            contractId,
+            recipients
+        };
+
+        return [participantPayload];
     };
 
     // Validate Step 1 data
@@ -562,6 +842,39 @@ const DocumentForm = () => {
             } finally {
                 setLoading(false);
             }
+        } else if (currentStep === 2 && documentType !== 'batch') {
+            if (!validateStep2()) {
+                return;
+            }
+
+            const participantsPayload = buildParticipantsPayload();
+
+            if (!participantsPayload || participantsPayload.length === 0) {
+                showToast('Vui lòng nhập thông tin người xử lý trước khi tiếp tục.', 'error');
+                return;
+            }
+
+            try {
+                setLoading(true);
+
+                const participantResponse = await contractService.createParticipant(contractId, participantsPayload);
+
+                if (participantResponse.code !== 'SUCCESS') {
+                    throw new Error(participantResponse.message || 'Không thể lưu người xử lý');
+                }
+
+                setParticipantsData(participantResponse.data || []);
+                showToast('Lưu thông tin người xử lý thành công.', 'success', 3000);
+
+                if (currentStep < maxStep) {
+                    setCurrentStep(currentStep + 1);
+                }
+            } catch (err) {
+                console.error('Error saving participants:', err);
+                showToast(err.message || 'Không thể lưu người xử lý. Vui lòng thử lại.', 'error');
+            } finally {
+                setLoading(false);
+            }
         } else {
             // For other steps, just move forward
             if (currentStep < maxStep) {
@@ -581,9 +894,56 @@ const DocumentForm = () => {
         // Implement save draft functionality
     };
 
-    const handleComplete = () => {
-        console.log('Completing document:', formData);
-        // Implement complete functionality
+    const handleComplete = async () => {
+        // Bước 4: Xác Nhận và Hoàn Tất
+        // 4.1. Tạo Fields
+        // 4.2. Thay đổi trạng thái hợp đồng sang CREATED (status = 10)
+        
+        if (!contractId || !documentId) {
+            showToast('Không tìm thấy thông tin hợp đồng. Vui lòng quay lại bước 1.', 'error');
+            return;
+        }
+
+        if (!fieldsData || fieldsData.length === 0) {
+            showToast('Vui lòng thiết kế ít nhất một field trên tài liệu ở bước 3.', 'error');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // 4.1. Tạo Fields
+            console.log('[Step 4] Creating fields...', fieldsData);
+            const fieldsResponse = await contractService.createField(fieldsData);
+            
+            if (fieldsResponse.code !== 'SUCCESS') {
+                throw new Error(fieldsResponse.message || 'Không thể tạo fields');
+            }
+
+            console.log('[Step 4] Fields created:', fieldsResponse.data);
+
+            // 4.2. Thay đổi trạng thái hợp đồng sang CREATED (status = 10)
+            console.log('[Step 4] Changing contract status to CREATED (10)...');
+            const statusResponse = await contractService.changeContractStatus(contractId, 10);
+            
+            if (statusResponse.code !== 'SUCCESS') {
+                throw new Error(statusResponse.message || 'Không thể cập nhật trạng thái hợp đồng');
+            }
+
+            console.log('[Step 4] Contract status updated:', statusResponse.data);
+
+            showToast('✅ Tạo hợp đồng thành công! Hợp đồng đã được tạo với trạng thái "Đã tạo".', 'success', 5000);
+            
+            // Có thể redirect hoặc reset form sau khi hoàn thành
+            // Ví dụ: window.location.href = '/contracts';
+            // Hoặc: resetForm();
+            
+        } catch (err) {
+            console.error('[Step 4] Error completing contract:', err);
+            showToast(err.message || 'Không thể hoàn tất hợp đồng. Vui lòng thử lại.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderStepContent = () => {
@@ -635,6 +995,23 @@ const DocumentForm = () => {
         );
     };
 
+    // Helper function for name autocomplete (Step 2)
+    const suggestName = async (textSearch) => {
+        try {
+            if (!textSearch || textSearch.trim().length < 2) {
+                return [];
+            }
+            const response = await customerService.suggestListCustomer(textSearch.trim());
+            if (response.code === 'SUCCESS' && response.data) {
+                return response.data.map(item => item.name || '').filter(Boolean);
+            }
+            return [];
+        } catch (err) {
+            console.error('Error fetching name suggestions:', err);
+            return [];
+        }
+    };
+
     const renderStep2 = () => {
         return (
             <DocumentSigners
@@ -643,12 +1020,18 @@ const DocumentForm = () => {
                 setFormData={setFormData}
                 reviewers={reviewers}
                 addReviewer={addReviewer}
+                updateReviewer={updateReviewer}
+                removeReviewer={removeReviewer}
                 signers={signers}
                 addSigner={addSigner}
                 removeSigner={removeSigner}
                 updateSigner={updateSigner}
                 documentClerks={documentClerks}
                 addDocumentClerk={addDocumentClerk}
+                updateDocumentClerk={updateDocumentClerk}
+                removeDocumentClerk={removeDocumentClerk}
+                handleOrganizationOrderingChange={handleOrganizationOrderingChange}
+                suggestName={suggestName}
             />
         );
     };
@@ -657,6 +1040,12 @@ const DocumentForm = () => {
         return (
             <DocumentEditor
                 documentType={documentType}
+                contractId={contractId}
+                documentId={documentId}
+                participantsData={participantsData}
+                fieldsData={fieldsData}
+                onFieldsChange={setFieldsData}
+                totalPages={formData.pdfPageCount || 1}
                 onBack={() => setCurrentStep(2)}
                 onNext={() => setCurrentStep(4)}
                 onSaveDraft={() => {
@@ -677,6 +1066,10 @@ const DocumentForm = () => {
                 reviewers={reviewers}
                 signers={signers}
                 documentClerks={documentClerks}
+                contractId={contractId}
+                documentId={documentId}
+                fieldsData={fieldsData}
+                loading={loading}
                 onBack={() => setCurrentStep(documentType === 'batch' ? 1 : 3)}
                 onComplete={handleComplete}
                 onSaveDraft={handleSaveDraft}

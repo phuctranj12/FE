@@ -12,21 +12,16 @@ const authService = {
         return apiClient.post('/auth/register', userData);
     },
 
-    logout: async () => {
-        const response = await apiClient.post('/auth/logout');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        return response;
-    },
-
     // 1.3. Logout
     logout: async () => {
         try {
             await apiClient.post('/auth/logout');
+            sessionStorage.removeItem('token');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
         } catch (error) {
-            // Clear local storage even if API call fails
+            // Clear stored credentials even if API call fails
+            sessionStorage.removeItem('token');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             throw error;

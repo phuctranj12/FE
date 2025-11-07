@@ -9,6 +9,10 @@ function DocumentConfirmation({
     reviewers,
     signers,
     documentClerks,
+    contractId,
+    documentId,
+    fieldsData = [],
+    loading = false,
     onBack, 
     onComplete, 
     onSaveDraft 
@@ -151,15 +155,19 @@ function DocumentConfirmation({
                     </div>
 
                     <div className="batch-actions">
-                        <button className="back-btn" onClick={onBack}>
+                        <button className="back-btn" onClick={onBack} disabled={loading}>
                             Quay lại
                         </button>
                         <div className="right-actions">
-                            <button className="save-draft-btn" onClick={onSaveDraft}>
+                            <button className="save-draft-btn" onClick={onSaveDraft} disabled={loading}>
                                 Lưu nháp
                             </button>
-                            <button className="complete-btn" onClick={onComplete}>
-                                Hoàn thành
+                            <button 
+                                className="complete-btn" 
+                                onClick={onComplete}
+                                disabled={loading || !contractId || !documentId || !fieldsData || fieldsData.length === 0}
+                            >
+                                {loading ? 'Đang xử lý...' : 'Hoàn thành'}
                             </button>
                         </div>
                     </div>
@@ -344,15 +352,19 @@ function DocumentConfirmation({
 
             {/* Footer Buttons */}
             <div className="step-footer">
-                <button className="back-btn" onClick={onBack}>
+                <button className="back-btn" onClick={onBack} disabled={loading}>
                     Quay lại
                 </button>
                 <div className="footer-right">
-                    <button className="save-draft-btn" onClick={onSaveDraft}>
+                    <button className="save-draft-btn" onClick={onSaveDraft} disabled={loading}>
                         Lưu nháp
                     </button>
-                    <button className="complete-btn" onClick={onComplete}>
-                        Hoàn thành
+                    <button 
+                        className="complete-btn" 
+                        onClick={onComplete}
+                        disabled={loading || !contractId || !documentId || !fieldsData || fieldsData.length === 0}
+                    >
+                        {loading ? 'Đang xử lý...' : 'Hoàn thành'}
                     </button>
                 </div>
             </div>
