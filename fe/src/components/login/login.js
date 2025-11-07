@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/login.css';
 import authService from '../../api/authService';
-import customerService from '../../api/customerService';
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,11 +16,11 @@ function Login() {
 
             const response = await authService.login({ email, password });
 
+            const accessToken = response?.data?.access_token;
 
-            if (response.data) {
-                // let user = JSON.stringify(customerService.getCustomerByEmail(email));
-                // localStorage.setItem('user', JSON.stringify(user.data));
-                localStorage.setItem('token', JSON.stringify(response.data));
+            if (accessToken) {
+                sessionStorage.setItem('token', accessToken);
+                localStorage.setItem('token', accessToken);
             }
 
             console.log('Đăng nhập thành công', response);

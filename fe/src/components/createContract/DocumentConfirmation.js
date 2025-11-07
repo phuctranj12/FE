@@ -9,12 +9,15 @@ function DocumentConfirmation({
     reviewers,
     signers,
     documentClerks,
+    contractId,
+    documentId,
+    fieldsData = [],
+    loading = false,
     onBack, 
     onComplete, 
     onSaveDraft 
 }) {
     const [expirationDate, setExpirationDate] = useState('2025-11-23');
-    const [ccEmails, setCcEmails] = useState('');
     const [currentBatchDoc, setCurrentBatchDoc] = useState(1);
     const totalBatchDocs = 1; // Mock data
     const [currentPage, setCurrentPage] = useState(1);
@@ -45,13 +48,6 @@ function DocumentConfirmation({
         }));
     };
 
-    const handleCcEmailsChange = (e) => {
-        setCcEmails(e.target.value);
-        setFormData(prev => ({
-            ...prev,
-            ccEmails: e.target.value
-        }));
-    };
 
     const formatDateForDisplay = (dateString) => {
         if (!dateString) return '';
@@ -151,15 +147,19 @@ function DocumentConfirmation({
                     </div>
 
                     <div className="batch-actions">
-                        <button className="back-btn" onClick={onBack}>
+                        <button className="back-btn" onClick={onBack} disabled={loading}>
                             Quay lại
                         </button>
                         <div className="right-actions">
-                            <button className="save-draft-btn" onClick={onSaveDraft}>
+                            <button className="save-draft-btn" onClick={onSaveDraft} disabled={loading}>
                                 Lưu nháp
                             </button>
-                            <button className="complete-btn" onClick={onComplete}>
-                                Hoàn thành
+                            <button 
+                                className="complete-btn" 
+                                onClick={onComplete}
+                                disabled={loading || !contractId || !documentId || !fieldsData || fieldsData.length === 0}
+                            >
+                                {loading ? 'Đang xử lý...' : 'Hoàn thành'}
                             </button>
                         </div>
                     </div>
@@ -327,32 +327,23 @@ function DocumentConfirmation({
                     </div>
                 </div>
 
-                {/* CC Emails */}
-                <div className="summary-section">
-                    <h4 className="section-title">CC Tài liệu tới</h4>
-                    <div className="form-group">
-                        <input
-                            type="text"
-                            value={ccEmails}
-                            onChange={handleCcEmailsChange}
-                            className="form-input"
-                            placeholder="Nhập email, ngăn cách nhau bởi dấu ','"
-                        />
-                    </div>
-                </div>
             </div>
 
             {/* Footer Buttons */}
             <div className="step-footer">
-                <button className="back-btn" onClick={onBack}>
+                <button className="back-btn" onClick={onBack} disabled={loading}>
                     Quay lại
                 </button>
                 <div className="footer-right">
-                    <button className="save-draft-btn" onClick={onSaveDraft}>
+                    <button className="save-draft-btn" onClick={onSaveDraft} disabled={loading}>
                         Lưu nháp
                     </button>
-                    <button className="complete-btn" onClick={onComplete}>
-                        Hoàn thành
+                    <button 
+                        className="complete-btn" 
+                        onClick={onComplete}
+                        disabled={loading || !contractId || !documentId || !fieldsData || fieldsData.length === 0}
+                    >
+                        {loading ? 'Đang xử lý...' : 'Hoàn thành'}
                     </button>
                 </div>
             </div>

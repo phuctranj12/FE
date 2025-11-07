@@ -34,7 +34,10 @@ apiClient.interceptors.request.use(
         if (!isPublicEndpoint(config.url)) {
             let token = sessionStorage.getItem('token'); 
             if(token === null){
-                token = "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIkFETUlOIl0sInBlcm1pc3Npb25zIjpbIkNSRUFURV9DVVNUT01FUiIsIlZJRVdfQ1VTVE9NRVIiLCJVUERBVEVfQ1VTVE9NRVIiLCJERUxFVEVfQ1VTVE9NRVIiLCJNQU5BR0VfUk9MRSJdLCJjdXN0b21lcklkIjoyMiwiaWQiOjIyLCJlbWFpbCI6Im1pbmhAZ21haWwuY29tIiwic3ViIjoibWluaEBnbWFpbC5jb20iLCJpYXQiOjE3NjIzMTU1OTksImV4cCI6MTc2MjQwMTk5OX0.Q0dryc0H3vzR015M1jO0iSElACTz_IMYifjvittE_I-wFfZa-ChMhMWwXxxPiDKMhwM4COdZxGmycMnY9K2DBA"
+                token = localStorage.getItem('token');
+            }
+            if(token === null){
+                window.location.href = '/login';
             }
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
@@ -57,11 +60,14 @@ apiClient.interceptors.response.use(
         if (error.response) {
             switch (error.response.status) {
                 case 401:
-                    // // Unauthorized - redirect to login (only if not a public endpoint)
-                    // if (!isPublicEndpoint(error.config.url)) {
-                    //     localStorage.removeItem('token');
-                    //     window.location.href = '/login';
-                    // }
+                    // Unauthorized - redirect to login (only if not a public endpoint)
+                    if (!isPublicEndpoint(error.config.url)) {
+                        localStorage.removeItem('token');
+                        sessionStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        sessionStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
                     break;
                 case 403:
                     // Forbidden

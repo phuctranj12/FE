@@ -27,7 +27,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                 outlineColor="#0B57D0"
                 backgroundColor="rgb(11, 87, 208)"
                 text="Tạo ngay"
-                onClick={() => handleSelectMenu("create-document")}
+                onClick={() => handleNavigation('/main/form-contract/add')}
             />
             <div className="menu">
                 {/* Trang chủ */}

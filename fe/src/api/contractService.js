@@ -129,16 +129,52 @@ const contractService = {
     // 7.2.1. Lấy số lượng trang PDF
     getPageSize: async (file) => {
         try {
+            console.log('[getPageSize] Starting API call...');
+            console.log('[getPageSize] File info:', {
+                name: file?.name,
+                size: file?.size,
+                type: file?.type,
+                lastModified: file?.lastModified ? new Date(file.lastModified).toISOString() : 'N/A'
+            });
+
             const formData = new FormData();
             formData.append('file', file);
-            // Note: Using POST because GET requests cannot have multipart/form-data body
+            
+            console.log('[getPageSize] Sending POST request to /contracts/documents/get-page-size');
+            console.log('[getPageSize] FormData entries:', Array.from(formData.entries()).map(([key, value]) => ({
+                key,
+                value: value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value
+            })));
+
             const response = await apiClient.post('/contracts/documents/get-page-size', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                  'Accept': '*/*',
+                  'Content-Type': 'multipart/form-data',
                 },
+              }
+            );
+
+            console.log('[getPageSize] API Response received:', {
+                code: response?.code,
+                message: response?.message,
+                data: response?.data
             });
+
+            if (response?.data) {
+                console.log('[getPageSize] Page size data:', {
+                    fileName: response.data.fileName,
+                    numberOfPages: response.data.numberOfPages
+                });
+            }
+
             return response;
         } catch (error) {
+            console.error('[getPageSize] API Error:', {
+                message: error?.message,
+                response: error?.response?.data,
+                status: error?.response?.status,
+                statusText: error?.response?.statusText
+            });
             throw error;
         }
     },
@@ -148,7 +184,6 @@ const contractService = {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            // Note: Using POST because GET requests cannot have multipart/form-data body
             const response = await apiClient.post('/contracts/documents/check-signature', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',

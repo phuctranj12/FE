@@ -71,6 +71,28 @@ const customerService = {
         }
     },
 
+    // 2.7. Lấy thông tin user theo email (internal)
+    getCustomerByEmailInternal: async (email) => {
+        try {
+            const response = await apiClient.get('/customers/internal/get-by-email', { 
+                params: { email } 
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 2.7.1. Lấy thông tin user từ token
+    getCustomerByToken: async () => {
+        try {
+            const response = await apiClient.get('/customers/get-customer-by-token');
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 2.8. Đổi mật khẩu
     changePassword: async (customerId, passwordData) => {
         try {
@@ -189,6 +211,18 @@ const customerService = {
     getOrganizationById: async (organizationId) => {
         try {
             const response = await apiClient.get(`/customers/organizations/${organizationId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 4.6. Gợi ý tên người dùng (Step 2)
+    suggestListCustomer: async (textSearch) => {
+        try {
+            const response = await apiClient.get('/customers/suggest-list-customer', {
+                params: { textSearch: textSearch || '' }
+            });
             return response;
         } catch (error) {
             throw error;

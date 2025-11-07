@@ -7,8 +7,36 @@ function DocumentTypeSelection({
     formData, 
     handleInputChange, 
     handleFileUpload, 
-    handleBatchFileUpload 
+    handleBatchFileUpload,
+    documentTypes = [],
+    relatedContracts = [],
+    loading = false,
+    handleDocumentNumberBlur = () => {},
+    isCheckingDocumentNumber = false,
+    isDocumentNumberValid = true,
+    handleAttachedFilesUpload = () => {},
+    removeAttachedFile = () => {}
 }) {
+    const formatDateForInput = (value) => {
+        if (!value) return '';
+        if (value.includes('T')) {
+            return value.substring(0, 10);
+        }
+        if (value.includes('/')) {
+            const [day, month, year] = value.split('/');
+            if (day && month && year) {
+                return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+        }
+        return value;
+    };
+
+    const handleDateChange = (event) => {
+        const { name, value } = event.target;
+        const formatted = value ? value.split('-').reverse().join('/') : '';
+        handleInputChange({ target: { name, value: formatted } });
+    };
+
     // Batch document type
     if (documentType === 'batch') {
         return (
@@ -156,14 +184,30 @@ function DocumentTypeSelection({
                             />
                         </div>
                         <div className="form-group">
-                            <label>Số tài liệu</label>
+                            <label>Số tài liệu *</label>
                             <input
                                 type="text"
                                 name="documentNumber"
                                 value={formData.documentNumber}
                                 onChange={handleInputChange}
+                                onBlur={handleDocumentNumberBlur}
                                 placeholder="Nhập số tài liệu"
+                                required
+                                style={{
+                                    borderColor: !isDocumentNumberValid ? '#f44336' : undefined
+                                }}
+                                disabled={isCheckingDocumentNumber}
                             />
+                            {isCheckingDocumentNumber && (
+                                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                    Đang kiểm tra...
+                                </div>
+                            )}
+                            {!isDocumentNumberValid && (
+                                <div style={{ fontSize: '12px', color: '#f44336', marginTop: '4px' }}>
+                                    ❌ Mã hợp đồng đã tồn tại
+                                </div>
+                            )}
                         </div>
                         <div className="form-group">
                             <label>Loại tài liệu</label>
@@ -179,13 +223,11 @@ function DocumentTypeSelection({
                             <label>Ngày hết hạn ký *</label>
                             <div className="date-input-container">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="signingExpirationDate"
-                                    value={formData.signingExpirationDate}
-                                    onChange={handleInputChange}
-                                    placeholder="20/11/2025"
+                                    value={formatDateForInput(formData.signingExpirationDate)}
+                                    onChange={handleDateChange}
                                 />
-                                <span className="calendar-icon">📅</span>
                             </div>
                         </div>
                         <div className="form-group">
@@ -237,13 +279,11 @@ function DocumentTypeSelection({
                             <label>Ngày hết hiệu lực tài liệu</label>
                             <div className="date-input-container">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="expirationDate"
-                                    value={formData.expirationDate}
-                                    onChange={handleInputChange}
-                                    placeholder=""
+                                    value={formatDateForInput(formData.expirationDate)}
+                                    onChange={handleDateChange}
                                 />
-                                <span className="calendar-icon">📅</span>
                             </div>
                         </div>
                     </div>
@@ -298,14 +338,20 @@ function DocumentTypeSelection({
                 <div className="upload-support">Hỗ trợ file docx, pdf</div>
                 <input
                     type="file"
-                    accept=".docx,.pdf"
+                    accept=".pdf"
                     onChange={handleFileUpload}
                     style={{ display: 'none' }}
                     id="file-upload-single"
+                    disabled={loading}
                 />
-                <label htmlFor="file-upload-single" className="file-upload-label">
-                    {formData.attachedFile || 'Chọn file'}
+                <label htmlFor="file-upload-single" className={`file-upload-label ${loading ? 'disabled' : ''}`}>
+                    {loading ? 'Đang xử lý...' : (formData.pdfFileName || formData.attachedFile || 'Chọn file PDF')}
                 </label>
+                {formData.pdfPageCount > 0 && (
+                    <div className="file-info" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                        ✅ File: {formData.pdfFileName} | Số trang: {formData.pdfPageCount}
+                    </div>
+                )}
             </div>
 
             <div className="form-content">
@@ -321,25 +367,47 @@ function DocumentTypeSelection({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Số tài liệu</label>
+                        <label>Số tài liệu *</label>
                         <input
                             type="text"
                             name="documentNumber"
                             value={formData.documentNumber}
                             onChange={handleInputChange}
+                            onBlur={handleDocumentNumberBlur}
                             placeholder="Số tài liệu"
+                            required
+                            style={{
+                                borderColor: !isDocumentNumberValid ? '#f44336' : undefined
+                            }}
+                            disabled={isCheckingDocumentNumber}
                         />
+                        {isCheckingDocumentNumber && (
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                Đang kiểm tra...
+                            </div>
+                        )}
+                        {!isDocumentNumberValid && (
+                            <div style={{ fontSize: '12px', color: '#f44336', marginTop: '4px' }}>
+                                ❌ Mã hợp đồng đã tồn tại
+                            </div>
+                        )}
                     </div>
                     <div className="form-group">
                         <label>Tài liệu liên quan</label>
                         <div className="dropdown-container">
-                            <input
-                                type="text"
+                            <select
                                 name="relatedDocuments"
                                 value={formData.relatedDocuments}
                                 onChange={handleInputChange}
-                                placeholder="Tài liệu đã hoàn thành hoặc trong menu Quản lý thư mục"
-                            />
+                                disabled={loading}
+                            >
+                                <option value="">-- Chọn tài liệu liên quan --</option>
+                                {relatedContracts.map((contract) => (
+                                    <option key={contract.id} value={contract.id}>
+                                        {contract.name} ({contract.contractNo})
+                                    </option>
+                                ))}
+                            </select>
                             <span className="dropdown-icon">▼</span>
                         </div>
                     </div>
@@ -356,13 +424,11 @@ function DocumentTypeSelection({
                         <label>Ngày hết hiệu lực tài liệu</label>
                         <div className="date-input-container">
                             <input
-                                type="text"
+                                type="date"
                                 name="expirationDate"
-                                value={formData.expirationDate}
-                                onChange={handleInputChange}
-                                placeholder=""
+                                value={formatDateForInput(formData.expirationDate)}
+                                onChange={handleDateChange}
                             />
-                            <span className="calendar-icon">📅</span>
                         </div>
                     </div>
                 </div>
@@ -372,25 +438,70 @@ function DocumentTypeSelection({
                         <label>File đính kèm</label>
                         <div className="file-input-container">
                             <input
-                                type="text"
-                                name="attachedFile"
-                                value={formData.attachedFile}
-                                onChange={handleInputChange}
-                                placeholder="Chọn file đính kèm (PDF, DOC, DOCX, PNG, JPG, JPEG, ZIP, RAR, TXT, XLS, XLSX)"
+                                type="file"
+                                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar,.txt,.xls,.xlsx"
+                                onChange={handleAttachedFilesUpload}
+                                style={{ display: 'none' }}
+                                id="attached-files-upload"
+                                multiple
+                                disabled={loading}
                             />
-                            <span className="attachment-icon">📎</span>
+                            <label 
+                                htmlFor="attached-files-upload" 
+                                className={`file-upload-label ${loading ? 'disabled' : ''}`}
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    display: 'inline-block', 
+                                    padding: '8px 16px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    background: '#fff'
+                                }}
+                            >
+                                {formData.attachedFiles?.length > 0 
+                                    ? `${formData.attachedFiles.length} file(s) đã chọn` 
+                                    : 'Chọn file đính kèm'}
+                            </label>
                         </div>
+                        {formData.attachedFiles && formData.attachedFiles.length > 0 && (
+                            <div style={{ marginTop: '8px', fontSize: '12px' }}>
+                                {formData.attachedFiles.map((file, index) => (
+                                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <span>📎 {file.name}</span>
+                                        <button 
+                                            type="button"
+                                            onClick={() => removeAttachedFile(index)}
+                                            style={{ 
+                                                background: 'transparent', 
+                                                border: 'none', 
+                                                color: '#f44336', 
+                                                cursor: 'pointer',
+                                                fontSize: '16px'
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="form-group">
                         <label>Loại tài liệu</label>
                         <div className="dropdown-container">
-                            <input
-                                type="text"
+                            <select
                                 name="documentType"
                                 value={formData.documentType}
                                 onChange={handleInputChange}
-                                placeholder="Chọn loại tài liệu"
-                            />
+                                disabled={loading}
+                            >
+                                <option value="">-- Chọn loại tài liệu --</option>
+                                {documentTypes.map((type) => (
+                                    <option key={type.id} value={type.id}>
+                                        {type.name}
+                                    </option>
+                                ))}
+                            </select>
                             <span className="dropdown-icon">▼</span>
                         </div>
                     </div>
@@ -398,13 +509,11 @@ function DocumentTypeSelection({
                         <label>Ngày hết hạn ký *</label>
                         <div className="date-input-container">
                             <input
-                                type="text"
+                                type="date"
                                 name="signingExpirationDate"
-                                value={formData.signingExpirationDate}
-                                onChange={handleInputChange}
-                                placeholder="20/11/2025"
+                                value={formatDateForInput(formData.signingExpirationDate)}
+                                onChange={handleDateChange}
                             />
-                            <span className="calendar-icon">📅</span>
                         </div>
                     </div>
                 </div>
