@@ -39,6 +39,10 @@
   height: 40px;
   display: flex;
   align-items: center;
+  gap: 8px;
+  font-size: 22px;
+  font-weight: 700;
+  padding-left: 10px;
 }
 .breadcrumb-inline {
   display: inline-flex;
@@ -57,6 +61,23 @@
 
 .breadcrumb-inline .crumb-current {
   color: #0041C4; /* màu phần cuối */
+}
+
+/* Style for chevron when NOT using .breadcrumb-inline wrapper */
+.divider .chev {
+  width: 10px;
+  height: 10px;
+  color: #8aa0c7;
+  flex-shrink: 0;
+}
+
+.divider .crumb {
+  cursor: default;
+  color: #333;
+}
+
+.divider .crumb-current {
+  color: #0041C4;
 }
 
 
