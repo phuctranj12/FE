@@ -592,33 +592,90 @@ function DocumentEditor({
         const component = documentComponents.find(comp => comp.id === componentId);
         if (!component) return;
 
+        // Tìm page container (parent có data-page-index)
+        let pageContainer = e.target.closest('[data-page-index]');
+        if (!pageContainer) {
+            // Fallback: tìm trong document
+            pageContainer = document.querySelector(`[data-page-index="${(component.properties?.page || component.page || 1) - 1}"]`);
+        }
+
+        const pageRect = pageContainer ? pageContainer.getBoundingClientRect() : null;
+        const componentRect = e.currentTarget.getBoundingClientRect();
+
         setDraggedComponent(component);
         setIsDragging(true);
-        setDragStart({
-            x: e.clientX - component.properties.x,
-            y: e.clientY - component.properties.y
-        });
+        
+        if (pageRect) {
+            // Lưu offset từ mouse đến component (relative với page container)
+            const offsetX = e.clientX - componentRect.left;
+            const offsetY = e.clientY - componentRect.top;
+            setDragStart({
+                offsetX: offsetX,
+                offsetY: offsetY,
+                initialX: component.properties.x,
+                initialY: component.properties.y,
+                pageRectLeft: pageRect.left,
+                pageRectTop: pageRect.top
+            });
+        } else {
+            // Fallback: dùng logic cũ
+            setDragStart({
+                offsetX: e.clientX - component.properties.x,
+                offsetY: e.clientY - component.properties.y,
+                initialX: component.properties.x,
+                initialY: component.properties.y,
+                pageRectLeft: 0,
+                pageRectTop: 0
+            });
+        }
     };
 
     const handleMouseMove = (e) => {
         if (!isDragging || !draggedComponent) return;
 
-        const newX = e.clientX - dragStart.x;
-        const newY = e.clientY - dragStart.y;
+        // Tìm page container hiện tại (cập nhật mỗi lần move để handle scroll)
+        const pageNumber = draggedComponent.properties?.page || draggedComponent.page || currentPage;
+        const pageContainer = document.querySelector(`[data-page-index="${pageNumber - 1}"]`);
+        
+        if (pageContainer) {
+            const pageRect = pageContainer.getBoundingClientRect();
+            // Tính toán tọa độ mới relative với page container
+            // newX = (mouse position - page position) - offset từ mouse đến component
+            const newX = (e.clientX - pageRect.left) - dragStart.offsetX;
+            const newY = (e.clientY - pageRect.top) - dragStart.offsetY;
+            
+            setDocumentComponents(prev => prev.map(comp => 
+                comp.id === draggedComponent.id 
+                    ? { 
+                        ...comp, 
+                        properties: { 
+                            ...comp.properties, 
+                            x: Math.max(0, newX), 
+                            y: Math.max(0, newY),
+                            page: pageNumber
+                        } 
+                    }
+                    : comp
+            ));
+        } else {
+            // Fallback: dùng logic cũ
+            const newX = e.clientX - dragStart.offsetX;
+            const newY = e.clientY - dragStart.offsetY;
 
-        setDocumentComponents(prev => prev.map(comp => 
-            comp.id === draggedComponent.id 
-                ? { 
-                    ...comp, 
-                    properties: { 
-                        ...comp.properties, 
-                        x: newX, 
-                        y: newY,
-                        page: currentPage // Cập nhật page khi drag
-                    } 
-                }
-                : comp
-        ));
+            setDocumentComponents(prev => prev.map(comp => 
+                comp.id === draggedComponent.id 
+                    ? { 
+                        ...comp, 
+                        properties: { 
+                            ...comp.properties, 
+                            x: Math.max(0, newX), 
+                            y: Math.max(0, newY),
+                            page: currentPage
+                        } 
+                    }
+                    : comp
+            ));
+        }
     };
 
     const handleMouseUp = () => {
@@ -905,6 +962,17 @@ function DocumentEditor({
                                         totalPages={totalPages}
                                         zoom={zoom}
                                         onPageChange={handlePageChange}
+                                        components={documentComponents}
+                                        editingComponentId={editingComponentId}
+                                        hoveredComponentId={hoveredComponentId}
+                                        isDragging={isDragging}
+                                        draggedComponent={draggedComponent}
+                                        onComponentClick={handleComponentClick}
+                                        onComponentMouseDown={handleMouseDown}
+                                        onComponentMouseEnter={setHoveredComponentId}
+                                        onComponentMouseLeave={() => setHoveredComponentId(null)}
+                                        onResizeStart={handleResizeStart}
+                                        onRemoveComponent={handleRemoveComponent}
                                     />
                                 </div>
                             )}
@@ -921,62 +989,6 @@ function DocumentEditor({
                                     <p>Chưa có tài liệu để hiển thị</p>
                                 </div>
                             )}
-
-                            {/* Document Components - chỉ hiển thị components trên trang hiện tại */}
-                            {documentComponents
-                                .filter(component => (component.properties.page || component.page || 1) === currentPage)
-                                .map(component => (
-                                <div 
-                                    key={component.id} 
-                                    className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''}`}
-                                    style={{
-                                        position: 'absolute',
-                                        left: `${component.properties.x}px`,
-                                        top: `${component.properties.y}px`,
-                                        width: `${component.properties.width}px`,
-                                        height: `${component.properties.height}px`,
-                                        fontSize: `${component.properties.size}px`,
-                                        fontFamily: component.properties.font,
-                                        cursor: isDragging ? 'grabbing' : 'grab'
-                                    }}
-                                    onMouseEnter={() => setHoveredComponentId(component.id)}
-                                    onMouseLeave={() => setHoveredComponentId(null)}
-                                    onMouseDown={(e) => handleMouseDown(e, component.id)}
-                                    onClick={(e) => {
-                                        if (!isDragging) {
-                                            handleComponentClick(component);
-                                        }
-                                    }}
-                                >
-                                    <div className="component-content">
-                                        {component.type === 'text' && component.properties.fieldName 
-                                            ? `[${component.properties.fieldName}]` 
-                                            : component.signatureType 
-                                                ? `[${component.name}]`
-                                                : `[${component.name}]`
-                                        }
-                                    </div>
-                                    
-                                    {/* Resize handles */}
-                                    <div className="resize-handle nw" onMouseDown={(e) => handleResizeStart(e, component.id, 'nw')}></div>
-                                    <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, component.id, 'ne')}></div>
-                                    <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, component.id, 'sw')}></div>
-                                    <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, component.id, 'se')}></div>
-                                    
-                                    {hoveredComponentId === component.id && (
-                                        <button 
-                                            className="remove-component-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRemoveComponent(component.id);
-                                            }}
-                                            title="Xóa component"
-                                        >
-                                            ×
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
                         </div>
                     </div>
 
