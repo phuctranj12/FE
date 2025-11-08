@@ -560,6 +560,7 @@ function DocumentEditor({
     };
 
     const handleSignatureOptionClick = (option) => {
+        console.log('handleSignatureOptionClick', option);
         if (selectedComponent) {
             const newComponent = {
                 id: Date.now(),
@@ -784,6 +785,7 @@ function DocumentEditor({
                                         onClick={(e) => {
                                             if (component.hasDropdown) {
                                                 e.stopPropagation();
+                                                setSelectedComponent(component);
                                                 const rect = e.target.getBoundingClientRect();
                                                 setDropdownPosition({
                                                     top: rect.top,
