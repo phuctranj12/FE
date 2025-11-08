@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/documentForm.css';
 import DocumentTypeSelection from './DocumentTypeSelection';
 import DocumentSigners from './DocumentSigners';
@@ -8,6 +9,7 @@ import customerService from '../../api/customerService';
 import contractService from '../../api/contractService';
 
 const DocumentForm = () => {
+    const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
     const [documentType, setDocumentType] = useState('single-no-template');
     
@@ -945,9 +947,10 @@ const DocumentForm = () => {
 
             showToast('✅ Tạo hợp đồng thành công! Hợp đồng đã được tạo với trạng thái "Đã tạo".', 'success', 5000);
             
-            // Có thể redirect hoặc reset form sau khi hoàn thành
-            // Ví dụ: window.location.href = '/contracts';
-            // Hoặc: resetForm();
+            // Redirect về dashboard sau 2 giây để user có thể thấy toast
+            setTimeout(() => {
+                navigate('/main/dashboard');
+            }, 1500);
             
         } catch (err) {
             console.error('[Step 4] Error completing contract:', err);
