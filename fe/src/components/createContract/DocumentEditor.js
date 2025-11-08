@@ -136,15 +136,16 @@ function DocumentEditor({
     });
 
     const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
+        if (page && page >= 1) {
+            console.log(`[Page Change] Trang hiện tại: ${page} / Tổng số trang: ${totalPages}`);
             setCurrentPage(page);
         }
     };
 
     // Handle page change from PDFViewer (sync với pagination controls)
-    const handlePDFPageChange = (page) => {
-        setCurrentPage(page);
-    };
+    // const handlePDFPageChange = (page) => {
+    //     setCurrentPage(page);
+    // };
 
     const handleComponentSelect = (component) => {
         // Nếu component có autoCreate (Số tài liệu hoặc Text), tự động tạo component ở giữa màn hình
@@ -301,6 +302,11 @@ function DocumentEditor({
             setTotalPages(initialTotalPages);
         }
     }, [initialTotalPages]);
+
+    // Log khi currentPage thay đổi (bắt cả scroll và click)
+    useEffect(() => {
+        console.log(`[Page Update] Trang hiện tại: ${currentPage} / Tổng số trang: ${totalPages}`);
+    }, [currentPage, totalPages]);
 
     // Load presigned URL khi documentId có
     useEffect(() => {
@@ -892,13 +898,15 @@ function DocumentEditor({
                             )}
                             
                             {pdfUrl && !pdfLoading && !pdfError && (
-                                <PDFViewer
-                                    document={{ pdfUrl: pdfUrl }}
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    zoom={zoom}
-                                    onPageChange={handlePDFPageChange}
-                                />
+                                <div className="pdf-viewer">
+                                    <PDFViewer
+                                        document={{ pdfUrl: pdfUrl }}
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        zoom={zoom}
+                                        onPageChange={handlePageChange}
+                                    />
+                                </div>
                             )}
                             
                             {!pdfUrl && !pdfLoading && !pdfError && (
