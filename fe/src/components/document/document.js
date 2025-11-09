@@ -15,15 +15,14 @@ function Document({ selectedStatus, onDocumentClick }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
     const [totalDocs, setTotalDocs] = useState(0);
-    const [errorMessage, setErrorMessage] = useState(""); // <-- Thông báo lỗi
+    const [errorMessage, setErrorMessage] = useState("");
 
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentDocs = docs.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(totalDocs / itemsPerPage);
 
     const fetchDocuments = async () => {
-        setErrorMessage(""); // reset lỗi trước khi fetch
+        setErrorMessage("");
+
+        // Lấy filter
         const filter = {
             status: selectedStatus === "all" ? 0 : selectedStatus,
             textSearch: searchTerm,
@@ -31,15 +30,17 @@ function Document({ selectedStatus, onDocumentClick }) {
             toDate: advancedFilters.toDate || "",
             page: currentPage - 1,
             size: itemsPerPage,
-            organizationId: 0
+            // organizationId bỏ đi
         };
 
+        // Chuyển filter thành query string
+        const queryParams = new URLSearchParams(filter).toString();
+
         try {
-            const response = await documentService.getMyContracts(filter);
-            setDocs(response.content || []);
-            setTotalDocs(response.total || 0);
+            const data = await documentService.getMyContracts(`?${queryParams}`);
+            setDocs(data?.content || []);
+            setTotalDocs(data?.total || 0);
         } catch (error) {
-            // Xử lý lỗi hiển thị cho người dùng
             if (error.response) {
                 if (error.response.status === 401) {
                     setErrorMessage("Bạn chưa đăng nhập hoặc token đã hết hạn.");
@@ -149,7 +150,7 @@ function Document({ selectedStatus, onDocumentClick }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentDocs.map(doc => (
+                                {docs.map(doc => (
                                     <tr
                                         key={doc.id}
                                         className="document-row"
