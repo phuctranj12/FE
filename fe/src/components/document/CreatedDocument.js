@@ -28,12 +28,12 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
             fromDate: advancedFilters.fromDate || "",
             toDate: advancedFilters.toDate || "",
             page: currentPage - 1,
-            size: itemsPerPage,
-            organizationId: 0
+            size: itemsPerPage
         };
 
         try {
-            const response = await createdDocumentService.getMyProcessContracts(filter);
+            // Gọi API qua service đã sửa
+            const response = await createdDocumentService.getCreatedContracts(filter);
             setDocs(response.content || []);
             setTotalDocs(response.total || 0);
         } catch (error) {

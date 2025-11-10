@@ -14,7 +14,7 @@ const documentService = {
                 // organizationId bỏ 
             };
 
-            const response = await apiClient.get('/contracts/my-contracts', body);
+            const response = await apiClient.post('/contracts/my-contracts', body);
             return response; // apiClient trả về data
         } catch (error) {
             throw error;

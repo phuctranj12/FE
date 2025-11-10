@@ -15,6 +15,7 @@ function MainContent() {
     const location = useLocation();
     const [selectedStatus, setSelectedStatus] = useState("");
     const [menuStatus, setMenuStatus] = useState("home");
+    const [breadcrumb, setBreadcrumb] = useState("Trang chủ > Dashboard");
     const getBreadcrumb = () => {
         // Check URL-based routes first
         if (location.pathname.startsWith('/main/contract-template')) return "Tài liệu mẫu";
@@ -25,6 +26,10 @@ function MainContent() {
         if (location.pathname.startsWith('/main/form-user/edit')) return "Quản lý người dùng > Sửa người dùng";
         if (location.pathname.startsWith('/main/user')) return "Quản lý người dùng > Danh sách người dùng";
         if (location.pathname.startsWith('/main/role')) return "Quản lý người dùng > Danh sách vai trò";
+        if (location.pathname.startsWith('/main/document')) return "Tài liệu đã tạo";
+        if (location.pathname.startsWith('/main/created-document')) return "Tài liệu đã nhận";
+        if (location.pathname.startsWith('/main/server-certificate')) return "Cấu hình > Danh sách chứng thư số Server";
+
 
         // Fallback to state-based logic for old components
         if (menuStatus === "user-management") {

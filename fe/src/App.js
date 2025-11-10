@@ -15,7 +15,7 @@ import DocTypeList from './components/configuration/DocTypeList';
 import Document from './components/document/document';
 import CreatedDocument from './components/document/CreatedDocument';
 import DocumentForm from './components/createContract/DocumentForm';
-
+import ServerCertificateList from './components/certificate/ServerCertificateList';
 function App() {
   return (
     <Routes>
@@ -35,6 +35,7 @@ function App() {
         <Route path="role" element={<RoleList />} />
         <Route path="document" element={<Document />} />
         <Route path="created-document" element={<CreatedDocument />} />
+        <Route path="server-certificate" element={<CreatedDocument />} />
       </Route>
     </Routes>
   );

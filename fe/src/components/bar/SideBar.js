@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../../styles/sideBar.css";
 import { useNavigate } from "react-router-dom";
 import Button from "../common/Button";
-function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus }) {
+function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus, setBreadcrumb }) {
     const [activeMenu, setActiveMenu] = useState(null);
     const navigate = useNavigate();
     const handleNavigation = (path) => {
@@ -128,7 +128,10 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                         <div className="subitem" onClick={() => handleSelect("gui-sms-email")}>
                             Cấu hình gửi SMS/Email
                         </div>
-                        <div className="subitem" onClick={() => handleSelectMenu("certificate")}>
+                        <div className="subitem" onClick={() => {
+                            handleSelectMenu("certificate");
+                            handleNavigation("/main/server-certificate");
+                        }}>
                             Danh sách chứng thư số Server
                         </div>
                         <div className="subitem" onClick={() => handleSelect("webhook")}>Cấu hình WebHook</div>
