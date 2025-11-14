@@ -36,11 +36,22 @@ const contractService = {
     },
 
     // 7.1.4. Thay đổi trạng thái hợp đồng
-    changeContractStatus: async (contractId, status) => {
+    changeContractStatus: async (contractId, status, reason = '') => {
         try {
-            const response = await apiClient.put(`/contract/${contractId}/change-status/${status}`);
+            const response = await apiClient.put(`/contracts/${contractId}/change-status/${status}`, {
+                reason: reason
+            });
             return response;
         } catch (error) {
+            console.error('[contractService] Error changing contract status:', error);
+            // Log more details if available
+            if (error.response) {
+                console.error('[contractService] Response error:', error.response.status, error.response.data);
+            } else if (error.request) {
+                console.error('[contractService] Request error:', error.request);
+            } else {
+                console.error('[contractService] Error message:', error.message);
+            }
             throw error;
         }
     },
