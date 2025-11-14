@@ -993,7 +993,7 @@ const DocumentForm = () => {
                     name: fullName,
                     email,
                     phone,
-                    card_id: item.card_id || item.cardId || '',
+                    cardId: item.cardId || item.card_id || '',
                     role,
                     ordering,
                     status: 0,
