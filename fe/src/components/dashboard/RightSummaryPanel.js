@@ -3,7 +3,7 @@ import '../../styles/dashboardLayout.css';
 
 const DocItem = ({
     title,
-    party = 'Trung tâm công nghệ thông tin MobiFone',
+    party = 'Trung tâm công nghệ thông tin eContract',
     tag = 'Ký số bằng HSM',
     date = '20/10/2025 00:18:23',
 }) => {

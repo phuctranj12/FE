@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import '../../styles/documentDetail.css';
 import PDFViewer from '../document/PDFViewer';
 
-function TemplateDetail({ template, onBack }) {
+function TemplateDetail({ template, onBack, mode = 'view' }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(14);
     const [zoom, setZoom] = useState(100);
     const [showSigningInfo, setShowSigningInfo] = useState(false);
+    const [signAgreement, setSignAgreement] = useState(null); // null: chưa chọn, true: đồng ý, false: không đồng ý
 
     // Dữ liệu mẫu cho thông tin ký
     const signingInfo = [
@@ -111,6 +112,40 @@ function TemplateDetail({ template, onBack }) {
                                 </div>
                             )}
                         </div>
+
+                        {/* Xác nhận ký tài liệu - chỉ hiển thị khi mode='sign' */}
+                        {mode === 'sign' && (
+                            <div className="sign-confirmation-section">
+                                <h3 className="section-title">XÁC NHẬN KÝ TÀI LIỆU</h3>
+                                <div className="confirmation-content">
+                                    <p className="confirmation-question">
+                                        Bạn có đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch không?
+                                    </p>
+                                    <div className="radio-options">
+                                        <label className="radio-option">
+                                            <input
+                                                type="radio"
+                                                name="signAgreement"
+                                                value="agree"
+                                                checked={signAgreement === true}
+                                                onChange={() => setSignAgreement(true)}
+                                            />
+                                            <span className="radio-label">Đồng ý</span>
+                                        </label>
+                                        <label className="radio-option">
+                                            <input
+                                                type="radio"
+                                                name="signAgreement"
+                                                value="disagree"
+                                                checked={signAgreement === false}
+                                                onChange={() => setSignAgreement(false)}
+                                            />
+                                            <span className="radio-label">Không đồng ý</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -181,10 +216,35 @@ function TemplateDetail({ template, onBack }) {
 
                     {/* Nút hành động */}
                     <div className="document-actions">
-                        <button className="edit-btn" onClick={() => {
-                            console.log('Edit template:', template);
-                        }}>Chỉnh sửa</button>
-                        <button className="finish-btn" onClick={onBack}>Đóng</button>
+                        {mode === 'view' ? (
+                            <>
+                                <button className="edit-btn" onClick={() => {
+                                    console.log('Edit template:', template);
+                                }}>Chỉnh sửa</button>
+                                <button className="finish-btn" onClick={onBack}>Đóng</button>
+                            </>
+                        ) : (
+                            <>
+                                <button className="edit-btn" onClick={onBack}>Hủy</button>
+                                <button 
+                                    className="finish-btn" 
+                                    onClick={() => {
+                                        if (signAgreement === true) {
+                                            console.log('Tiến hành ký tài liệu');
+                                            // Logic ký tài liệu
+                                        } else if (signAgreement === false) {
+                                            console.log('Người dùng không đồng ý');
+                                            alert('Bạn cần đồng ý với các điều khoản để ký tài liệu');
+                                        } else {
+                                            alert('Vui lòng chọn đồng ý hoặc không đồng ý');
+                                        }
+                                    }}
+                                    disabled={signAgreement !== true}
+                                >
+                                    Ký tài liệu
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
         </div>

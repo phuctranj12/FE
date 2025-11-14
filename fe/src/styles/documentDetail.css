@@ -386,8 +386,14 @@ Document Content
     transition: background 0.2s ease;
 }
 
-.finish-btn:hover {
+.finish-btn:hover:not(:disabled) {
     background: #0a4bb8;
+}
+
+.finish-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .edit-btn {
@@ -472,6 +478,51 @@ Document Content
     background: #e3f2fd;
     border-radius: 12px;
     display: inline-block;
+}
+
+/* Sign Confirmation Section */
+.sign-confirmation-section {
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 16px;
+}
+
+.confirmation-content {
+    margin-top: 16px;
+}
+
+.confirmation-question {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+.radio-options {
+    display: flex;
+    gap: 20px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.radio-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #0B57D0;
+}
+
+.radio-label {
+    margin-left: 8px;
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
 }
 
 /* Responsive */

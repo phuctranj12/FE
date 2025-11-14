@@ -83,6 +83,9 @@ const DocumentForm = () => {
         }
     ]);
     const [documentClerks, setDocumentClerks] = useState([]);
+    
+    // Partners state - array of partner objects
+    const [partners, setPartners] = useState([]);
 
     // Fetch initial data when component mounts
     useEffect(() => {
@@ -534,6 +537,267 @@ const DocumentForm = () => {
         setDocumentClerks(documentClerks.filter(clerk => clerk.id !== id));
     };
 
+    // Partner management functions
+    const addPartner = () => {
+        const newPartner = {
+            id: Date.now(),
+            type: 2, // 2 = Đối tác (Organization), 3 = Cá nhân (Individual)
+            name: '',
+            ordering: partners.length + 2, // Start from 2 (1 is for "Tổ chức của tôi")
+            coordinators: [],
+            reviewers: [],
+            signers: [],
+            clerks: []
+        };
+        setPartners([...partners, newPartner]);
+    };
+
+    const removePartner = (id) => {
+        setPartners(partners.filter(partner => partner.id !== id));
+    };
+
+    const updatePartner = (id, field, value) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === id) {
+                    // If changing type to individual (3), clear coordinators, reviewers, and clerks
+                    if (field === 'type' && value === 3) {
+                        return {
+                            ...partner,
+                            type: 3,
+                            coordinators: [],
+                            reviewers: [],
+                            clerks: []
+                        };
+                    }
+                    return { ...partner, [field]: value };
+                }
+                return partner;
+            })
+        );
+    };
+
+    // Partner coordinator functions
+    const addPartnerCoordinator = (partnerId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    const newCoordinator = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        card_id: '',
+                        ordering: partner.coordinators.length + 1
+                    };
+                    return {
+                        ...partner,
+                        coordinators: [...partner.coordinators, newCoordinator]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerCoordinator = (partnerId, coordinatorId, field, value) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        coordinators: partner.coordinators.map(coordinator =>
+                            coordinator.id === coordinatorId
+                                ? { ...coordinator, [field]: value }
+                                : coordinator
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerCoordinator = (partnerId, coordinatorId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        coordinators: partner.coordinators.filter(c => c.id !== coordinatorId)
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    // Partner reviewer functions
+    const addPartnerReviewer = (partnerId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    const newReviewer = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        card_id: '',
+                        ordering: partner.reviewers.length + 1
+                    };
+                    return {
+                        ...partner,
+                        reviewers: [...partner.reviewers, newReviewer]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerReviewer = (partnerId, reviewerId, field, value) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        reviewers: partner.reviewers.map(reviewer =>
+                            reviewer.id === reviewerId
+                                ? { ...reviewer, [field]: value }
+                                : reviewer
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerReviewer = (partnerId, reviewerId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        reviewers: partner.reviewers.filter(r => r.id !== reviewerId)
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    // Partner signer functions
+    const addPartnerSigner = (partnerId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    const newSigner = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        loginByPhone: false,
+                        card_id: '',
+                        ordering: partner.signers.length + 1
+                    };
+                    return {
+                        ...partner,
+                        signers: [...partner.signers, newSigner]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerSigner = (partnerId, signerId, field, value) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        signers: partner.signers.map(signer =>
+                            signer.id === signerId
+                                ? { ...signer, [field]: value }
+                                : signer
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerSigner = (partnerId, signerId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        signers: partner.signers.filter(s => s.id !== signerId)
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    // Partner clerk functions
+    const addPartnerClerk = (partnerId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    const newClerk = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        card_id: '',
+                        ordering: partner.clerks.length + 1
+                    };
+                    return {
+                        ...partner,
+                        clerks: [...partner.clerks, newClerk]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerClerk = (partnerId, clerkId, field, value) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        clerks: partner.clerks.map(clerk =>
+                            clerk.id === clerkId
+                                ? { ...clerk, [field]: value }
+                                : clerk
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerClerk = (partnerId, clerkId) => {
+        setPartners(prevPartners =>
+            prevPartners.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        clerks: partner.clerks.filter(c => c.id !== clerkId)
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
     const handleOrganizationOrderingChange = (value) => {
         const parsed = parseInt(value, 10);
         setFormData(prev => ({
@@ -601,6 +865,83 @@ const DocumentForm = () => {
             errors.push('Email của văn thư không hợp lệ.');
         }
 
+        // Validate partners
+        partners.forEach((partner, index) => {
+            if (!partner.name?.trim()) {
+                errors.push(`Vui lòng nhập tên cho đối tác ${index + 1}.`);
+                return;
+            }
+
+            // For organization type, validate all roles
+            if (partner.type === 2) {
+                // Validate coordinators
+                const invalidCoordinators = partner.coordinators.filter((coord) => 
+                    coord.fullName && coord.email && !validateEmail(coord.email)
+                );
+                if (invalidCoordinators.length > 0) {
+                    errors.push(`Email của người điều phối trong đối tác "${partner.name}" không hợp lệ.`);
+                }
+
+                // Validate reviewers
+                const invalidReviewers = partner.reviewers.filter((reviewer) => 
+                    reviewer.fullName && reviewer.email && !validateEmail(reviewer.email)
+                );
+                if (invalidReviewers.length > 0) {
+                    errors.push(`Email của người xem xét trong đối tác "${partner.name}" không hợp lệ.`);
+                }
+
+                // Validate signers
+                const invalidSigners = partner.signers.filter((signer) => {
+                    if (!signer.fullName?.trim()) return false;
+                    if (signer.loginByPhone) {
+                        return !validatePhone(signer.phone);
+                    } else {
+                        return !validateEmail(signer.email);
+                    }
+                });
+                if (invalidSigners.length > 0) {
+                    errors.push(`Email hoặc số điện thoại của người ký trong đối tác "${partner.name}" không hợp lệ.`);
+                }
+
+                // Validate clerks
+                const invalidClerks = partner.clerks.filter((clerk) => 
+                    clerk.fullName && clerk.email && !validateEmail(clerk.email)
+                );
+                if (invalidClerks.length > 0) {
+                    errors.push(`Email của văn thư trong đối tác "${partner.name}" không hợp lệ.`);
+                }
+            } 
+            // For individual type, only validate signers
+            else if (partner.type === 3) {
+                const validSigners = partner.signers.filter((signer) => {
+                    const hasName = signer.fullName?.trim();
+                    if (!hasName) return false;
+                    
+                    if (signer.loginByPhone) {
+                        return validatePhone(signer.phone);
+                    } else {
+                        return validateEmail(signer.email);
+                    }
+                });
+                
+                if (validSigners.length === 0) {
+                    errors.push(`Vui lòng thêm ít nhất một người ký cho đối tác "${partner.name}".`);
+                }
+
+                const invalidSigners = partner.signers.filter((signer) => {
+                    if (!signer.fullName?.trim()) return false;
+                    if (signer.loginByPhone) {
+                        return !validatePhone(signer.phone);
+                    } else {
+                        return !validateEmail(signer.email);
+                    }
+                });
+                if (invalidSigners.length > 0) {
+                    errors.push(`Email hoặc số điện thoại của người ký trong đối tác "${partner.name}" không hợp lệ.`);
+                }
+            }
+        });
+
         if (errors.length > 0) {
             showToast(errors[0], 'error');
             return false;
@@ -610,12 +951,10 @@ const DocumentForm = () => {
     };
 
     const buildParticipantsPayload = () => {
-        // Group recipients by role and calculate ordering per role
-        // According to CreateContractFlow.md: "Với mỗi participant khác nhau: Mỗi role bắt đầu từ 1"
-        const recipients = [];
+        const participants = [];
 
         // Helper to add recipients with proper ordering per role
-        const addRecipients = (items, role) => {
+        const addRecipients = (items, role, recipientsArray) => {
             // Filter valid items first
             // For signers (role = 3), check phone if loginByPhone = true, otherwise check email
             const validItems = items.filter(item => {
@@ -648,13 +987,13 @@ const DocumentForm = () => {
                 const phone = (role === 3 && item.loginByPhone) ? (item.phone?.trim() || '') : (item.phone || '');
 
                 // signType luôn = 6 theo CreateContractFlow.md
-                recipients.push({
+                recipientsArray.push({
                     // Include id if exists (for editing when returning to step 2)
                     ...(item.recipientId && { id: item.recipientId }),
                     name: fullName,
                     email,
                     phone,
-                    card_id: item.card_id || item.cardId || '',
+                    cardId: item.cardId || item.card_id || '',
                     role,
                     ordering,
                     status: 0,
@@ -663,31 +1002,69 @@ const DocumentForm = () => {
             });
         };
 
-        addRecipients(reviewers, 2);  // role = 2: Xem xét
-        addRecipients(signers, 3);    // role = 3: Ký
-        addRecipients(documentClerks, 4);  // role = 4: Văn thư
+        // Build "Tổ chức của tôi" participant
+        const myOrgRecipients = [];
+        addRecipients(reviewers, 2, myOrgRecipients);  // role = 2: Xem xét
+        addRecipients(signers, 3, myOrgRecipients);    // role = 3: Ký
+        addRecipients(documentClerks, 4, myOrgRecipients);  // role = 4: Văn thư
 
-        if (recipients.length === 0) {
-            return [];
+        if (myOrgRecipients.length > 0) {
+            const participantName = formData.organization?.trim() || 'Tổ chức của tôi';
+            const participantOrdering = parseInt(formData.organizationOrdering, 10);
+            const orderingValue = Number.isNaN(participantOrdering) || participantOrdering <= 0 ? 1 : participantOrdering;
+
+            const participantPayload = {
+                ...(participantsData?.[0]?.id && { id: participantsData[0].id }),
+                name: participantName,
+                type: 1,  // Tổ chức của tôi
+                ordering: orderingValue,
+                status: 1,
+                contractId,
+                recipients: myOrgRecipients
+            };
+            participants.push(participantPayload);
         }
 
-        const participantName = formData.organization?.trim() || 'Tổ chức của tôi';
-        const participantOrdering = parseInt(formData.organizationOrdering, 10);
-        const orderingValue = Number.isNaN(participantOrdering) || participantOrdering <= 0 ? 1 : participantOrdering;
+        // Build partners participants
+        partners.forEach((partner) => {
+            const partnerRecipients = [];
+            
+            // Only add recipients if partner has a name
+            if (partner.name?.trim()) {
+                // For organization (type = 2), include all roles
+                if (partner.type === 2) {
+                    addRecipients(partner.coordinators, 1, partnerRecipients);  // role = 1: Điều phối
+                    addRecipients(partner.reviewers, 2, partnerRecipients);     // role = 2: Xem xét
+                    addRecipients(partner.signers, 3, partnerRecipients);       // role = 3: Ký
+                    addRecipients(partner.clerks, 4, partnerRecipients);        // role = 4: Văn thư
+                } 
+                // For individual (type = 3), only include signers
+                else if (partner.type === 3) {
+                    addRecipients(partner.signers, 3, partnerRecipients);       // role = 3: Ký
+                }
 
-        // Build participant payload
-        // Include id if exists (for editing when returning to step 2)
-        const participantPayload = {
-            ...(participantsData?.[0]?.id && { id: participantsData[0].id }),
-            name: participantName,
-            type: 1,  // Tổ chức của tôi
-            ordering: orderingValue,
-            status: 1,
-            contractId,
-            recipients
-        };
+                // Only add participant if it has at least one recipient
+                if (partnerRecipients.length > 0) {
+                    const partnerOrdering = parseInt(partner.ordering, 10);
+                    const orderingValue = Number.isNaN(partnerOrdering) || partnerOrdering <= 0 
+                        ? participants.length + 1 
+                        : partnerOrdering;
 
-        return [participantPayload];
+                    const partnerPayload = {
+                        ...(partner.participantId && { id: partner.participantId }),
+                        name: partner.name.trim(),
+                        type: partner.type,  // 2 = Đối tác, 3 = Cá nhân
+                        ordering: orderingValue,
+                        status: 1,
+                        contractId,
+                        recipients: partnerRecipients
+                    };
+                    participants.push(partnerPayload);
+                }
+            }
+        });
+
+        return participants;
     };
 
     // Validate Step 1 data
@@ -1052,6 +1429,22 @@ const DocumentForm = () => {
                 removeDocumentClerk={removeDocumentClerk}
                 handleOrganizationOrderingChange={handleOrganizationOrderingChange}
                 suggestName={suggestName}
+                partners={partners}
+                addPartner={addPartner}
+                removePartner={removePartner}
+                updatePartner={updatePartner}
+                addPartnerCoordinator={addPartnerCoordinator}
+                updatePartnerCoordinator={updatePartnerCoordinator}
+                removePartnerCoordinator={removePartnerCoordinator}
+                addPartnerReviewer={addPartnerReviewer}
+                updatePartnerReviewer={updatePartnerReviewer}
+                removePartnerReviewer={removePartnerReviewer}
+                addPartnerSigner={addPartnerSigner}
+                updatePartnerSigner={updatePartnerSigner}
+                removePartnerSigner={removePartnerSigner}
+                addPartnerClerk={addPartnerClerk}
+                updatePartnerClerk={updatePartnerClerk}
+                removePartnerClerk={removePartnerClerk}
             />
         );
     };

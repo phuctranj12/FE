@@ -341,7 +341,7 @@ Content-Type: application/json
         "name": "Phạm Văn Tú",
         "email": "phamvantu.work@gmail.com",
         "phone": "",
-        "card_id": "0123456789",
+        "cardId": "0123456789",
         "role": 3,
         "ordering": 1,
         "status": 0,
@@ -360,7 +360,7 @@ Content-Type: application/json
         "name": "Nguyễn Văn B",
         "email": "nguyenvanb@example.com",
         "phone": "",
-        "card_id": "0122345678",
+        "cardId": "0122345678",
         "role": 3,
         "ordering": 1,
         "status": 0,
@@ -523,8 +523,10 @@ Content-Type: application/json
 
 **API: Chuyển trạng thái hợp đồng sang "Đã tạo"**
 ```
-PUT /contracts/change-status/{contractId}
-Query params: { status: 10 }
+PUT /contract/{contractId}/change-status/{status}
+Path params: 
+  - contractId: ID của hợp đồng
+  - status: 10 (CREATED)
 ```
 
 **Response**:
@@ -704,8 +706,10 @@ PUT /contracts/update-contract/{contractId}
 
 **API: Thay đổi trạng thái hợp đồng**
 ```
-PUT /contracts/change-status/{contractId}
-Query params: { status: 32 }
+PUT /contract/{contractId}/change-status/{status}
+Path params:
+  - contractId: ID của hợp đồng
+  - status: 32 (CANCEL)
 ```
 
 ---

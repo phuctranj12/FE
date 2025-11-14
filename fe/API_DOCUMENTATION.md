@@ -1060,15 +1060,13 @@
         ---
 
         #### 7.1.4. Thay đổi trạng thái hợp đồng
-        **Endpoint**: `PUT /contracts/change-status/{contractId}`
+        **Endpoint**: `PUT /contract/{contractId}/change-status/{status}`
 
         **Path Parameters**:
-        - `contractId`: integer (required)
-
-        **Query Parameters**:
+        - `contractId`: integer (required) - ID của hợp đồng
         - `status`: integer (required) - Trạng thái mới (0, 10, 20, 30, 31, 32, 35, 40)
 
-        **Example**: `http://localhost:8080/api/contracts/change-status/1?status=20`
+        **Example**: `http://localhost:8080/api/contract/1/change-status/20`
 
         **Response Success**:
         ```json
@@ -2350,7 +2348,7 @@
         | GET | `/contracts/check-code-unique` | ✅ | Kiểm tra mã hợp đồng unique |
         | POST | `/contracts/create-contract` | ✅ | Tạo hợp đồng mới |
         | GET | `/contracts/{contractId}` | ✅ | Lấy hợp đồng theo ID |
-        | PUT | `/contracts/change-status/{contractId}` | ✅ | Thay đổi trạng thái hợp đồng |
+        | PUT | `/contract/{contractId}/change-status/{status}` | ✅ | Thay đổi trạng thái hợp đồng |
         | GET | `/contracts/my-contracts` | ✅ | Danh sách hợp đồng mình tạo |
         | GET | `/contracts/my-process` | ✅ | Danh sách hợp đồng mình xử lý |
         | GET | `/contracts/contract-by-organization` | ✅ | Danh sách hợp đồng theo tổ chức |

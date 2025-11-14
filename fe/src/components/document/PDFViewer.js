@@ -21,16 +21,21 @@ function PDFViewer({
     onComponentMouseEnter,
     onComponentMouseLeave,
     onResizeStart,
-    onRemoveComponent
+    onRemoveComponent,
+    autoFitWidth = false, // New prop to enable auto-fit-to-width
+    onScaleChange = null // Callback to notify parent of scale changes
 }) {
     const [numPages, setNumPages] = useState(null);
     const [loading, setLoading] = useState(true);
     const [pageError, setPageError] = useState(false);
+    const [autoScale, setAutoScale] = useState(1);
+    const [containerWidth, setContainerWidth] = useState(0);
     const documentRef = useRef(null);
     const containerRef = useRef(null);
     const pageRefs = useRef([]);
     const lastDerivedPageRef = useRef(null); // trang tính được từ scroll gần nhất
     const isProgrammaticScrollRef = useRef(false); // đang scroll do code
+    const pageWidthsRef = useRef({}); // Store page widths
 
     // URL PDF mẫu - trong thực tế sẽ lấy từ document.pdfUrl
     const pdfUrl = document?.pdfUrl || 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf';
@@ -51,7 +56,57 @@ function PDFViewer({
     useEffect(() => {
         setLoading(true);
         setPageError(false);
+        pageWidthsRef.current = {};
     }, [pdfUrl]);
+
+    // Track container width for auto-fit
+    useEffect(() => {
+        if (!autoFitWidth || !containerRef.current) return;
+
+        const updateContainerWidth = () => {
+            if (containerRef.current) {
+                const width = containerRef.current.clientWidth;
+                setContainerWidth(width);
+            }
+        };
+
+        // Initial width
+        updateContainerWidth();
+
+        // Use ResizeObserver to track width changes
+        const resizeObserver = new ResizeObserver(() => {
+            updateContainerWidth();
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [autoFitWidth]);
+
+    // Calculate auto scale when container width or page width changes
+    useEffect(() => {
+        if (!autoFitWidth || !containerWidth) return;
+
+        // Get the first page width as reference (assuming all pages have same width)
+        const firstPageWidth = pageWidthsRef.current[1];
+        if (firstPageWidth && firstPageWidth > 0) {
+            // Calculate scale: container width / page width
+            // Account for padding (20px on each side = 40px total)
+            const availableWidth = containerWidth - 40;
+            const scale = availableWidth / firstPageWidth;
+            setAutoScale(scale);
+        }
+    }, [containerWidth, autoFitWidth, numPages]);
+
+    // Notify parent of scale changes
+    useEffect(() => {
+        if (onScaleChange) {
+            const currentScale = autoFitWidth ? autoScale : (zoom / 100);
+            onScaleChange(currentScale);
+        }
+    }, [autoScale, zoom, autoFitWidth, onScaleChange]);
 
     // Scroll tới trang khi currentPage thay đổi từ bên ngoài (khác trang do scroll tính ra)
     useEffect(() => {
@@ -113,7 +168,7 @@ function PDFViewer({
     };
 
     return (
-        <div className="pdf-viewer-container" ref={containerRef}>
+        <div className={`pdf-viewer-container ${autoFitWidth ? 'auto-fit-width' : ''}`} ref={containerRef}>
             <Document
                 ref={documentRef}
                 file={pdfUrl}
@@ -141,12 +196,26 @@ function PDFViewer({
                         );
                         
                         return (
-                            <div key={i} data-page-index={i} ref={setPageRef(i)} style={{ position: 'relative' }}>
+                            <div key={i} data-page-index={i} ref={setPageRef(i)} style={{ position: 'relative', width: autoFitWidth ? '100%' : 'auto' }}>
                                 <Page
                                     pageNumber={pageNumber}
-                                    scale={zoom / 100}
+                                    scale={autoFitWidth ? autoScale : (zoom / 100)}
                                     renderTextLayer={true}
                                     renderAnnotationLayer={true}
+                                    onLoadSuccess={(page) => {
+                                        // Store page width for auto-fit calculation
+                                        if (autoFitWidth) {
+                                            const viewport = page.getViewport({ scale: 1 });
+                                            pageWidthsRef.current[pageNumber] = viewport.width;
+                                            // Trigger scale recalculation
+                                            const firstPageWidth = pageWidthsRef.current[1];
+                                            if (firstPageWidth && containerWidth > 0) {
+                                                const availableWidth = containerWidth - 40;
+                                                const scale = availableWidth / firstPageWidth;
+                                                setAutoScale(scale);
+                                            }
+                                        }
+                                    }}
                                     loading={
                                         <div className="pdf-loading">
                                             <div className="loading-spinner"></div>
@@ -155,21 +224,26 @@ function PDFViewer({
                                     }
                                 />
                                 {/* Render components trên trang này */}
-                                {pageComponents.map(component => (
-                                    <div
-                                        key={component.id}
-                                        className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''}`}
-                                        style={{
-                                            position: 'absolute',
-                                            left: `${component.properties?.x || 0}px`,
-                                            top: `${component.properties?.y || 0}px`,
-                                            width: `${component.properties?.width || 100}px`,
-                                            height: `${component.properties?.height || 30}px`,
-                                            fontSize: `${component.properties?.size || 13}px`,
-                                            fontFamily: component.properties?.font || 'Times New Roman',
-                                            cursor: isDragging ? 'grabbing' : 'grab',
-                                            zIndex: 10
-                                        }}
+                                {pageComponents.map(component => {
+                                    // Render component coordinates as-is
+                                    // In DocumentEditor: coordinates are stored at currentScale (scaled for editing)
+                                    // In other views: coordinates will be scaled based on zoom level
+                                    
+                                    return (
+                                        <div
+                                            key={component.id}
+                                            className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''}`}
+                                            style={{
+                                                position: 'absolute',
+                                                left: `${component.properties?.x || 0}px`,
+                                                top: `${component.properties?.y || 0}px`,
+                                                width: `${component.properties?.width || 100}px`,
+                                                height: `${component.properties?.height || 30}px`,
+                                                fontSize: `${component.properties?.size || 13}px`,
+                                                fontFamily: component.properties?.font || 'Times New Roman',
+                                                cursor: isDragging ? 'grabbing' : 'grab',
+                                                zIndex: 10
+                                            }}
                                         onMouseEnter={() => onComponentMouseEnter && onComponentMouseEnter(component.id)}
                                         onMouseLeave={() => onComponentMouseLeave && onComponentMouseLeave()}
                                         onMouseDown={(e) => onComponentMouseDown && onComponentMouseDown(e, component.id)}
@@ -207,7 +281,8 @@ function PDFViewer({
                                             </button>
                                         )}
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         );
                     })

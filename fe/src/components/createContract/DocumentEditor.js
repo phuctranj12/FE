@@ -34,6 +34,7 @@ function DocumentEditor({
     const [isResizing, setIsResizing] = useState(false);
     const [resizeHandle, setResizeHandle] = useState(null);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [currentScale, setCurrentScale] = useState(1); // Track PDF scale for coordinate normalization
     
     // State cho autocomplete gợi ý tên
     const [nameSuggestions, setNameSuggestions] = useState([]);
@@ -140,6 +141,12 @@ function DocumentEditor({
             console.log(`[Page Change] Trang hiện tại: ${page} / Tổng số trang: ${totalPages}`);
             setCurrentPage(page);
         }
+    };
+
+    // Handle scale change from PDFViewer
+    const handleScaleChange = (scale) => {
+        console.log(`[Scale Change] Current scale: ${scale}`);
+        setCurrentScale(scale);
     };
 
     // Handle page change from PDFViewer (sync với pagination controls)
@@ -370,14 +377,22 @@ function DocumentEditor({
 
     // Load fields data khi component mount hoặc fieldsData thay đổi
     useEffect(() => {
-        if (fieldsData && fieldsData.length > 0 && documentComponents.length === 0) {
+        if (fieldsData && fieldsData.length > 0 && documentComponents.length === 0 && currentScale > 0) {
             // Convert fieldsData về documentComponents format
+            // NOTE: Coordinates from DB are normalized (scale=1.0)
+            // We scale them by currentScale for editing consistency
             const loadedComponents = fieldsData.map((field, index) => {
                 // Map field type về component type
                 let componentType = 'text';
                 if (field.type === 4) componentType = 'document-number';
                 else if (field.type === 2) componentType = 'image-signature';
                 else if (field.type === 3) componentType = 'digital-signature';
+                
+                // Scale coordinates from normalized (scale=1.0) to currentScale
+                const scaledX = (field.boxX || 0) * currentScale;
+                const scaledY = (field.boxY || 0) * currentScale;
+                const scaledW = (field.boxW || 100) * currentScale;
+                const scaledH = (field.boxH || 30) * currentScale;
                 
                 return {
                     id: field.id || Date.now() + index,
@@ -390,10 +405,11 @@ function DocumentEditor({
                         recipientId: field.recipientId,
                         font: field.font || 'Times New Roman',
                         size: field.fontSize || 13,
-                        x: field.boxX || 0,
-                        y: field.boxY || 0,
-                        width: field.boxW || 100,
-                        height: field.boxH || 30,
+                        // Store coordinates at currentScale for editing consistency
+                        x: scaledX,
+                        y: scaledY,
+                        width: scaledW,
+                        height: scaledH,
                         fieldName: field.name || '',
                         ordering: field.ordering || index + 1
                     }
@@ -401,11 +417,11 @@ function DocumentEditor({
             });
             setDocumentComponents(loadedComponents);
         }
-    }, [fieldsData]);
+    }, [fieldsData, currentScale]);
 
     // Convert documentComponents sang fields format và gọi onFieldsChange
     useEffect(() => {
-        if (onFieldsChange && contractId && documentId) {
+        if (onFieldsChange && contractId && documentId && currentScale > 0) {
             const fields = documentComponents
                 .filter(component => {
                     // Chỉ include components có recipientId hợp lệ
@@ -416,9 +432,12 @@ function DocumentEditor({
                     const fieldType = getFieldType(component.type);
                     const recipientId = component.properties.recipientId || parseInt(component.properties.signer);
                     
-                    // Đảm bảo boxW và boxH có thể là number hoặc string (theo API)
-                    const boxW = component.properties.width || 100;
-                    const boxH = component.properties.height || 30;
+                    // Normalize coordinates: divide by currentScale to get scale=1.0 coordinates
+                    // These normalized coordinates will be saved to database
+                    const normalizedX = (component.properties.x || 0) / currentScale;
+                    const normalizedY = (component.properties.y || 0) / currentScale;
+                    const normalizedW = (component.properties.width || 100) / currentScale;
+                    const normalizedH = (component.properties.height || 30) / currentScale;
                     
                     return {
                         // Chỉ include id khi edit (có fieldId)
@@ -426,12 +445,13 @@ function DocumentEditor({
                         name: component.properties.fieldName || component.name,
                         font: component.properties.font || 'Times New Roman',
                         fontSize: component.properties.size || 13,
-                        boxX: component.properties.x || 0,
-                        boxY: component.properties.y || 0,
+                        // Save normalized coordinates (scale=1.0) to database
+                        boxX: normalizedX,
+                        boxY: normalizedY,
                         page: (component.properties.page || currentPage).toString(),
                         ordering: component.properties.ordering || index + 1,
-                        boxW: boxW, // Có thể là number hoặc string
-                        boxH: boxH.toString(), // API yêu cầu string cho boxH
+                        boxW: normalizedW, // Có thể là number hoặc string
+                        boxH: normalizedH.toString(), // API yêu cầu string cho boxH
                         contractId: contractId,
                         documentId: documentId,
                         type: fieldType,
@@ -444,7 +464,7 @@ function DocumentEditor({
                 onFieldsChange(fields);
             }
         }
-    }, [documentComponents, contractId, documentId, currentPage, onFieldsChange]);
+    }, [documentComponents, contractId, documentId, currentPage, currentScale, onFieldsChange]);
 
     // Add event listeners for drag and resize
     useEffect(() => {
@@ -962,6 +982,7 @@ function DocumentEditor({
                                         totalPages={totalPages}
                                         zoom={zoom}
                                         onPageChange={handlePageChange}
+                                        onScaleChange={handleScaleChange}
                                         components={documentComponents}
                                         editingComponentId={editingComponentId}
                                         hoveredComponentId={hoveredComponentId}
@@ -973,6 +994,7 @@ function DocumentEditor({
                                         onComponentMouseLeave={() => setHoveredComponentId(null)}
                                         onResizeStart={handleResizeStart}
                                         onRemoveComponent={handleRemoveComponent}
+                                        autoFitWidth={true}
                                     />
                                 </div>
                             )}
