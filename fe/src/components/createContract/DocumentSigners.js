@@ -672,53 +672,58 @@ function DocumentSigners({
                     </div>
                 ) : (
                     partners.map((partner, partnerIndex) => (
-                        <div key={partner.id} className="partner-card" style={{ marginTop: '20px', border: '1px solid #ddd', borderRadius: '8px', padding: '20px' }}>
-                            <div className="partner-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
-                                    <div className="order-input-box small">
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={partner.ordering ?? ''}
-                                            onChange={(e) => updatePartner(partner.id, 'ordering', e.target.value)}
-                                        />
-                                    </div>
-                                    <h3 style={{ margin: 0 }}>Đối tác {partnerIndex + 1}</h3>
-                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                                            <input
-                                                type="radio"
-                                                checked={partner.type === 2}
-                                                onChange={() => {
-                                                    updatePartner(partner.id, 'type', 2);
-                                                }}
-                                            />
-                                            <span>Tổ chức</span>
+                        <div key={partner.id} className="organization-section">
+                            <div className="form-group">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '15px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label className="ordering-label">
+                                            <div className="order-input-box small">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={partner.ordering ?? ''}
+                                                    onChange={(e) => updatePartner(partner.id, 'ordering', e.target.value)}
+                                                />
+                                            </div>
+                                            <span>Đối tác {partnerIndex + 1} *</span>
                                         </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+                                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                <label className="radio-option" style={{ margin: 0 }}>
+                                                    <input
+                                                        type="radio"
+                                                        checked={partner.type === 2}
+                                                        onChange={() => {
+                                                            updatePartner(partner.id, 'type', 2);
+                                                        }}
+                                                    />
+                                                    <span>Tổ chức</span>
+                                                </label>
+                                                <label className="radio-option" style={{ margin: 0 }}>
+                                                    <input
+                                                        type="radio"
+                                                        checked={partner.type === 3}
+                                                        onChange={() => updatePartner(partner.id, 'type', 3)}
+                                                    />
+                                                    <span>Cá nhân</span>
+                                                </label>
+                                            </div>
                                             <input
-                                                type="radio"
-                                                checked={partner.type === 3}
-                                                onChange={() => updatePartner(partner.id, 'type', 3)}
+                                                type="text"
+                                                value={partner.name}
+                                                onChange={(e) => updatePartner(partner.id, 'name', e.target.value)}
+                                                placeholder={partner.type === 2 ? "Tên tổ chức" : "Tên cá nhân"}
+                                                style={{ flex: 1, minWidth: '200px', padding: '12px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
                                             />
-                                            <span>Cá nhân</span>
-                                        </label>
+                                        </div>
                                     </div>
-                                    <input
-                                        type="text"
-                                        value={partner.name}
-                                        onChange={(e) => updatePartner(partner.id, 'name', e.target.value)}
-                                        placeholder={partner.type === 2 ? "Tên tổ chức" : "Tên cá nhân"}
-                                        style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                    />
+                                    <button 
+                                        className="remove-btn"
+                                        onClick={() => removePartner(partner.id)}
+                                    >
+                                        ✕
+                                    </button>
                                 </div>
-                                <button 
-                                    className="remove-btn"
-                                    onClick={() => removePartner(partner.id)}
-                                    style={{ marginLeft: '10px' }}
-                                >
-                                    ✕
-                                </button>
                             </div>
 
                             {/* Coordinators Section - Only for Organization */}
