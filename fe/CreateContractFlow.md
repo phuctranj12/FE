@@ -523,8 +523,10 @@ Content-Type: application/json
 
 **API: Chuyển trạng thái hợp đồng sang "Đã tạo"**
 ```
-PUT /contracts/change-status/{contractId}
-Query params: { status: 10 }
+PUT /contract/{contractId}/change-status/{status}
+Path params: 
+  - contractId: ID của hợp đồng
+  - status: 10 (CREATED)
 ```
 
 **Response**:
@@ -704,8 +706,10 @@ PUT /contracts/update-contract/{contractId}
 
 **API: Thay đổi trạng thái hợp đồng**
 ```
-PUT /contracts/change-status/{contractId}
-Query params: { status: 32 }
+PUT /contract/{contractId}/change-status/{status}
+Path params:
+  - contractId: ID của hợp đồng
+  - status: 32 (CANCEL)
 ```
 
 ---

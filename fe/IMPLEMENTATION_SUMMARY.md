@@ -600,7 +600,7 @@ Các bước tiếp theo trong luồng tạo hợp đồng:
 
 ### Bước 4 cần implement:
 - Gọi API `contracts/fields/create` để lưu fields
-- Gọi API `contracts/change-status/{contractId}?status=10` để đổi status thành CREATED
+- Gọi API `contract/{contractId}/change-status/10` để đổi status thành CREATED
 
 ---
 

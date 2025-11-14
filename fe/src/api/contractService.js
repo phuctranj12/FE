@@ -38,9 +38,7 @@ const contractService = {
     // 7.1.4. Thay đổi trạng thái hợp đồng
     changeContractStatus: async (contractId, status) => {
         try {
-            const response = await apiClient.put(`/contracts/change-status/${contractId}`, null, {
-                params: { status }
-            });
+            const response = await apiClient.put(`/contract/${contractId}/change-status/${status}`);
             return response;
         } catch (error) {
             throw error;
