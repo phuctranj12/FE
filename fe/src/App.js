@@ -16,6 +16,7 @@ import Document from './components/document/document';
 import CreatedDocument from './components/document/CreatedDocument';
 import DocumentForm from './components/createContract/DocumentForm';
 import ServerCertificateList from './components/certificate/ServerCertificateList';
+import ContractDetail from './components/contract_coordinate/ContractDetail';
 function App() {
   return (
     <Routes>
@@ -36,6 +37,7 @@ function App() {
         <Route path="document" element={<Document />} />
         <Route path="created-document" element={<CreatedDocument />} />
         <Route path="server-certificate" element={<ServerCertificateList />} />
+        <Route path="c/:type/:contractId" element={<ContractDetail />} />
       </Route>
     </Routes>
   );

@@ -340,6 +340,26 @@ const contractService = {
         }
     },
 
+    // 7.4.4. Lấy thông tin participant theo recipient ID (Coordination Flow)
+    getParticipantByRecipientId: async (recipientId) => {
+        try {
+            const response = await apiClient.get(`/contracts/participants/by-recipient/${recipientId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.4.5. Lấy tất cả participant của hợp đồng (Coordination Flow)
+    getAllParticipantsByContract: async (contractId) => {
+        try {
+            const response = await apiClient.get(`/contracts/${contractId}/participants`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // ========== FIELD API ==========
 
     // 7.5.1. Thêm trường dữ liệu cho hợp đồng
@@ -352,12 +372,67 @@ const contractService = {
         }
     },
 
+    // 7.5.2. Lấy tất cả field của hợp đồng (Coordination Flow)
+    getFieldsByContract: async (contractId) => {
+        try {
+            const response = await apiClient.get(`/contracts/${contractId}/fields`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // ========== RECIPIENT API ==========
 
     // 7.6.1. Lấy thông tin người xử lý theo ID
     getRecipientById: async (recipientId) => {
         try {
             const response = await apiClient.get(`/contracts/recipients/${recipientId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // ========== COORDINATION FLOW API ==========
+
+    // 7.10.1. Điều phối hợp đồng
+    coordinate: async (participantId, recipientId, recipients) => {
+        try {
+            const response = await apiClient.post(
+                `/contracts/participants/${participantId}/recipients/${recipientId}/coordinate`,
+                recipients
+            );
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.10.2. Xem xét hợp đồng
+    review: async (recipientId) => {
+        try {
+            const response = await apiClient.post(`/contracts/recipients/${recipientId}/review`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.10.3. Ký hợp đồng
+    sign: async (recipientId, signData) => {
+        try {
+            const response = await apiClient.post(`/contracts/recipients/${recipientId}/sign`, signData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.10.4. Phê duyệt hợp đồng
+    approve: async (recipientId) => {
+        try {
+            const response = await apiClient.post(`/contracts/recipients/${recipientId}/approve`);
             return response;
         } catch (error) {
             throw error;

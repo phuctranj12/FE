@@ -225,6 +225,7 @@ function PDFViewer({
                                 />
                                 {/* Render components trên trang này */}
                                 {pageComponents.map(component => {
+                                    const isLocked = Boolean(component.locked);
                                     // Render component coordinates as-is
                                     // In DocumentEditor: coordinates are stored at currentScale (scaled for editing)
                                     // In other views: coordinates will be scaled based on zoom level
@@ -232,7 +233,7 @@ function PDFViewer({
                                     return (
                                         <div
                                             key={component.id}
-                                            className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''}`}
+                                            className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''} ${isLocked ? 'locked' : ''}`}
                                             style={{
                                                 position: 'absolute',
                                                 left: `${component.properties?.x || 0}px`,
@@ -241,14 +242,18 @@ function PDFViewer({
                                                 height: `${component.properties?.height || 30}px`,
                                                 fontSize: `${component.properties?.size || 13}px`,
                                                 fontFamily: component.properties?.font || 'Times New Roman',
-                                                cursor: isDragging ? 'grabbing' : 'grab',
+                                                cursor: isLocked ? 'not-allowed' : (isDragging ? 'grabbing' : 'grab'),
                                                 zIndex: 10
                                             }}
                                         onMouseEnter={() => onComponentMouseEnter && onComponentMouseEnter(component.id)}
                                         onMouseLeave={() => onComponentMouseLeave && onComponentMouseLeave()}
-                                        onMouseDown={(e) => onComponentMouseDown && onComponentMouseDown(e, component.id)}
+                                        onMouseDown={(e) => {
+                                            if (!isLocked && onComponentMouseDown) {
+                                                onComponentMouseDown(e, component.id);
+                                            }
+                                        }}
                                         onClick={(e) => {
-                                            if (!isDragging && onComponentClick) {
+                                            if (!isDragging && !isLocked && onComponentClick) {
                                                 onComponentClick(component);
                                             }
                                         }}
@@ -262,13 +267,21 @@ function PDFViewer({
                                             }
                                         </div>
                                         
-                                        {/* Resize handles */}
-                                        <div className="resize-handle nw" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'nw')}></div>
-                                        <div className="resize-handle ne" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'ne')}></div>
-                                        <div className="resize-handle sw" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'sw')}></div>
-                                        <div className="resize-handle se" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'se')}></div>
+                                        {isLocked && (
+                                            <div className="locked-badge">Đối tác</div>
+                                        )}
                                         
-                                        {hoveredComponentId === component.id && (
+                                        {/* Resize handles */}
+                                        {!isLocked && (
+                                            <>
+                                                <div className="resize-handle nw" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'nw')}></div>
+                                                <div className="resize-handle ne" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'ne')}></div>
+                                                <div className="resize-handle sw" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'sw')}></div>
+                                                <div className="resize-handle se" onMouseDown={(e) => onResizeStart && onResizeStart(e, component.id, 'se')}></div>
+                                            </>
+                                        )}
+                                        
+                                        {hoveredComponentId === component.id && !isLocked && (
                                             <button 
                                                 className="remove-component-btn"
                                                 onClick={(e) => {

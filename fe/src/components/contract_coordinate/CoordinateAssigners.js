@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import '../../styles/coordinateAssigners.css';
+import contractService from '../../api/contractService';
+import DocumentEditor from '../createContract/DocumentEditor';
 
 function CoordinateAssigners({
     partner = '',
@@ -20,8 +22,280 @@ function CoordinateAssigners({
     onNext,
     currentStep = 1,
     totalSteps = 3,
-    timer = null
+    timer = null,
+    // Props cho luồng điều phối
+    contractId = null,
+    recipientId = null,
+    participantId = null,
+    coordinatorRecipient = null, // Thông tin người điều phối hiện tại
+    onCoordinateSuccess = null, // Callback khi điều phối thành công
+    onCoordinateError = null // Callback khi điều phối lỗi
 }) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [contractInfo, setContractInfo] = useState(null);
+    const [participantInfo, setParticipantInfo] = useState(null);
+    const [allParticipants, setAllParticipants] = useState([]);
+    const [fields, setFields] = useState([]);
+    const [documents, setDocuments] = useState([]);
+    const [activeDocumentId, setActiveDocumentId] = useState(null);
+    const [pendingFields, setPendingFields] = useState([]);
+    const currentParticipantId = participantId || participantInfo?.id;
+
+    const lockedFieldIds = useMemo(() => {
+        if (!fields || fields.length === 0) return [];
+        if (!currentParticipantId) {
+            return fields.map(field => field.id);
+        }
+        return fields
+            .filter(field => field.participantId !== currentParticipantId)
+            .map(field => field.id);
+    }, [fields, currentParticipantId]);
+
+    const loadFieldsByContract = useCallback(async (id) => {
+        if (!id) return;
+        try {
+            const fieldsResponse = await contractService.getFieldsByContract(id);
+            if (fieldsResponse?.code === 'SUCCESS') {
+                setFields(fieldsResponse.data || []);
+            }
+        } catch (err) {
+            console.error('Error loading fields:', err);
+            setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải field');
+        }
+    }, []);
+
+    const loadDocumentsByContract = useCallback(async (id) => {
+        if (!id) return;
+        try {
+            const documentsResponse = await contractService.getDocumentsByContract(id);
+            if (documentsResponse?.code === 'SUCCESS') {
+                const docs = documentsResponse.data || [];
+                setDocuments(docs);
+                setActiveDocumentId(prev => prev || (docs[0]?.id || null));
+            }
+        } catch (err) {
+            console.error('Error loading documents:', err);
+            setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải tài liệu');
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!activeDocumentId && fields.length > 0) {
+            const documentIdFromField = fields.find(field => field.documentId)?.documentId;
+            if (documentIdFromField) {
+                setActiveDocumentId(documentIdFromField);
+            }
+        }
+    }, [activeDocumentId, fields]);
+
+    useEffect(() => {
+        setPendingFields([]);
+    }, [activeDocumentId]);
+
+    useEffect(() => {
+        setActiveDocumentId(null);
+        setPendingFields([]);
+    }, [contractId]);
+
+    // Load dữ liệu khi component mount hoặc khi contractId/recipientId thay đổi
+    useEffect(() => {
+        const loadData = async () => {
+            if (!contractId) return;
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                // BƯỚC 1: Lấy thông tin hợp đồng
+                if (contractId) {
+                    const contractResponse = await contractService.getContractById(contractId);
+                    if (contractResponse?.code === 'SUCCESS') {
+                        setContractInfo(contractResponse.data);
+                    }
+                }
+
+                // BƯỚC 2: Lấy thông tin participant theo recipient ID
+                if (recipientId) {
+                    const participantResponse = await contractService.getParticipantByRecipientId(recipientId);
+                    if (participantResponse?.code === 'SUCCESS') {
+                        setParticipantInfo(participantResponse.data);
+                        // participantId sẽ được lấy từ participantInfo nếu chưa được truyền vào
+                    }
+                }
+
+                // BƯỚC 2: Lấy tất cả participant của hợp đồng
+                if (contractId) {
+                    const allParticipantsResponse = await contractService.getAllParticipantsByContract(contractId);
+                    if (allParticipantsResponse?.code === 'SUCCESS') {
+                        setAllParticipants(allParticipantsResponse.data || []);
+                    }
+                }
+
+                // BƯỚC 3: Lấy thông tin field
+                await loadFieldsByContract(contractId);
+
+                // Lấy thông tin tài liệu của hợp đồng
+                await loadDocumentsByContract(contractId);
+            } catch (err) {
+                console.error('Error loading coordination data:', err);
+                setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, [contractId, recipientId, loadDocumentsByContract, loadFieldsByContract]);
+
+    // Chuyển đổi dữ liệu từ form sang format API
+    const convertToRecipientDTO = (person, role) => {
+        return {
+            id: person.id || null,
+            name: person.fullName || person.name || '',
+            email: person.email || '',
+            phone: person.phone || '',
+            role: role,
+            username: person.username || null,
+            password: person.password || null,
+            ordering: person.ordering || 1,
+            status: role === 1 ? 1 : 0, // Người điều phối: status = 1, người khác: status = 0
+            fields: null,
+            fromAt: null,
+            dueAt: null,
+            signAt: null,
+            processAt: null,
+            signType: person.signType === 'hsm' ? 6 : person.signType || 6, // Mặc định signType = 6 (ký số)
+            reasonReject: null,
+            cardId: person.cardId || '',
+            image_height_signature: person.image_height_signature || null,
+            image_width_signature: person.image_width_signature || null
+        };
+    };
+
+    const handleDocumentFieldsChange = (updatedFields = []) => {
+        setPendingFields(updatedFields);
+    };
+
+    const handleDocumentChange = (event) => {
+        const { value } = event.target;
+        if (value === '') {
+            setActiveDocumentId(null);
+            return;
+        }
+        const numericValue = Number(value);
+        setActiveDocumentId(Number.isNaN(numericValue) ? value : numericValue);
+    };
+
+    // Xử lý điều phối hợp đồng
+    const handleCoordinate = async () => {
+        if (!currentParticipantId || !recipientId) {
+            setError('Thiếu thông tin participantId hoặc recipientId');
+            return;
+        }
+
+        // Kiểm tra có người tham gia nào không
+        const allRecipients = [
+            ...reviewers.map(r => ({ ...r, role: 2 })), // Role 2: Xem xét
+            ...signers.map(s => ({ ...s, role: 3 })), // Role 3: Ký
+            ...clerks.map(c => ({ ...c, role: 4 })) // Role 4: Văn thư
+        ];
+
+        if (allRecipients.length === 0) {
+            setError('Vui lòng thêm ít nhất một người tham gia xử lý');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Chuẩn bị dữ liệu điều phối
+            // Phần tử đầu tiên: Người điều phối (lấy từ coordinatorRecipient hoặc từ participantInfo)
+            const coordinator = coordinatorRecipient || participantInfo?.recipients?.[0];
+            
+            if (!coordinator) {
+                setError('Không tìm thấy thông tin người điều phối');
+                return;
+            }
+
+            const recipientsData = [
+                // Người điều phối (phần tử đầu tiên)
+                convertToRecipientDTO({
+                    id: coordinator.id,
+                    fullName: coordinator.name,
+                    email: coordinator.email,
+                    phone: coordinator.phone,
+                    ordering: coordinator.ordering || 1
+                }, 1), // Role 1: Điều phối
+                // Các người tham gia tiếp theo
+                ...allRecipients.map(person => convertToRecipientDTO(person, person.role))
+            ];
+
+            // Gọi API điều phối
+            const response = await contractService.coordinate(
+                currentParticipantId,
+                recipientId,
+                recipientsData
+            );
+
+            if (response?.code === 'SUCCESS') {
+                // Gọi callback thành công nếu có
+                if (onCoordinateSuccess) {
+                    onCoordinateSuccess(response.data);
+                }
+                // Gọi onNext nếu có
+                if (onNext) {
+                    onNext();
+                }
+            } else {
+                throw new Error(response?.message || 'Điều phối thất bại');
+            }
+        } catch (err) {
+            console.error('Error coordinating contract:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi điều phối';
+            setError(errorMessage);
+            if (onCoordinateError) {
+                onCoordinateError(err);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Xử lý khi nhấn "Tiếp theo"
+    const handleNext = async () => {
+        if (currentStep === 2) {
+            if (pendingFields.length > 0) {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    await contractService.createField(pendingFields);
+                    await loadFieldsByContract(contractId);
+                    setPendingFields([]);
+                    if (onNext) {
+                        onNext();
+                    }
+                } catch (err) {
+                    console.error('Error saving fields:', err);
+                    setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu field');
+                } finally {
+                    setLoading(false);
+                }
+            } else if (onNext) {
+                onNext();
+            }
+            return;
+        }
+        
+        // Nếu đang ở step cuối và có đủ thông tin để điều phối
+        if (currentStep === totalSteps && currentParticipantId && recipientId) {
+            handleCoordinate();
+        } else if (onNext) {
+            // Nếu không phải step cuối hoặc chưa có đủ thông tin, gọi onNext bình thường
+            onNext();
+        }
+    };
 
     const renderStepIndicator = () => {
         const steps = [
@@ -49,6 +323,34 @@ function CoordinateAssigners({
         );
     };
 
+    const renderDocumentEditorStep = () => (
+        <div className="coordinate-document-editor-section">
+            {documents.length > 1 && (
+                <div className="coordinate-document-selector">
+                    <label>Chọn tài liệu</label>
+                    <select value={activeDocumentId ?? ''} onChange={handleDocumentChange}>
+                        <option value="">Chọn tài liệu</option>
+                        {documents.map((doc) => (
+                            <option key={doc.id} value={doc.id}>
+                                {doc.name || doc.fileName || `Tài liệu ${doc.id}`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+            <DocumentEditor
+                documentType={contractInfo?.documentType || 'single-template'}
+                contractId={contractId}
+                documentId={activeDocumentId}
+                participantsData={allParticipants}
+                fieldsData={fields}
+                onFieldsChange={handleDocumentFieldsChange}
+                hideFooter={true}
+                lockedFieldIds={lockedFieldIds}
+            />
+        </div>
+    );
+
     return (
         <div className="coordinate-assigners-container">
             {/* Timer */}
@@ -58,24 +360,55 @@ function CoordinateAssigners({
                 </div>
             )}
 
+            {/* Error Message */}
+            {error && (
+                <div className="coordinate-error-message" style={{
+                    padding: '10px',
+                    marginBottom: '15px',
+                    backgroundColor: '#fee',
+                    color: '#c33',
+                    borderRadius: '4px',
+                    border: '1px solid #fcc'
+                }}>
+                    {error}
+                </div>
+            )}
+
+            {/* Loading Indicator */}
+            {loading && (
+                <div className="coordinate-loading" style={{
+                    padding: '10px',
+                    marginBottom: '15px',
+                    textAlign: 'center',
+                    color: '#666'
+                }}>
+                    Đang xử lý...
+                </div>
+            )}
+
             {/* Step Indicator */}
             <div className="coordinate-header">
                 {renderStepIndicator()}
             </div>
 
             {/* Partner Input */}
-            <div className="coordinate-partner-section">
-                <label className="coordinate-label">Đối tác</label>
-                <input
-                    type="text"
-                    className="coordinate-input"
-                    value={partner}
-                    onChange={(e) => onPartnerChange && onPartnerChange(e.target.value)}
-                    placeholder="aaaaa"
-                />
-            </div>
+            {currentStep !== 2 && (
+                <div className="coordinate-partner-section">
+                    <label className="coordinate-label">Đối tác</label>
+                    <input
+                        type="text"
+                        className="coordinate-input"
+                        value={partner}
+                        onChange={(e) => onPartnerChange && onPartnerChange(e.target.value)}
+                        placeholder="aaaaa"
+                    />
+                </div>
+            )}
 
-            {/* Role Assignment Sections */}
+            {/* Role Assignment Sections / Document Designer */}
+            {currentStep === 2 ? (
+                renderDocumentEditorStep()
+            ) : (
             <div className="coordinate-roles-container">
                 {/* Reviewers Section */}
                 <div className="coordinate-role-section">
@@ -371,17 +704,26 @@ function CoordinateAssigners({
                     )}
                 </div>
             </div>
+            )}
 
             {/* Navigation Buttons */}
             <div className="coordinate-footer">
                 {onBack && (
-                    <button className="coordinate-back-btn" onClick={onBack}>
+                    <button 
+                        className="coordinate-back-btn" 
+                        onClick={onBack}
+                        disabled={loading}
+                    >
                         Quay lại
                     </button>
                 )}
-                {onNext && (
-                    <button className="coordinate-next-btn" onClick={onNext}>
-                        Tiếp theo
+                {(onNext || (currentStep === totalSteps && currentParticipantId && recipientId)) && (
+                    <button 
+                        className="coordinate-next-btn" 
+                        onClick={handleNext}
+                        disabled={loading}
+                    >
+                        {loading ? 'Đang xử lý...' : (currentStep === totalSteps && currentParticipantId && recipientId ? 'Điều phối' : 'Tiếp theo')}
                     </button>
                 )}
             </div>

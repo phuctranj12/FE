@@ -132,6 +132,35 @@
     margin-bottom: 30px;
 }
 
+.coordinate-document-editor-section {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.coordinate-document-selector {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.coordinate-document-selector label {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.coordinate-document-selector select {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #b3d4ff;
+    font-size: 14px;
+    max-width: 320px;
+}
+
 /* Role Section */
 .coordinate-role-section {
     margin-bottom: 25px;
