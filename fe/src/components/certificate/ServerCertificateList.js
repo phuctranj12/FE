@@ -22,8 +22,11 @@ function ServerCertificateList() {
         const fetchCertificates = async () => {
             try {
                 const data = await certificateService.getAllCertificates();
-                setAllCertificates(data || []);
-                setFiltered(data || []);
+                // console.log("DATA API TRẢ VỀ = ", data);
+                // console.log("Có phải array không? ", Array.isArray(data));
+
+                setAllCertificates(data.certificates || []);
+                setFiltered(data.certificates || []);
             } catch (error) {
                 console.error("Lỗi khi tải chứng thư số:", error);
             }
