@@ -35,7 +35,7 @@ function App() {
         <Route path="role" element={<RoleList />} />
         <Route path="document" element={<Document />} />
         <Route path="created-document" element={<CreatedDocument />} />
-        <Route path="server-certificate" element={<CreatedDocument />} />
+        <Route path="server-certificate" element={<ServerCertificateList />} />
       </Route>
     </Routes>
   );
