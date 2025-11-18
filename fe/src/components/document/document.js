@@ -7,24 +7,50 @@ import ActionMenu from "./ActionMenu";
 import SearchBar from "../common/SearchBar";
 import documentService from "../../api/documentService";
 
-function Document({ selectedStatus, onDocumentClick }) {
+function Document({ selectedStatus = "all", onDocumentClick }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState({});
     const [docs, setDocs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5);
+    const [itemsPerPage] = useState(10);
     const [totalDocs, setTotalDocs] = useState(0);
     const [errorMessage, setErrorMessage] = useState("");
 
     const totalPages = Math.ceil(totalDocs / itemsPerPage);
+
+    const extractListAndTotal = (response) => {
+        const payload = response?.data ?? response ?? {};
+        const nested = payload?.data ?? {};
+        const list =
+            Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload.content)
+                    ? payload.content
+                    : Array.isArray(payload.items)
+                        ? payload.items
+                        : Array.isArray(nested)
+                            ? nested
+                            : Array.isArray(nested.content)
+                                ? nested.content
+                                : Array.isArray(nested.items)
+                                    ? nested.items
+                                    : [];
+        const total =
+            typeof payload.total === "number" ? payload.total :
+            typeof payload.totalElements === "number" ? payload.totalElements :
+            typeof nested.total === "number" ? nested.total :
+            typeof nested.totalElements === "number" ? nested.totalElements :
+            list.length;
+        return { list, total };
+    };
 
     const fetchDocuments = async () => {
         setErrorMessage("");
 
         // Lấy filter
         const filter = {
-            status: selectedStatus === "all" ? 0 : selectedStatus,
+            status: selectedStatus === "all" ? undefined : selectedStatus,
             textSearch: searchTerm,
             fromDate: advancedFilters.fromDate || "",
             toDate: advancedFilters.toDate || "",
@@ -33,13 +59,11 @@ function Document({ selectedStatus, onDocumentClick }) {
             // organizationId bỏ đi
         };
 
-        // Chuyển filter thành query string
-        const queryParams = new URLSearchParams(filter).toString();
-
         try {
-            const data = await documentService.getMyContracts(`?${queryParams}`);
-            setDocs(data?.content || []);
-            setTotalDocs(data?.total || 0);
+            const data = await documentService.getMyContracts(filter);
+            const { list, total } = extractListAndTotal(data);
+            setDocs(list);
+            setTotalDocs(total);
         } catch (error) {
             if (error.response) {
                 if (error.response.status === 401) {

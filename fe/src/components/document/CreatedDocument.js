@@ -13,13 +13,36 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
     const [advancedFilters, setAdvancedFilters] = useState({});
     const [docs, setDocs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5);
+    const [itemsPerPage] = useState(10);
     const [totalDocs, setTotalDocs] = useState(0);
 
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentDocs = docs.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(totalDocs / itemsPerPage);
+
+    const extractListAndTotal = (response) => {
+        const payload = response?.data ?? response ?? {};
+        const nested = payload?.data ?? {};
+        const list =
+            Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload.content)
+                    ? payload.content
+                    : Array.isArray(payload.items)
+                        ? payload.items
+                        : Array.isArray(nested)
+                            ? nested
+                            : Array.isArray(nested.content)
+                                ? nested.content
+                                : Array.isArray(nested.items)
+                                    ? nested.items
+                                    : [];
+        const total =
+            typeof payload.total === "number" ? payload.total :
+            typeof payload.totalElements === "number" ? payload.totalElements :
+            typeof nested.total === "number" ? nested.total :
+            typeof nested.totalElements === "number" ? nested.totalElements :
+            list.length;
+        return { list, total };
+    };
 
     const fetchDocuments = async () => {
         const filter = {
@@ -32,10 +55,10 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
         };
 
         try {
-            // Gọi API qua service đã sửa
             const response = await createdDocumentService.getCreatedContracts(filter);
-            setDocs(response.content || []);
-            setTotalDocs(response.total || 0);
+            const { list, total } = extractListAndTotal(response);
+            setDocs(list);
+            setTotalDocs(total);
         } catch (error) {
             console.error("Lấy tài liệu thất bại:", error);
             setDocs([]);
@@ -126,7 +149,7 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentDocs.map(doc => (
+                                {docs.map(doc => (
                                     <tr
                                         key={doc.id}
                                         className="document-row"

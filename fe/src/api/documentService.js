@@ -5,7 +5,7 @@ const documentService = {
         try {
             // Chuẩn hóa dữ liệu trước khi gửi
             const body = {
-                status: filterContractDTO.status ?? 0,
+                ...(typeof filterContractDTO.status === 'number' ? { status: filterContractDTO.status } : {}),
                 textSearch: filterContractDTO.textSearch ?? "",
                 fromDate: filterContractDTO.fromDate || null,
                 toDate: filterContractDTO.toDate || null,
