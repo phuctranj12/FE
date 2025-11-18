@@ -836,6 +836,45 @@
 
         ---
 
+        ### 4.6. Lấy tổ chức theo email khách hàng (Internal)
+        **Endpoint**: `GET /customers/organizations/internal/get-by-email-customer`
+
+        **Query Parameters**:
+        - `customerEmail`: string (required)
+
+        **Response Success**:
+        ```json
+        {
+          "code": "SUCCESS",
+          "message": "Success",
+          "data": {
+            "id": "integer",
+            "name": "string",
+            "email": "string",
+            "status": "integer",
+            "taxCode": "string",
+            "code": "string",
+            "children": []
+          }
+        }
+        ```
+
+        **Mô tả**: API nội bộ để ánh xạ customer sang tổ chức tương ứng dựa trên email. Được sử dụng bởi các service backend khác, frontend không cần gọi trực tiếp.
+
+        ---
+
+        ### 4.7. Lấy tổ chức theo ID (Internal)
+        **Endpoint**: `GET /customers/organizations/internal/get-by-id`
+
+        **Query Parameters**:
+        - `organizationId`: integer (required)
+
+        **Response**: Tương tự 4.6
+
+        **Mô tả**: API nội bộ để lấy thông tin chi tiết tổ chức bằng ID mà không cần đi qua endpoint public.
+
+        ---
+
         ## 5. Permission API (`/customers/permissions`)
 
         Tất cả API này **YÊU CẦU** JWT token.
@@ -1060,13 +1099,15 @@
         ---
 
         #### 7.1.4. Thay đổi trạng thái hợp đồng
-        **Endpoint**: `PUT /contract/{contractId}/change-status/{status}`
+        **Endpoint**: `PUT /contracts/change-status/{contractId}`
 
         **Path Parameters**:
-        - `contractId`: integer (required) - ID của hợp đồng
+        - `contractId`: integer (required)
+
+        **Query Parameters**:
         - `status`: integer (required) - Trạng thái mới (0, 10, 20, 30, 31, 32, 35, 40)
 
-        **Example**: `http://localhost:8080/api/contract/1/change-status/20`
+        **Example**: `http://localhost:8080/api/contracts/change-status/1?status=20`
 
         **Response Success**:
         ```json
@@ -1212,7 +1253,7 @@
         ---
 
         #### 7.2.1. Lấy số lượng trang PDF
-        **Endpoint**: `GET /contracts/documents/get-page-size`
+        **Endpoint**: `POST /contracts/documents/get-page-size`
 
         **Content-Type**: `multipart/form-data`
 
@@ -1247,7 +1288,7 @@
         ---
 
         #### 7.2.2. Kiểm tra chữ ký số trong tài liệu
-        **Endpoint**: `GET /contracts/documents/check-signature`
+        **Endpoint**: `POST /contracts/documents/check-signature`
 
         **Content-Type**: `multipart/form-data`
 
@@ -2153,6 +2194,186 @@
 
         ---
 
+        ### 7.10. Template Contract API (`/contracts/template-contracts`)
+
+        #### 7.10.1. Tạo hợp đồng mẫu
+        **Endpoint**: `POST /contracts/template-contracts/create-contract`
+
+        **Request Body**: Sử dụng `ContractRequestDTO` giống 7.1.2 (tên, contractNo, signTime, typeId, ...).
+
+        **Response**: Thông tin hợp đồng mẫu vừa tạo, bao gồm `id`, `name`, `status`, `typeId`, `contractRefs`, `participants` (mặc định rỗng).
+
+        **Mô tả**: Tạo hợp đồng mẫu để tái sử dụng nhiều lần. Authentication xác định người tạo template.
+
+        #### 7.10.2. Thay đổi trạng thái hợp đồng mẫu
+        **Endpoint**: `PUT /contracts/template-contracts/{contractId}/change-status/{new-status}`
+
+        **Path Parameters**:
+        - `contractId`: integer (required)
+        - `new-status`: integer (required) – sử dụng cùng bộ trạng thái của hợp đồng thường
+
+        **Request Body** *(optional)*:
+        ```json
+        {
+          "reasonReject": "string (optional)",
+          "note": "string (optional)"
+        }
+        ```
+
+        **Mô tả**: Cho phép chuyển trạng thái template (ví dụ: DRAFT → ACTIVE) và lưu lại lý do nếu cần.
+
+        ---
+
+        ### 7.11. Template Document API (`/contracts/template-documents`)
+
+        #### 7.11.1. Tạo bản ghi tài liệu mẫu
+        **Endpoint**: `POST /contracts/template-documents/create-document`
+
+        **Request Body**: `DocumentUploadDTO` (name, type, contractId, fileName, path, status).
+
+        **Response**: Bản ghi tài liệu mẫu đã lưu với `id`, `contractId`, `fileName`, `path`, `type`, `status`.
+
+        #### 7.11.2. Lấy presigned URL của tài liệu mẫu
+        **Endpoint**: `GET /contracts/template-documents/get-presigned-url/{docId}`
+
+        **Path Parameters**:
+        - `docId`: integer (required)
+
+        **Response**:
+        ```json
+        {
+          "code": "SUCCESS",
+          "message": "Success",
+          "data": { "url": "string" }
+        }
+        ```
+
+        #### 7.11.3. Lấy tài liệu mẫu theo hợp đồng
+        **Endpoint**: `GET /contracts/template-documents/get-template-document-by-contract/{contractId}`
+
+        **Path Parameters**:
+        - `contractId`: integer (required)
+
+        **Mô tả**: Trả về danh sách tài liệu mẫu gắn với hợp đồng mẫu để frontend hiển thị trước khi tạo hợp đồng thật.
+
+        ---
+
+        ### 7.12. Template Participant API (`/contracts/template-participants`)
+
+        #### 7.12.1. Tạo danh sách tổ chức tham gia mẫu
+        **Endpoint**: `POST /contracts/template-participants/create-participant/{contractId}`
+
+        **Path Parameters**:
+        - `contractId`: integer (required)
+
+        **Request Body**: Danh sách `ParticipantDTO` (giống 7.4.1) bao gồm thông tin tổ chức và `recipients`.
+
+        **Response**: Danh sách participant mẫu đã lưu, sắp xếp theo `ordering`.
+
+        ---
+
+        ### 7.13. Template Field API (`/contracts/template-fields`)
+
+        #### 7.13.1. Thêm trường dữ liệu cho hợp đồng mẫu
+        **Endpoint**: `POST /contracts/template-fields/create`
+
+        **Request Body**: Mảng `FieldDto` (name, type, font, fontSize, page, boxX/Y/W/H, contractId, documentId, recipientId, ...).
+
+        **Response**: Danh sách trường mẫu đã lưu với `id` tương ứng.
+
+        ---
+
+        ### 7.14. Process API (`/contracts/processes`)
+
+        #### 7.14.1. Điều phối hợp đồng
+        **Endpoint**: `PUT /contracts/processes/coordinator/{participantId}/{recipientId}`
+
+        **Path Parameters**:
+        - `participantId`: integer (required)
+        - `recipientId`: integer (required) – người đang điều phối
+
+        **Request Body**:
+        ```json
+        [
+          {
+            "id": "integer (optional)",
+            "name": "string",
+            "email": "string",
+            "role": "integer",
+            "ordering": "integer",
+            "status": "integer",
+            "signType": "integer",
+            "fields": []
+          }
+        ]
+        ```
+
+        **Mô tả**: Cho phép điều phối viên cập nhật danh sách recipients của một participant. Authentication cung cấp email người thao tác để lưu audit.
+
+        #### 7.14.2. Phê duyệt hợp đồng
+        **Endpoint**: `PUT /contracts/processes/approval/{recipientId}`
+
+        **Path Parameters**:
+        - `recipientId`: integer (required)
+
+        **Mô tả**: Xác nhận người nhận đồng ý xử lý hợp đồng. Không yêu cầu body, trả về trạng thái mới của recipient.
+
+        #### 7.14.3. Ký hợp đồng bằng chứng thư số
+        **Endpoint**: `POST /contracts/processes/certificate`
+
+        **Request Parameters**:
+        - `recipientId`: integer (required) – query param
+
+        **Request Body**:
+        ```json
+        {
+          "certId": "integer (required)",
+          "isTimestamp": "string (optional, default: \"false\")",
+          "imageBase64": "string (optional)",
+          "field": { ... FieldDto ... },
+          "width": "number (optional)",
+          "height": "number (optional)",
+          "type": "integer (optional)"
+        }
+        ```
+
+        **Mô tả**: Thực hiện ký số bằng certificate đã import. Email người ký được lấy từ JWT và tự gán vào request.
+
+        ---
+
+        ### 7.15. Utility/Test API (`/contracts`)
+
+        Các API này phục vụ thao tác nhanh với MinIO (upload/download) trong quá trình phát triển. Không yêu cầu JWT.
+
+        #### 7.15.1. Upload thử file lên MinIO
+        **Endpoint**: `POST /contracts/upload`
+        **Content-Type**: `multipart/form-data`
+
+        **Request Parameters**:
+        - `file`: MultipartFile (required)
+
+        **Response**: Chuỗi URL/path file trên MinIO.
+
+        #### 7.15.2. Download file từ MinIO
+        **Endpoint**: `GET /contracts/download/{fileName}`
+
+        **Path Parameters**:
+        - `fileName`: string (required)
+
+        **Response**: Trả về file dạng `application/octet-stream`.
+
+        #### 7.15.3. Lấy presigned URL theo documentId
+        **Endpoint**: `GET /contracts/view/{id}`
+
+        **Path Parameters**:
+        - `id`: integer (required) – documentId trong DB
+
+        **Response**: URL presigned dạng text.
+
+        **Lưu ý**: Đây là các API thử nghiệm, không đi qua gateway auth flow. Không dùng trong môi trường production.
+
+        ---
+
         ## 8. Gateway API
 
         API Gateway test endpoint.
@@ -2326,7 +2547,7 @@
         | GET | `/customers/roles/get-all` | ✅ | Danh sách vai trò (phân trang) |
         | GET | `/customers/roles/{roleId}` | ✅ | Chi tiết vai trò |
 
-        ### Organization Service (5 endpoints)
+        ### Organization Service (7 endpoints)
         | Method | Endpoint | Auth Required | Description |
         |--------|----------|---------------|-------------|
         | POST | `/customers/organizations/create` | ✅ | Tạo mới tổ chức |
@@ -2334,13 +2555,15 @@
         | PUT | `/customers/organizations/update/{organizationId}` | ✅ | Cập nhật tổ chức |
         | GET | `/customers/organizations/get-all` | ✅ | Danh sách tổ chức (phân trang) |
         | GET | `/customers/organizations/{organizationId}` | ✅ | Chi tiết tổ chức |
+        | GET | `/customers/organizations/internal/get-by-email-customer` | ✅ | Lấy tổ chức theo email customer (Internal) |
+        | GET | `/customers/organizations/internal/get-by-id` | ✅ | Lấy tổ chức theo ID (Internal) |
 
         ### Permission Service (1 endpoint)
         | Method | Endpoint | Auth Required | Description |
         |--------|----------|---------------|-------------|
         | GET | `/customers/permissions/get-all` | ✅ | Danh sách phân quyền (phân trang) |
 
-        ### Contract Service (36 endpoints)
+        ### Contract Service (48 endpoints)
 
         **Contract APIs (9 endpoints):**
         | Method | Endpoint | Auth Required | Description |
@@ -2348,18 +2571,18 @@
         | GET | `/contracts/check-code-unique` | ✅ | Kiểm tra mã hợp đồng unique |
         | POST | `/contracts/create-contract` | ✅ | Tạo hợp đồng mới |
         | GET | `/contracts/{contractId}` | ✅ | Lấy hợp đồng theo ID |
-        | PUT | `/contract/{contractId}/change-status/{status}` | ✅ | Thay đổi trạng thái hợp đồng |
-        | GET | `/contracts/my-contracts` | ✅ | Danh sách hợp đồng mình tạo |
-        | GET | `/contracts/my-process` | ✅ | Danh sách hợp đồng mình xử lý |
-        | GET | `/contracts/contract-by-organization` | ✅ | Danh sách hợp đồng theo tổ chức |
+        | PUT | `/contracts/change-status/{contractId}` | ✅ | Thay đổi trạng thái hợp đồng |
+        | POST | `/contracts/my-contracts` | ✅ | Danh sách hợp đồng mình tạo |
+        | POST | `/contracts/my-process` | ✅ | Danh sách hợp đồng mình xử lý |
+        | POST | `/contracts/contract-by-organization` | ✅ | Danh sách hợp đồng theo tổ chức |
         | PUT | `/contracts/update-contract/{contractId}` | ✅ | Cập nhật hợp đồng |
         | GET | `/contracts/bpmn-flow/{contractId}` | ✅ | Lấy luồng BPMN |
 
         **Document APIs (6 endpoints):**
         | Method | Endpoint | Auth Required | Description |
         |--------|----------|---------------|-------------|
-        | GET | `/contracts/documents/get-page-size` | ✅ | Lấy số trang PDF |
-        | GET | `/contracts/documents/check-signature` | ✅ | Kiểm tra chữ ký số |
+        | POST | `/contracts/documents/get-page-size` | ✅ | Lấy số trang PDF |
+        | POST | `/contracts/documents/check-signature` | ✅ | Kiểm tra chữ ký số |
         | POST | `/contracts/documents/upload-document` | ✅ | Tải lên tài liệu |
         | POST | `/contracts/documents/create-document` | ✅ | Tạo bản ghi tài liệu |
         | GET | `/contracts/documents/get-presigned-url/{docId}` | ✅ | Lấy URL truy cập tài liệu |
@@ -2413,6 +2636,43 @@
         | GET | `/contracts/certs/find-cert-by-id` | ✅ | Lấy chứng thư số theo ID |
         | GET | `/contracts/certs/find-cert` | ✅ | Tìm kiếm chứng thư số |
 
+        **Template Contract APIs (2 endpoints):**
+        | Method | Endpoint | Auth Required | Description |
+        |--------|----------|---------------|-------------|
+        | POST | `/contracts/template-contracts/create-contract` | ✅ | Tạo hợp đồng mẫu |
+        | PUT | `/contracts/template-contracts/{contractId}/change-status/{new-status}` | ✅ | Đổi trạng thái hợp đồng mẫu |
+
+        **Template Document APIs (3 endpoints):**
+        | Method | Endpoint | Auth Required | Description |
+        |--------|----------|---------------|-------------|
+        | POST | `/contracts/template-documents/create-document` | ✅ | Tạo bản ghi tài liệu mẫu |
+        | GET | `/contracts/template-documents/get-presigned-url/{docId}` | ✅ | Lấy URL truy cập tài liệu mẫu |
+        | GET | `/contracts/template-documents/get-template-document-by-contract/{contractId}` | ✅ | Lấy tài liệu mẫu theo hợp đồng |
+
+        **Template Participant APIs (1 endpoint):**
+        | Method | Endpoint | Auth Required | Description |
+        |--------|----------|---------------|-------------|
+        | POST | `/contracts/template-participants/create-participant/{contractId}` | ✅ | Tạo tổ chức tham gia mẫu |
+
+        **Template Field APIs (1 endpoint):**
+        | Method | Endpoint | Auth Required | Description |
+        |--------|----------|---------------|-------------|
+        | POST | `/contracts/template-fields/create` | ✅ | Thêm trường dữ liệu mẫu |
+
+        **Process APIs (3 endpoints):**
+        | Method | Endpoint | Auth Required | Description |
+        |--------|----------|---------------|-------------|
+        | PUT | `/contracts/processes/coordinator/{participantId}/{recipientId}` | ✅ | Điều phối participants/recipients |
+        | PUT | `/contracts/processes/approval/{recipientId}` | ✅ | Phê duyệt hợp đồng |
+        | POST | `/contracts/processes/certificate` | ✅ | Ký hợp đồng bằng chứng thư số |
+
+        **Utility/Test APIs (3 endpoints):**
+        | Method | Endpoint | Auth Required | Description |
+        |--------|----------|---------------|-------------|
+        | POST | `/contracts/upload` | ❌ | Upload test file lên MinIO |
+        | GET | `/contracts/download/{fileName}` | ❌ | Download file trực tiếp từ MinIO |
+        | GET | `/contracts/view/{id}` | ❌ | Lấy presigned URL theo documentId |
+
         ### Gateway Service (1 endpoint)
         | Method | Endpoint | Auth Required | Description |
         |--------|----------|---------------|-------------|
@@ -2420,15 +2680,15 @@
 
         ---
 
-        **Tổng cộng: 63 API endpoints**
+        **Tổng cộng: 77 API endpoints**
 
         **Chi tiết theo service:**
         - Authentication Service: 3 endpoints
         - Customer Service: 12 endpoints
         - Role Service: 5 endpoints
-        - Organization Service: 5 endpoints
+        - Organization Service: 7 endpoints
         - Permission Service: 1 endpoint
-        - Contract Service: 36 endpoints
+        - Contract Service: 48 endpoints
           - Contract APIs: 9 endpoints
           - Document APIs: 6 endpoints
           - Type APIs: 5 endpoints
@@ -2438,5 +2698,11 @@
           - Share APIs: 2 endpoints
           - Contract Ref APIs: 1 endpoint
           - Certificate APIs: 7 endpoints
+          - Template Contract APIs: 2 endpoints
+          - Template Document APIs: 3 endpoints
+          - Template Participant APIs: 1 endpoint
+          - Template Field APIs: 1 endpoint
+          - Process APIs: 3 endpoints
+          - Utility/Test APIs: 3 endpoints
         - Gateway Service: 1 endpoint
 

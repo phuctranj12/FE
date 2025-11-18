@@ -15,7 +15,8 @@ function DocumentEditor({
     onBack, 
     onNext, 
     onSaveDraft, 
-    hideFooter = false 
+    hideFooter = false,
+    lockedFieldIds = []
 }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -394,6 +395,8 @@ function DocumentEditor({
                 const scaledW = (field.boxW || 100) * currentScale;
                 const scaledH = (field.boxH || 30) * currentScale;
                 
+                const isLocked = lockedFieldIds?.includes(field.id);
+
                 return {
                     id: field.id || Date.now() + index,
                     fieldId: field.id,
@@ -412,18 +415,33 @@ function DocumentEditor({
                         height: scaledH,
                         fieldName: field.name || '',
                         ordering: field.ordering || index + 1
-                    }
+                    },
+                    locked: Boolean(isLocked)
                 };
             });
             setDocumentComponents(loadedComponents);
         }
-    }, [fieldsData, currentScale]);
+    }, [fieldsData, currentScale, lockedFieldIds]);
+
+    useEffect(() => {
+        if (!lockedFieldIds) return;
+        setDocumentComponents(prev => prev.map(component => {
+            if (!component.fieldId) return component;
+            const shouldLock = lockedFieldIds.includes(component.fieldId);
+            if (component.locked === shouldLock) {
+                return component;
+            }
+            return { ...component, locked: shouldLock };
+        }));
+    }, [lockedFieldIds]);
 
     // Convert documentComponents sang fields format và gọi onFieldsChange
     useEffect(() => {
         if (onFieldsChange && contractId && documentId && currentScale > 0) {
             const fields = documentComponents
                 .filter(component => {
+                    // Bỏ qua các component bị khóa (thuộc đối tác trước đó)
+                    if (component.locked) return false;
                     // Chỉ include components có recipientId hợp lệ
                     const recipientId = component.properties.recipientId || parseInt(component.properties.signer);
                     return recipientId && !isNaN(recipientId);
@@ -535,6 +553,7 @@ function DocumentEditor({
                 type: selectedComponent.id,
                 name: selectedComponent.name,
                 page: currentPage,
+                locked: false,
                 properties: { 
                     ...componentProperties,
                     recipientId: recipientId,
@@ -549,10 +568,17 @@ function DocumentEditor({
     };
 
     const handleRemoveComponent = (componentId) => {
+        const target = documentComponents.find(comp => comp.id === componentId);
+        if (target?.locked) {
+            return;
+        }
         setDocumentComponents(prev => prev.filter(comp => comp.id !== componentId));
     };
 
     const handleComponentClick = (component) => {
+        if (component.locked) {
+            return;
+        }
         setEditingComponentId(component.id);
         setComponentProperties(component.properties);
         // Set recipient search value khi click vào component
@@ -569,6 +595,10 @@ function DocumentEditor({
 
     const handleUpdateComponent = () => {
         if (editingComponentId) {
+            const editingComponent = documentComponents.find(comp => comp.id === editingComponentId);
+            if (editingComponent?.locked) {
+                return;
+            }
             const recipientId = parseInt(componentProperties.signer);
             setDocumentComponents(prev => prev.map(comp => 
                 comp.id === editingComponentId 
@@ -593,6 +623,7 @@ function DocumentEditor({
                 type: selectedComponent.id,
                 name: `${selectedComponent.name} - ${option.name}`,
                 signatureType: option.id,
+                locked: false,
                 properties: { 
                     ...componentProperties,
                     width: Math.max(componentProperties.width || 100, 50),
@@ -610,7 +641,7 @@ function DocumentEditor({
         e.stopPropagation();
         
         const component = documentComponents.find(comp => comp.id === componentId);
-        if (!component) return;
+        if (!component || component.locked) return;
 
         // Tìm page container (parent có data-page-index)
         let pageContainer = e.target.closest('[data-page-index]');
@@ -711,7 +742,7 @@ function DocumentEditor({
         console.log('Resize start:', { componentId, handle, clientX: e.clientX, clientY: e.clientY });
         
         const component = documentComponents.find(comp => comp.id === componentId);
-        if (!component) return;
+        if (!component || component.locked) return;
 
         setIsResizing(true);
         setResizeHandle(handle);

@@ -43,8 +43,6 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 <div className={`menu-item${(menuStatus === "document") ? " active-menu" : ""}`} onClick={() => {
                     toggleMenu("tao");
                     handleSelectMenu("document");
-                    handleSelect("all");
-                    handleNavigation('/main/document');
                 }} >
                     Tài liệu đã tạo{" "}
                     <i
@@ -54,12 +52,60 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 </div>
                 {activeMenu === "tao" && (
                     <div className="submenu">
-                        <div className="subitem" onClick={() => handleSelect(0)}>Bản nháp</div>
-                        <div className="subitem" onClick={() => handleSelect(1)}>Đang xử lý</div>
-                        <div className="subitem" onClick={() => handleSelect(2)}>Đã xử lý</div>
-                        <div className="subitem" onClick={() => handleSelect(3)}>Từ chối</div>
-                        <div className="subitem" onClick={() => handleSelect(4)}>Xác Thực</div>
-                        <div className="subitem" onClick={() => handleSelect(5)}>Chờ</div>
+                        <div
+                            className="subitem"
+                            onClick={() => {
+                                handleSelect(0);
+                                handleNavigation('/main/contract/create/draft');
+                            }}
+                        >
+                            Bản nháp
+                        </div>
+                        <div
+                            className="subitem"
+                            onClick={() => {
+                                handleSelect(1);
+                                handleNavigation('/main/contract/create/processing');
+                            }}
+                        >
+                            Đang xử lý
+                        </div>
+                        <div
+                            className="subitem"
+                            onClick={() => {
+                                handleSelect(2);
+                                handleNavigation('/main/contract/create/complete');
+                            }}
+                        >
+                            Đã xử lý
+                        </div>
+                        <div
+                            className="subitem"
+                            onClick={() => {
+                                handleSelect(3);
+                                handleNavigation('/main/contract/create/fail');
+                            }}
+                        >
+                            Từ chối
+                        </div>
+                        <div
+                            className="subitem"
+                            onClick={() => {
+                                handleSelect(4);
+                                handleNavigation('/main/contract/create/validate');
+                            }}
+                        >
+                            Xác Thực
+                        </div>
+                        <div
+                            className="subitem"
+                            onClick={() => {
+                                handleSelect(5);
+                                handleNavigation('/main/contract/create/waiting');
+                            }}
+                        >
+                            Chờ
+                        </div>
                     </div>
                 )}
 
