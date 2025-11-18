@@ -5,6 +5,7 @@ const authService = {
 
     // 1.1. Login
     login: async ({ email, password }) => {
+
         return apiClient.post('/auth/login', { email, password });
     },
 

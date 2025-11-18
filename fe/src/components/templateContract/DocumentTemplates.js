@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../styles/documentTemplates.css";
 import SearchBar from "../common/SearchBar";
 import Button from "../common/Button";
@@ -6,7 +6,7 @@ import Pagination from "../common/Pagination";
 import TemplateContractItem from "./TemplateContractItem";
 import TemplateForm from "./TemplateForm";
 import TemplateDetail from "./TemplateDetail";
-
+import DocumentTemplatesService from "../../api/documentTemplateService";
 function DocumentTemplates() {
     const [activeTab, setActiveTab] = useState("created"); // "created" or "shared"
     const [searchName, setSearchName] = useState("");
@@ -15,7 +15,24 @@ function DocumentTemplates() {
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
+    const [documentTypesList, setDocumentTypesList] = useState([]);
+    useEffect(() => {
+        const loadDocumentTypes = async () => {
+            try {
+                const res = await DocumentTemplatesService.getAllTypes({
+                    page: 0,
+                    size: 50
+                });
+                const types = res.data;
+                setDocumentTypesList(types);
+                console.log("Document types loaded:", types);
+            } catch (err) {
+                console.error("Lỗi khi lấy loại hợp đồng:", err);
+            }
+        };
 
+        loadDocumentTypes();
+    }, []);
     // Mock data - Replace with real API data
     const [templates] = useState([
         {
@@ -249,7 +266,7 @@ function DocumentTemplates() {
 // Full pagination component with page info
 function FullPagination({ currentPage, totalPages, totalItems, itemsPerPage, startIndex, endIndex, onPageChange }) {
     const windowSize = 5;
-    
+
     const handlePageChange = (page) => {
         onPageChange && onPageChange(page);
     };
@@ -257,7 +274,7 @@ function FullPagination({ currentPage, totalPages, totalItems, itemsPerPage, sta
     const getPageNumbers = () => {
         const pages = [];
         const size = Math.max(1, windowSize);
-        
+
         if (totalPages <= size) {
             for (let i = 1; i <= totalPages; i++) pages.push(i);
         } else if (currentPage <= Math.ceil(size / 2)) {
@@ -268,7 +285,7 @@ function FullPagination({ currentPage, totalPages, totalItems, itemsPerPage, sta
             const start = currentPage - Math.floor(size / 2);
             for (let i = 0; i < size; i++) pages.push(start + i);
         }
-        
+
         return pages;
     };
 
@@ -282,7 +299,7 @@ function FullPagination({ currentPage, totalPages, totalItems, itemsPerPage, sta
                 onChange={handlePageChange}
                 windowSize={windowSize}
             />
-            
+
             <div className="pagination-info">
                 <span className="page-count">{currentPage} của {totalPages} trang</span>
                 <span className="item-count">Số lượng: {startIndex} - {endIndex} / {totalItems}</span>
