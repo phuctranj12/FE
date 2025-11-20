@@ -18,6 +18,7 @@ import CreatedDocument from './components/document/CreatedDocument';
 import DocumentForm from './components/createContract/DocumentForm';
 import ServerCertificateList from './components/certificate/ServerCertificateList';
 import ContractDetail from './components/contract_coordinate/ContractDetail';
+import EditDocumentForm from './components/document/EditDocumentForm';
 function App() {
   return (
     <Routes>
@@ -40,6 +41,8 @@ function App() {
         <Route path="created-document" element={<CreatedDocument />} />
         <Route path="server-certificate" element={<ServerCertificateList />} />
         <Route path="c/:type/:contractId" element={<ContractDetail />} />
+        <Route path="document/edit/:id" element={<EditDocumentForm />} />
+
       </Route>
     </Routes>
   );

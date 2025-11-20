@@ -19,6 +19,42 @@ const documentService = {
         } catch (error) {
             throw error;
         }
+    },
+    getContractById: async (contractId) => {
+        try {
+            const response = await apiClient.get(`/contracts/${contractId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // Put Change Status /{contractId}/change-status/{new-status}
+    changeContractStatus: async (contractId, newStatus, reason) => {
+        try {
+            const body = { reason }; // swagger yêu cầu body có reason
+
+            const response = await apiClient.put(
+                `/contracts/${contractId}/change-status/${newStatus}`,
+                body
+            );
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    //  PUT: Update contract - /update-contract/{contractId}
+    updateContract: async (contractId, data) => {
+        try {
+            const response = await apiClient.put(
+                `/contracts/update-contract/${contractId}`,
+                data
+            );
+            return response;
+        } catch (error) {
+            throw error;
+        }
     }
 };
 

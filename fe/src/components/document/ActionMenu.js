@@ -9,7 +9,6 @@ function ActionMenu({ onEdit, onViewFlow, onCopy, onDelete, doc }) {
 
     const toggleMenu = () => setOpen((prev) => !prev);
 
-    // ✅ Đóng menu khi click ra ngoài
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -38,16 +37,15 @@ function ActionMenu({ onEdit, onViewFlow, onCopy, onDelete, doc }) {
 
             {open && (
                 <div className="action-dropdown">
-                    <button onClick={onEdit}>Sửa tài liệu</button>
-                    <button onClick={onViewFlow}>Xem luồng ký</button>
-                    <button onClick={onCopy}>Sao chép tài liệu</button>
+                    <button onClick={() => onEdit(doc)}>Sửa tài liệu</button>
+                    <button onClick={() => onViewFlow(doc)}>Xem luồng ký</button>
+                    <button onClick={() => onCopy(doc)}>Sao chép tài liệu</button>
                     <button className="delete-btn" onClick={handleDelete}>
                         Xóa tài liệu
                     </button>
                 </div>
             )}
 
-            {/* Popup xác nhận xoá */}
             <ConfirmDeleteModal
                 show={showConfirm}
                 onClose={() => setShowConfirm(false)}

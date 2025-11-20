@@ -6,6 +6,7 @@ import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
 import SearchBar from "../common/SearchBar";
 import documentService from "../../api/documentService";
+import { useNavigate } from "react-router-dom";
 
 function Document({ selectedStatus = "all", onDocumentClick }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -38,10 +39,10 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                     : [];
         const total =
             typeof payload.total === "number" ? payload.total :
-            typeof payload.totalElements === "number" ? payload.totalElements :
-            typeof nested.total === "number" ? nested.total :
-            typeof nested.totalElements === "number" ? nested.totalElements :
-            list.length;
+                typeof payload.totalElements === "number" ? payload.totalElements :
+                    typeof nested.total === "number" ? nested.total :
+                        typeof nested.totalElements === "number" ? nested.totalElements :
+                            list.length;
         return { list, total };
     };
 
@@ -90,6 +91,13 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, selectedStatus, advancedFilters]);
+    const navigate = useNavigate();
+
+    const handleEdit = (doc) => {
+        if (!doc?.id) return;
+        navigate(`document/edit/:id/${doc.id}`);
+    };
+
 
     const getStatusLabel = (status) => {
         switch (status) {
@@ -188,7 +196,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                         <td>{formatDate(doc.updated_at)}</td>
                                         <td>
                                             <ActionMenu
-                                                onEdit={() => console.log("Sửa", doc.id)}
+                                                onEdit={handleEdit}
                                                 onViewFlow={() => console.log("Xem luồng ký", doc.id)}
                                                 onCopy={() => console.log("Sao chép", doc.id)}
                                                 onDelete={() => console.log("Xóa tài liệu có id:", doc.id)}
