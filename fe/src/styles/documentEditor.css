@@ -276,6 +276,19 @@
     display: none;
 }
 
+/* Highlight components for review */
+.document-component.highlight-sign {
+    border: 2px solid #ff6b6b !important;
+    background: rgba(255, 107, 107, 0.1) !important;
+    box-shadow: 0 0 0 1px rgba(255, 107, 107, 0.5);
+}
+
+.document-component.highlight-info {
+    border: 2px solid #4ecdc4 !important;
+    background: rgba(78, 205, 196, 0.1) !important;
+    box-shadow: 0 0 0 1px rgba(78, 205, 196, 0.5);
+}
+
 .locked-badge {
     position: absolute;
     top: -18px;

@@ -34,6 +34,13 @@ function ContractDetail() {
     const [clerks, setClerks] = useState([]);
     const [partner, setPartner] = useState('');
 
+    // State cho fields và highlight
+    const [fields, setFields] = useState([]);
+    const [highlightedFields, setHighlightedFields] = useState([]);
+    const [highlightType, setHighlightType] = useState(null); // 'sign' | 'info' | null
+    const [reviewDecision, setReviewDecision] = useState(''); // 'agree' | 'disagree' | ''
+    const [showReviewDialog, setShowReviewDialog] = useState(false);
+
     // Load contract data
     useEffect(() => {
         const loadContractData = async () => {
@@ -73,6 +80,12 @@ function ContractDetail() {
                         const document = documentsResponse.data[0];
                         // Có thể cần lấy presigned URL nếu cần
                     }
+
+                    // Lấy thông tin fields của hợp đồng
+                    const fieldsResponse = await contractService.getFieldsByContract(contractId);
+                    if (fieldsResponse?.code === 'SUCCESS') {
+                        setFields(fieldsResponse.data || []);
+                    }
                 } else {
                     throw new Error(contractResponse?.message || 'Không thể tải thông tin hợp đồng');
                 }
@@ -110,7 +123,8 @@ function ContractDetail() {
     // Handler cho các nút action
     const handleDelegate = () => {
         console.log('Ủy quyền/Chuyển tiếp');
-        // TODO: Implement delegate logic
+        // TODO: Implement delegate logic - có thể mở modal chọn người nhận ủy quyền
+        alert('Chức năng ủy quyền đang được phát triển');
     };
 
     const handleReject = () => {
@@ -122,12 +136,85 @@ function ContractDetail() {
 
     const handleFindSignFields = () => {
         console.log('Tìm ô ký');
-        // TODO: Implement find sign fields logic
+        // Filter fields có type là IMAGE_SIGN (2) hoặc DIGITAL_SIGN (3)
+        const signFields = fields.filter(field => field.type === 2 || field.type === 3);
+        setHighlightedFields(signFields);
+        setHighlightType('sign');
+        console.log('Found sign fields:', signFields);
     };
 
     const handleFindInfoFields = () => {
         console.log('Tìm ô thông tin');
-        // TODO: Implement find info fields logic
+        // Filter fields có type là TEXT (1), CONTRACT_NO (4), MONEY (5)
+        const infoFields = fields.filter(field => field.type === 1 || field.type === 4 || field.type === 5);
+        setHighlightedFields(infoFields);
+        setHighlightType('info');
+        console.log('Found info fields:', infoFields);
+    };
+
+    // Convert highlighted fields to components for PDFViewer
+    const getHighlightComponents = () => {
+        if (!highlightedFields.length) return [];
+
+        return highlightedFields.map(field => ({
+            id: `highlight-${field.id}`,
+            type: highlightType === 'sign' ? 'signature' : 'text',
+            page: field.page || 1,
+            properties: {
+                x: field.boxX || 0,
+                y: field.boxY || 0,
+                width: field.boxW || 100,
+                height: field.boxH || 30
+            },
+            name: field.name || '',
+            highlight: true,
+            highlightType: highlightType,
+            locked: true // Không cho phép edit highlight fields
+        }));
+    };
+
+    const handleReviewClick = () => {
+        if (!recipientId) {
+            alert('Không tìm thấy thông tin người xem xét');
+            return;
+        }
+
+        if (!reviewDecision) {
+            alert('Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận');
+            return;
+        }
+
+        setShowReviewDialog(true);
+    };
+
+    const handleReviewConfirm = async () => {
+        if (!reviewDecision) {
+            alert('Vui lòng chọn Đồng ý hoặc Không đồng ý');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await contractService.review(recipientId);
+
+            if (response?.code === 'SUCCESS') {
+                alert(`Đã xác nhận ${reviewDecision === 'agree' ? 'đồng ý' : 'không đồng ý'} với hợp đồng thành công!`);
+                setReviewDecision('');
+                setShowReviewDialog(false);
+                navigate('/main/dashboard');
+            } else {
+                throw new Error(response?.message || 'Xác nhận xem xét thất bại');
+            }
+        } catch (error) {
+            console.error('Error reviewing contract:', error);
+            alert(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi xác nhận xem xét');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReviewCancel = () => {
+        setShowReviewDialog(false);
     };
 
     const handleCoordinate = () => {
@@ -318,6 +405,42 @@ function ContractDetail() {
                                     <p>Thông tin ký sẽ được hiển thị ở đây</p>
                                 </div>
                             )}
+
+                            {type === 'review' && (
+                                <div className="sign-confirmation-section">
+                                    <h3 className="section-title">XEM XÉT TÀI LIỆU</h3>
+                                    <div className="confirmation-content">
+                                        <p className="confirmation-question">
+                                            Bạn có đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch không?
+                                        </p>
+                                        <div className="radio-options">
+                                            <label className="radio-option">
+                                                <input
+                                                    type="radio"
+                                                    name="reviewDecision"
+                                                    value="agree"
+                                                    checked={reviewDecision === 'agree'}
+                                                    onChange={() => setReviewDecision('agree')}
+                                                />
+                                                <span className="radio-label">Đồng ý</span>
+                                            </label>
+                                            <label className="radio-option">
+                                                <input
+                                                    type="radio"
+                                                    name="reviewDecision"
+                                                    value="disagree"
+                                                    checked={reviewDecision === 'disagree'}
+                                                    onChange={() => setReviewDecision('disagree')}
+                                                />
+                                                <span className="radio-label">Không đồng ý</span>
+                                            </label>
+                                        </div>
+                                        <p className="confirmation-note">
+                                            Vui lòng lựa chọn trước khi nhấn nút Xác nhận ở phần Luồng xử lý tài liệu.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -377,12 +500,13 @@ function ContractDetail() {
 
                 {/* PDF Viewer */}
                 <div className="pdf-viewer">
-                    <PDFViewer 
+                    <PDFViewer
                         document={contract}
                         currentPage={currentPage}
                         totalPages={totalPages}
                         zoom={zoom}
                         onPageChange={handlePageChange}
+                        components={getHighlightComponents()}
                     />
                 </div>
 
@@ -400,14 +524,89 @@ function ContractDetail() {
                     <button className="edit-btn" onClick={handleFindInfoFields}>
                         Tìm ô thông tin
                     </button>
-                    <button className="finish-btn" onClick={handleCoordinate}>
-                        Điều phối
-                    </button>
+                    {type === 'review' ? (
+                        <button className="approve-btn" onClick={handleReviewClick}>
+                            Xác nhận
+                        </button>
+                    ) : (
+                        <button className="finish-btn" onClick={handleCoordinate}>
+                            Điều phối
+                        </button>
+                    )}
                     <button className="edit-btn" onClick={handleBack}>
                         Đóng
                     </button>
                 </div>
             </div>
+            
+            {/* Review Confirmation Dialog */}
+            {showReviewDialog && (
+                <div className="review-dialog-overlay" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div className="review-dialog" style={{
+                        background: 'white',
+                        padding: '30px',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                        minWidth: '380px',
+                        maxWidth: '480px'
+                    }}>
+                        <h3 style={{ margin: '0 0 12px 0', color: '#333' }}>
+                            Xác nhận gửi kết quả xem xét
+                        </h3>
+                        <p style={{ margin: '0 0 24px 0', color: '#555', lineHeight: 1.5 }}>
+                            Bạn chuẩn bị gửi kết quả "<strong>{reviewDecision === 'agree' ? 'Đồng ý' : 'Không đồng ý'}</strong>" cho tài liệu này.
+                            Bạn có chắc chắn muốn tiếp tục?
+                        </p>
+
+                        <div className="review-actions" style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: '10px'
+                        }}>
+                            <button
+                                className="edit-btn"
+                                onClick={handleReviewCancel}
+                                disabled={loading}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#f5f5f5',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                className="approve-btn"
+                                onClick={handleReviewConfirm}
+                                disabled={loading}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#28a745',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: loading ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {loading ? 'Đang xử lý...' : 'Xác nhận'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

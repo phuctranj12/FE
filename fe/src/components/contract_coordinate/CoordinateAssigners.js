@@ -40,6 +40,8 @@ function CoordinateAssigners({
     const [documents, setDocuments] = useState([]);
     const [activeDocumentId, setActiveDocumentId] = useState(null);
     const [pendingFields, setPendingFields] = useState([]);
+    const [createdRecipients, setCreatedRecipients] = useState([]);
+    const [coordinatorDetail, setCoordinatorDetail] = useState(null);
     const currentParticipantId = participantId || participantInfo?.id;
 
     const lockedFieldIds = useMemo(() => {
@@ -148,30 +150,30 @@ function CoordinateAssigners({
         loadData();
     }, [contractId, recipientId, loadDocumentsByContract, loadFieldsByContract]);
 
-    // Chuyển đổi dữ liệu từ form sang format API
-    const convertToRecipientDTO = (person, role) => {
-        return {
-            id: person.id || null,
-            name: person.fullName || person.name || '',
-            email: person.email || '',
-            phone: person.phone || '',
-            role: role,
-            username: person.username || null,
-            password: person.password || null,
-            ordering: person.ordering || 1,
-            status: role === 1 ? 1 : 0, // Người điều phối: status = 1, người khác: status = 0
-            fields: null,
-            fromAt: null,
-            dueAt: null,
-            signAt: null,
-            processAt: null,
-            signType: person.signType === 'hsm' ? 6 : person.signType || 6, // Mặc định signType = 6 (ký số)
-            reasonReject: null,
-            cardId: person.cardId || '',
-            image_height_signature: person.image_height_signature || null,
-            image_width_signature: person.image_width_signature || null
+    // Lấy chi tiết coordinator từ recipientId
+    useEffect(() => {
+        if (!recipientId) {
+            setCoordinatorDetail(null);
+            return;
+        }
+
+        let ignore = false;
+        const fetchCoordinatorDetail = async () => {
+            try {
+                const response = await contractService.getRecipientById(recipientId);
+                if (response?.code === 'SUCCESS' && !ignore) {
+                    setCoordinatorDetail(response.data);
+                }
+            } catch (err) {
+                console.error('Error fetching coordinator detail:', err);
+                setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải thông tin người điều phối');
+            }
         };
-    };
+
+        fetchCoordinatorDetail();
+        return () => { ignore = true; };
+    }, [recipientId]);
+
 
     const handleDocumentFieldsChange = (updatedFields = []) => {
         setPendingFields(updatedFields);
@@ -194,15 +196,9 @@ function CoordinateAssigners({
             return;
         }
 
-        // Kiểm tra có người tham gia nào không
-        const allRecipients = [
-            ...reviewers.map(r => ({ ...r, role: 2 })), // Role 2: Xem xét
-            ...signers.map(s => ({ ...s, role: 3 })), // Role 3: Ký
-            ...clerks.map(c => ({ ...c, role: 4 })) // Role 4: Văn thư
-        ];
-
-        if (allRecipients.length === 0) {
-            setError('Vui lòng thêm ít nhất một người tham gia xử lý');
+        // Kiểm tra đã tạo participants chưa
+        if (createdRecipients.length === 0) {
+            setError('Vui lòng thêm ít nhất một người tham gia xử lý và lưu thông tin');
             return;
         }
 
@@ -211,25 +207,18 @@ function CoordinateAssigners({
             setError(null);
 
             // Chuẩn bị dữ liệu điều phối
-            // Phần tử đầu tiên: Người điều phối (lấy từ coordinatorRecipient hoặc từ participantInfo)
-            const coordinator = coordinatorRecipient || participantInfo?.recipients?.[0];
-            
+            // Phần tử đầu tiên: Người điều phối hiện tại (từ coordinatorDetail)
+            const coordinator = coordinatorDetail;
+
             if (!coordinator) {
-                setError('Không tìm thấy thông tin người điều phối');
+                setError('Không tìm thấy thông tin người điều phối hiện tại');
                 return;
             }
 
+            // Chuẩn bị recipientsData: [coordinator, ...createdRecipients]
             const recipientsData = [
-                // Người điều phối (phần tử đầu tiên)
-                convertToRecipientDTO({
-                    id: coordinator.id,
-                    fullName: coordinator.name,
-                    email: coordinator.email,
-                    phone: coordinator.phone,
-                    ordering: coordinator.ordering || 1
-                }, 1), // Role 1: Điều phối
-                // Các người tham gia tiếp theo
-                ...allRecipients.map(person => convertToRecipientDTO(person, person.role))
+                coordinator, // Người điều phối (phần tử đầu tiên)
+                ...createdRecipients // Các người tham gia đã được tạo với ID từ backend
             ];
 
             // Gọi API điều phối
@@ -265,6 +254,59 @@ function CoordinateAssigners({
 
     // Xử lý khi nhấn "Tiếp theo"
     const handleNext = async () => {
+        if (currentStep === 1) {
+            // BƯỚC 4: Tạo participant mới (nếu có người tham gia)
+            const allRecipients = [
+                ...reviewers.map(r => ({ ...r, role: 2 })), // Role 2: Xem xét
+                ...signers.map(s => ({ ...s, role: 3 })), // Role 3: Ký
+                ...clerks.map(c => ({ ...c, role: 4 })) // Role 4: Văn thư
+            ];
+
+            if (allRecipients.length > 0) {
+                try {
+                    setLoading(true);
+                    setError(null);
+
+                    // Chuẩn bị payload cho API tạo participant
+                    const participantPayload = [{
+                        name: partner || 'Đối tác',
+                        type: 2, // Type 2: Đối tác
+                        ordering: 2, // Thứ tự sau "Tổ chức của tôi" (ordering = 1)
+                        status: 1, // Status 1: Active
+                        recipients: allRecipients.map(person => ({
+                            name: person.fullName || person.name || '',
+                            email: person.email || '',
+                            phone: person.phone || '',
+                            role: person.role,
+                            ordering: person.ordering || 1,
+                            status: 0, // Người tham gia mới có status = 0 (chờ xử lý)
+                            signType: person.signType === 'hsm' ? 6 : person.signType || 6
+                        }))
+                    }];
+
+                    const response = await contractService.createParticipant(contractId, participantPayload);
+                    if (response?.code === 'SUCCESS') {
+                        // Lưu lại recipients đã được tạo với ID từ backend
+                        const newRecipients = response.data?.flatMap(p => p.recipients) || [];
+                        setCreatedRecipients(newRecipients);
+                        if (onNext) {
+                            onNext();
+                        }
+                    } else {
+                        throw new Error(response?.message || 'Tạo participant thất bại');
+                    }
+                } catch (err) {
+                    console.error('Error creating participants:', err);
+                    setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra khi tạo participant');
+                } finally {
+                    setLoading(false);
+                }
+            } else if (onNext) {
+                onNext();
+            }
+            return;
+        }
+
         if (currentStep === 2) {
             if (pendingFields.length > 0) {
                 try {
@@ -290,6 +332,11 @@ function CoordinateAssigners({
         
         // Nếu đang ở step cuối và có đủ thông tin để điều phối
         if (currentStep === totalSteps && currentParticipantId && recipientId) {
+            // Kiểm tra đã tạo participants chưa
+            if (createdRecipients.length === 0) {
+                setError('Vui lòng quay lại bước 1 để thêm người tham gia và lưu thông tin');
+                return;
+            }
             handleCoordinate();
         } else if (onNext) {
             // Nếu không phải step cuối hoặc chưa có đủ thông tin, gọi onNext bình thường

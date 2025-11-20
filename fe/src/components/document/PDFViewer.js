@@ -233,7 +233,7 @@ function PDFViewer({
                                     return (
                                         <div
                                             key={component.id}
-                                            className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''} ${isLocked ? 'locked' : ''}`}
+                                            className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''} ${isLocked ? 'locked' : ''} ${component.highlight ? `highlight-${component.highlightType}` : ''}`}
                                             style={{
                                                 position: 'absolute',
                                                 left: `${component.properties?.x || 0}px`,
