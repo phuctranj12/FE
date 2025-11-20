@@ -323,6 +323,20 @@ function CoordinateAssigners({
         );
     };
 
+    const formatDate = (isoString) => {
+        if (!isoString) return '';
+        try {
+            const date = new Date(isoString);
+            if (Number.isNaN(date.getTime())) return '';
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        } catch {
+            return '';
+        }
+    };
+
     const renderDocumentEditorStep = () => (
         <div className="coordinate-document-editor-section">
             {documents.length > 1 && (
@@ -350,6 +364,117 @@ function CoordinateAssigners({
             />
         </div>
     );
+
+    const renderConfirmationStep = () => {
+        const documentName = contractInfo?.name || '';
+        const expireDate = formatDate(contractInfo?.contractExpireTime);
+
+        return (
+            <div className="coordinate-confirmation-container">
+                {/* Thông tin tài liệu */}
+                <div className="coordinate-section">
+                    <h3 className="coordinate-section-title">Tài liệu</h3>
+                    <div className="coordinate-confirmation-grid">
+                        <div className="coordinate-confirmation-field">
+                            <label>Tên tài liệu</label>
+                            <div className="coordinate-confirmation-value">
+                                {documentName || '—'}
+                            </div>
+                        </div>
+                        <div className="coordinate-confirmation-field">
+                            <label>Lời nhắn</label>
+                            <div className="coordinate-confirmation-value">
+                                {contractInfo?.note || '—'}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="coordinate-confirmation-grid">
+                        <div className="coordinate-confirmation-field">
+                            <label>Ngày hết hạn ký</label>
+                            <div className="coordinate-confirmation-value">
+                                {expireDate || '—'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Các bên ký */}
+                <div className="coordinate-section">
+                    <h3 className="coordinate-section-title">Các bên ký</h3>
+
+                    {/* Tổ chức của tôi (người điều phối hiện tại) */}
+                    <div className="coordinate-party-card">
+                        <div className="coordinate-party-header">
+                            <span className="coordinate-party-title">TỔ CHỨC CỦA TÔI</span>
+                        </div>
+                        <div className="coordinate-party-body">
+                            <div className="coordinate-confirmation-field">
+                                <label>Người điều phối</label>
+                                <div className="coordinate-confirmation-value">
+                                    {coordinatorRecipient
+                                        ? `${coordinatorRecipient.name || ''} - ${coordinatorRecipient.email || ''}`
+                                        : '—'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Đối tác */}
+                    <div className="coordinate-party-card">
+                        <div className="coordinate-party-header">
+                            <span className="coordinate-party-title">
+                                {partner ? `ĐỐI TÁC ${partner}` : 'ĐỐI TÁC'}
+                            </span>
+                        </div>
+                        <div className="coordinate-party-body">
+                            <div className="coordinate-confirmation-field">
+                                <label>Người xem xét</label>
+                                <div className="coordinate-confirmation-value-list">
+                                    {reviewers && reviewers.length > 0 ? (
+                                        reviewers.map((r, idx) => (
+                                            <div key={r.id || idx}>
+                                                {r.fullName || '—'}{r.email ? ` - ${r.email}` : ''}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <span>—</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="coordinate-confirmation-field">
+                                <label>Người ký</label>
+                                <div className="coordinate-confirmation-value-list">
+                                    {signers && signers.length > 0 ? (
+                                        signers.map((s, idx) => (
+                                            <div key={s.id || idx}>
+                                                {s.fullName || '—'}{s.email ? ` - ${s.email}` : ''}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <span>—</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="coordinate-confirmation-field">
+                                <label>Văn thư</label>
+                                <div className="coordinate-confirmation-value-list">
+                                    {clerks && clerks.length > 0 ? (
+                                        clerks.map((c, idx) => (
+                                            <div key={c.id || idx}>
+                                                {c.fullName || '—'}{c.email ? ` - ${c.email}` : ''}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <span>—</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="coordinate-assigners-container">
@@ -405,9 +530,11 @@ function CoordinateAssigners({
                 </div>
             )}
 
-            {/* Role Assignment Sections / Document Designer */}
+            {/* Role Assignment Sections / Document Designer / Confirmation */}
             {currentStep === 2 ? (
                 renderDocumentEditorStep()
+            ) : currentStep === 3 ? (
+                renderConfirmationStep()
             ) : (
             <div className="coordinate-roles-container">
                 {/* Reviewers Section */}
