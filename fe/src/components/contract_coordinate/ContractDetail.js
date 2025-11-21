@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import '../../styles/documentDetail.css';
 import PDFViewer from '../document/PDFViewer';
 import CoordinateAssigners from './CoordinateAssigners';
+import RejectReviewDialog from './RejectReviewDialog';
 import contractService from '../../api/contractService';
 
 function ContractDetail() {
@@ -40,7 +41,8 @@ function ContractDetail() {
     const [highlightType, setHighlightType] = useState(null); // 'sign' | 'info' | null
     const [reviewDecision, setReviewDecision] = useState(''); // 'agree' | 'disagree' | ''
     const [showReviewDialog, setShowReviewDialog] = useState(false);
-    const [showDisagreeDialog, setShowDisagreeDialog] = useState(false);
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
+    const [documentMeta, setDocumentMeta] = useState(null);
 
     // Load contract data
     useEffect(() => {
@@ -79,7 +81,18 @@ function ContractDetail() {
                     const documentsResponse = await contractService.getDocumentsByContract(contractId);
                     if (documentsResponse?.code === 'SUCCESS' && documentsResponse.data?.length > 0) {
                         const document = documentsResponse.data[0];
-                        // Có thể cần lấy presigned URL nếu cần
+                        
+                        // Lấy presigned URL cho document
+                        const urlResponse = await contractService.getPresignedUrl(document.id);
+                        if (urlResponse?.code === 'SUCCESS') {
+                            setDocumentMeta({
+                                id: document.id,
+                                name: document.name,
+                                presignedUrl: urlResponse.data,
+                                totalPages: document.page || 1
+                            });
+                            setTotalPages(document.page || 1);
+                        }
                     }
 
                     // Lấy thông tin fields của hợp đồng
@@ -188,7 +201,12 @@ function ContractDetail() {
         if (reviewDecision === 'agree') {
             setShowReviewDialog(true);
         } else {
-            setShowDisagreeDialog(true);
+            // Open reject dialog with document metadata
+            if (!documentMeta) {
+                alert('Không tìm thấy thông tin tài liệu');
+                return;
+            }
+            setShowRejectDialog(true);
         }
     };
 
@@ -215,7 +233,14 @@ function ContractDetail() {
 
     const handleReviewCancel = () => {
         setShowReviewDialog(false);
-        setShowDisagreeDialog(false);
+        setShowRejectDialog(false);
+    };
+
+    const handleRejectSuccess = () => {
+        console.log('Contract rejected successfully');
+        setReviewDecision('');
+        // Navigate back to dashboard or reload
+        navigate('/main/dashboard');
     };
 
     const handleCoordinate = () => {
@@ -609,51 +634,15 @@ function ContractDetail() {
                 </div>
             )}
 
-            {/* Disagree Placeholder Dialog */}
-            {showDisagreeDialog && (
-                <div className="review-dialog-overlay" style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000
-                }}>
-                    <div className="review-dialog" style={{
-                        background: 'white',
-                        padding: '30px',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                        minWidth: '380px',
-                        maxWidth: '480px',
-                        textAlign: 'center'
-                    }}>
-                        <h3 style={{ margin: '0 0 12px 0', color: '#333' }}>
-                            Tính năng từ chối đang phát triển
-                        </h3>
-                        <p style={{ margin: '0 0 24px 0', color: '#555', lineHeight: 1.5 }}>
-                            Dialog xử lý cho lựa chọn "Không đồng ý" sẽ được cập nhật trong phiên bản tiếp theo.
-                        </p>
-                        <button
-                            className="edit-btn"
-                            onClick={handleReviewCancel}
-                            style={{
-                                padding: '8px 16px',
-                                backgroundColor: '#f5f5f5',
-                                border: '1px solid #ddd',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Đóng
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Reject Review Dialog */}
+            <RejectReviewDialog
+                open={showRejectDialog}
+                onClose={handleReviewCancel}
+                contractId={contractId}
+                recipientId={recipientId}
+                documentMeta={documentMeta}
+                onRejected={handleRejectSuccess}
+            />
         </div>
     );
 }

@@ -1,0 +1,371 @@
+/* Reject Review Dialog Styles */
+
+.reject-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.reject-dialog-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    height: 95vh;
+    max-width: 1600px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header */
+.reject-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+}
+
+.reject-dialog-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover:not(:disabled) {
+    background: #e9ecef;
+    color: #333;
+}
+
+.close-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Content - Two Column Layout */
+.reject-dialog-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 20px;
+    padding: 20px 24px;
+}
+
+.column-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 16px 0;
+}
+
+/* Left Column - PDF Annotation */
+.pdf-annotation-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.pdf-viewer-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #f5f5f5;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.pdf-viewer-inner {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    position: relative;
+}
+
+.pdf-viewer-inner .react-pdf__Document {
+    position: relative;
+}
+
+.pdf-viewer-inner .react-pdf__Page {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: white;
+    margin: 0 auto;
+}
+
+.annotation-canvas {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.pdf-loading,
+.pdf-error {
+    padding: 40px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+}
+
+.pdf-error {
+    color: #dc3545;
+}
+
+.pdf-page-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: white;
+    border-top: 1px solid #dee2e6;
+}
+
+.pdf-page-controls button {
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.pdf-page-controls button:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #0B57D0;
+    color: #0B57D0;
+}
+
+.pdf-page-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pdf-page-controls span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+/* Right Column - Rejection Reason */
+.rejection-reason-column {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.reason-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reason-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 150px;
+    transition: border-color 0.2s ease;
+}
+
+.reason-textarea:focus {
+    outline: none;
+    border-color: #0B57D0;
+}
+
+.reason-textarea.error {
+    border-color: #dc3545;
+}
+
+.reason-textarea:disabled {
+    background: #f8f9fa;
+    cursor: not-allowed;
+}
+
+.reason-error {
+    color: #dc3545;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.rejection-instructions {
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.rejection-instructions h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.rejection-instructions ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.rejection-instructions li {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.rejection-instructions li:last-child {
+    margin-bottom: 0;
+}
+
+.upload-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    border: 1px solid #90caf9;
+}
+
+.progress-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #e3f2fd;
+    border-top-color: #0B57D0;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.progress-text {
+    font-size: 13px;
+    color: #0B57D0;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Footer */
+.reject-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+}
+
+.cancel-btn,
+.confirm-reject-btn {
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn {
+    background: white;
+    color: #666;
+    border: 1px solid #ced4da;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.confirm-reject-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+}
+
+.confirm-reject-btn:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.cancel-btn:disabled,
+.confirm-reject-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .reject-dialog-content {
+        flex-direction: column;
+    }
+    
+    .rejection-reason-column {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .reject-dialog-container {
+        height: 100vh;
+        border-radius: 0;
+    }
+    
+    .reject-dialog-header h2 {
+        font-size: 18px;
+    }
+    
+    .reject-dialog-footer {
+        flex-direction: column-reverse;
+    }
+    
+    .cancel-btn,
+    .confirm-reject-btn {
+        width: 100%;
+    }
+}
+
