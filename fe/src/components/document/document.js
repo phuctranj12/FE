@@ -95,7 +95,20 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
 
     const handleEdit = (doc) => {
         if (!doc?.id) return;
-        navigate(`document/edit/:id/${doc.id}`);
+
+        // Map status thành slug để gắn vào URL
+        const statusMap = {
+            0: "draft",
+            1: "processing",
+            2: "complete",
+            3: "fail",
+            4: "validate",
+            5: "waiting",
+        };
+
+        const statusSlug = statusMap[doc.status] || "unknown";
+
+        navigate(`/main/contract/create/${statusSlug}/${doc.id}`);
     };
 
 

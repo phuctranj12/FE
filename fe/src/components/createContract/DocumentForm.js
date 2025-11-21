@@ -8,11 +8,11 @@ import DocumentConfirmation from './DocumentConfirmation';
 import customerService from '../../api/customerService';
 import contractService from '../../api/contractService';
 
-const DocumentForm = () => {
+const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
     const [documentType, setDocumentType] = useState('single-no-template');
-    
+
     // User and Organization data
     const [currentUser, setCurrentUser] = useState(null);
     const [organizationId, setOrganizationId] = useState(null);
@@ -20,7 +20,7 @@ const DocumentForm = () => {
     const [relatedContracts, setRelatedContracts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     // Toast notifications
     const [toasts, setToasts] = useState([]);
 
@@ -35,7 +35,7 @@ const DocumentForm = () => {
     const removeToast = (id) => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
     };
-    
+
     // Contract and Document IDs (saved after API calls)
     const [contractId, setContractId] = useState(null);
     const [documentId, setDocumentId] = useState(null);
@@ -43,7 +43,7 @@ const DocumentForm = () => {
     const [fieldsData, setFieldsData] = useState([]); // Lưu fields data từ bước 3
     const [isDocumentNumberValid, setIsDocumentNumberValid] = useState(true);
     const [isCheckingDocumentNumber, setIsCheckingDocumentNumber] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         documentName: '',
         documentNumber: '',
@@ -69,6 +69,50 @@ const DocumentForm = () => {
         // Thông tin file đính kèm
         attachedFiles: [] // Array of File objects
     });
+    useEffect(() => {
+        if (initialData && isEdit) {
+            // Map thông tin cơ bản
+            setFormData(prev => ({
+                ...prev,
+                documentName: initialData.name || '',
+                documentNumber: initialData.contractNo || '',
+                message: initialData.note || '',
+                documentType: initialData.typeId || '',
+                expirationDate: initialData.contractExpireTime?.split('T')[0] || '',
+                organizationOrdering: initialData.participants?.[0]?.ordering || 1
+            }));
+
+            // Map participants
+            const participants = initialData.participants || [];
+            const newReviewers = [];
+            const newSigners = [];
+            const newClerks = [];
+
+            participants.forEach(participant => {
+                participant.recipients.forEach(recipient => {
+                    const data = {
+                        id: recipient.id,
+                        fullName: recipient.name || '',
+                        email: recipient.email || '',
+                        phone: recipient.phone || '',
+                        card_id: recipient.cardId || recipient.card_id || '',
+                        ordering: recipient.ordering,
+                        loginByPhone: recipient.loginByPhone || false
+                    };
+
+                    if (recipient.role === 2) newReviewers.push(data);
+                    else if (recipient.role === 3) newSigners.push(data);
+                    else if (recipient.role === 4) newClerks.push(data);
+                });
+            });
+
+            setReviewers(newReviewers);
+            setSigners(newSigners.length ? newSigners : [{ id: 1, fullName: '', email: '', ordering: 1 }]);
+            setDocumentClerks(newClerks);
+        }
+    }, [initialData, isEdit]);
+
+
 
     const [reviewers, setReviewers] = useState([]);
     const [signers, setSigners] = useState([
@@ -83,7 +127,7 @@ const DocumentForm = () => {
         }
     ]);
     const [documentClerks, setDocumentClerks] = useState([]);
-    
+
     // Partners state - array of partner objects
     const [partners, setPartners] = useState([]);
 
@@ -100,7 +144,7 @@ const DocumentForm = () => {
                     setCurrentUser(userResponse.data);
                     const orgId = userResponse.data.organizationId;
                     setOrganizationId(orgId);
-                    
+
                     // Update organization name in form
                     setFormData(prev => ({
                         ...prev,
@@ -113,7 +157,7 @@ const DocumentForm = () => {
                         size: 100,
                         organizationId: orgId
                     });
-                    
+
                     if (typesResponse.code === 'SUCCESS' && typesResponse.data) {
                         setDocumentTypes(typesResponse.data.content || []);
                     }
@@ -124,7 +168,7 @@ const DocumentForm = () => {
                         size: 100,
                         organizationId: orgId
                     });
-                    
+
                     if (refsResponse.code === 'SUCCESS' && refsResponse.data) {
                         setRelatedContracts(refsResponse.data.content || []);
                     }
@@ -204,7 +248,7 @@ const DocumentForm = () => {
 
                             // Only update if we have data and haven't loaded yet
                             // Check if signers only have empty default entry
-                            const hasOnlyEmptySigner = signers.length === 1 && 
+                            const hasOnlyEmptySigner = signers.length === 1 &&
                                 !signers[0].fullName && !signers[0].email;
                             const shouldLoad = (newReviewers.length > 0 || newSigners.length > 0 || newClerks.length > 0) &&
                                 (reviewers.length === 0 && hasOnlyEmptySigner && documentClerks.length === 0);
@@ -278,10 +322,10 @@ const DocumentForm = () => {
         try {
             setIsCheckingDocumentNumber(true);
             const response = await contractService.checkCodeUnique(documentNumber);
-            
+
             if (response.code === 'SUCCESS') {
                 let isUnique = false;
-                
+
                 // Xử lý 2 format response có thể có:
                 // Format 1: data là boolean (theo API_DOCUMENTATION.md)
                 //   - true: unique (có thể dùng)
@@ -301,9 +345,9 @@ const DocumentForm = () => {
                         isUnique = !isExist; // Nếu boolean thì !isExist
                     }
                 }
-                
+
                 setIsDocumentNumberValid(isUnique);
-                
+
                 if (!isUnique) {
                     showToast('Mã hợp đồng đã tồn tại. Vui lòng nhập mã khác.', 'error');
                 }
@@ -345,13 +389,13 @@ const DocumentForm = () => {
             // 1. Gọi API kiểm tra số trang
             console.log('[handleFileUpload] Calling getPageSize API...');
             const pageSizeResponse = await contractService.getPageSize(file);
-            
+
             console.log('[handleFileUpload] getPageSize response:', {
                 code: pageSizeResponse?.code,
                 message: pageSizeResponse?.message,
                 data: pageSizeResponse?.data
             });
-            
+
             if (pageSizeResponse.code !== 'SUCCESS') {
                 console.error('[handleFileUpload] getPageSize failed:', pageSizeResponse);
                 throw new Error(pageSizeResponse.message || 'Không thể kiểm tra số trang của file');
@@ -363,13 +407,13 @@ const DocumentForm = () => {
             // 2. Gọi API kiểm tra chữ ký số
             console.log('[handleFileUpload] Calling checkSignature API...');
             const signatureResponse = await contractService.checkSignature(file);
-            
+
             console.log('[handleFileUpload] checkSignature response:', {
                 code: signatureResponse?.code,
                 message: signatureResponse?.message,
                 data: signatureResponse?.data
             });
-            
+
             if (signatureResponse.code !== 'SUCCESS') {
                 console.error('[handleFileUpload] checkSignature failed:', signatureResponse);
                 throw new Error(signatureResponse.message || 'Không thể kiểm tra chữ ký số');
@@ -500,15 +544,15 @@ const DocumentForm = () => {
     };
 
     const updateSigner = (id, field, value) => {
-        setSigners(prevSigners => 
-            prevSigners.map(signer => 
+        setSigners(prevSigners =>
+            prevSigners.map(signer =>
                 signer.id === id ? { ...signer, [field]: value } : signer
             )
         );
     };
 
     const updateReviewer = (id, field, value) => {
-        setReviewers(prevReviewers => 
+        setReviewers(prevReviewers =>
             prevReviewers.map(reviewer =>
                 reviewer.id === id ? { ...reviewer, [field]: value } : reviewer
             )
@@ -516,7 +560,7 @@ const DocumentForm = () => {
     };
 
     const updateDocumentClerk = (id, field, value) => {
-        setDocumentClerks(prevClerks => 
+        setDocumentClerks(prevClerks =>
             prevClerks.map(clerk =>
                 clerk.id === id ? { ...clerk, [field]: value } : clerk
             )
@@ -830,14 +874,14 @@ const DocumentForm = () => {
         const validSigners = signers.filter((signer) => {
             const hasName = signer.fullName?.trim();
             if (!hasName) return false;
-            
+
             if (signer.loginByPhone) {
                 return validatePhone(signer.phone);
             } else {
                 return validateEmail(signer.email);
             }
         });
-        
+
         if (validSigners.length === 0) {
             errors.push('Vui lòng thêm ít nhất một người ký với tên và email/số điện thoại hợp lệ.');
         }
@@ -875,7 +919,7 @@ const DocumentForm = () => {
             // For organization type, validate all roles
             if (partner.type === 2) {
                 // Validate coordinators
-                const invalidCoordinators = partner.coordinators.filter((coord) => 
+                const invalidCoordinators = partner.coordinators.filter((coord) =>
                     coord.fullName && coord.email && !validateEmail(coord.email)
                 );
                 if (invalidCoordinators.length > 0) {
@@ -883,7 +927,7 @@ const DocumentForm = () => {
                 }
 
                 // Validate reviewers
-                const invalidReviewers = partner.reviewers.filter((reviewer) => 
+                const invalidReviewers = partner.reviewers.filter((reviewer) =>
                     reviewer.fullName && reviewer.email && !validateEmail(reviewer.email)
                 );
                 if (invalidReviewers.length > 0) {
@@ -904,26 +948,26 @@ const DocumentForm = () => {
                 }
 
                 // Validate clerks
-                const invalidClerks = partner.clerks.filter((clerk) => 
+                const invalidClerks = partner.clerks.filter((clerk) =>
                     clerk.fullName && clerk.email && !validateEmail(clerk.email)
                 );
                 if (invalidClerks.length > 0) {
                     errors.push(`Email của văn thư trong đối tác "${partner.name}" không hợp lệ.`);
                 }
-            } 
+            }
             // For individual type, only validate signers
             else if (partner.type === 3) {
                 const validSigners = partner.signers.filter((signer) => {
                     const hasName = signer.fullName?.trim();
                     if (!hasName) return false;
-                    
+
                     if (signer.loginByPhone) {
                         return validatePhone(signer.phone);
                     } else {
                         return validateEmail(signer.email);
                     }
                 });
-                
+
                 if (validSigners.length === 0) {
                     errors.push(`Vui lòng thêm ít nhất một người ký cho đối tác "${partner.name}".`);
                 }
@@ -960,7 +1004,7 @@ const DocumentForm = () => {
             const validItems = items.filter(item => {
                 const fullName = item.fullName?.trim();
                 if (!fullName) return false;
-                
+
                 // For signers, check phone or email based on loginByPhone
                 if (role === 3 && item.loginByPhone) {
                     const phone = item.phone?.trim();
@@ -975,7 +1019,7 @@ const DocumentForm = () => {
             // If custom ordering is provided, use it; otherwise, use sequential ordering within the role
             validItems.forEach((item, index) => {
                 const fullName = item.fullName?.trim();
-                
+
                 // Use custom ordering if provided and valid, otherwise use index + 1 for this role
                 const customOrdering = parseInt(item.ordering, 10);
                 const ordering = (Number.isNaN(customOrdering) || customOrdering <= 0)
@@ -1028,7 +1072,7 @@ const DocumentForm = () => {
         // Build partners participants
         partners.forEach((partner) => {
             const partnerRecipients = [];
-            
+
             // Only add recipients if partner has a name
             if (partner.name?.trim()) {
                 // For organization (type = 2), include all roles
@@ -1037,7 +1081,7 @@ const DocumentForm = () => {
                     addRecipients(partner.reviewers, 2, partnerRecipients);     // role = 2: Xem xét
                     addRecipients(partner.signers, 3, partnerRecipients);       // role = 3: Ký
                     addRecipients(partner.clerks, 4, partnerRecipients);        // role = 4: Văn thư
-                } 
+                }
                 // For individual (type = 3), only include signers
                 else if (partner.type === 3) {
                     addRecipients(partner.signers, 3, partnerRecipients);       // role = 3: Ký
@@ -1046,8 +1090,8 @@ const DocumentForm = () => {
                 // Only add participant if it has at least one recipient
                 if (partnerRecipients.length > 0) {
                     const partnerOrdering = parseInt(partner.ordering, 10);
-                    const orderingValue = Number.isNaN(partnerOrdering) || partnerOrdering <= 0 
-                        ? participants.length + 1 
+                    const orderingValue = Number.isNaN(partnerOrdering) || partnerOrdering <= 0
+                        ? participants.length + 1
                         : partnerOrdering;
 
                     const partnerPayload = {
@@ -1088,7 +1132,7 @@ const DocumentForm = () => {
         if (!formData.documentNumber || !formData.documentNumber.trim()) {
             errors.push('Vui lòng nhập số tài liệu');
         }
-        
+
         // Kiểm tra số tài liệu hợp lệ (đã check unique)
         if (formData.documentNumber && formData.documentNumber.trim() && !isDocumentNumberValid) {
             errors.push('Mã hợp đồng đã tồn tại. Vui lòng nhập mã khác.');
@@ -1106,17 +1150,17 @@ const DocumentForm = () => {
     // Convert date format from DD/MM/YYYY to ISO format
     const convertToISODate = (dateStr) => {
         if (!dateStr) return new Date().toISOString();
-        
+
         // If already in ISO format, return as is
         if (dateStr.includes('T')) return dateStr;
-        
+
         // Parse DD/MM/YYYY format
         const parts = dateStr.split('/');
         if (parts.length === 3) {
             const [day, month, year] = parts;
             return new Date(`${year}-${month}-${day}T00:00:00.000Z`).toISOString();
         }
-        
+
         return new Date().toISOString();
     };
 
@@ -1138,19 +1182,19 @@ const DocumentForm = () => {
                     contractNo: formData.documentNumber?.trim() || '',
                     signTime: convertToISODate(formData.signingExpirationDate),
                     note: formData.message?.trim() || '',
-                    contractRefs: formData.relatedDocuments 
-                        ? [{ refId: parseInt(formData.relatedDocuments) }] 
+                    contractRefs: formData.relatedDocuments
+                        ? [{ refId: parseInt(formData.relatedDocuments) }]
                         : [],
                     typeId: formData.documentType ? parseInt(formData.documentType) : null,
                     isTemplate: false,
                     templateContractId: null,
-                    contractExpireTime: formData.expirationDate 
-                        ? convertToISODate(formData.expirationDate) 
+                    contractExpireTime: formData.expirationDate
+                        ? convertToISODate(formData.expirationDate)
                         : null
                 };
 
                 const contractResponse = await contractService.createContract(contractData);
-                
+
                 if (contractResponse.code !== 'SUCCESS' || !contractResponse.data?.id) {
                     throw new Error(contractResponse.message || 'Không thể tạo hợp đồng');
                 }
@@ -1162,7 +1206,7 @@ const DocumentForm = () => {
                 // API 8: Upload file PDF lên MinIO
                 console.log('Uploading PDF to MinIO...');
                 const uploadResponse = await contractService.uploadDocument(formData.pdfFile);
-                
+
                 if (uploadResponse.code !== 'SUCCESS' || !uploadResponse.data) {
                     throw new Error(uploadResponse.message || 'Không thể upload file PDF');
                 }
@@ -1182,7 +1226,7 @@ const DocumentForm = () => {
                 };
 
                 const documentResponse = await contractService.createDocument(documentData);
-                
+
                 if (documentResponse.code !== 'SUCCESS' || !documentResponse.data?.id) {
                     throw new Error(documentResponse.message || 'Không thể lưu thông tin tài liệu');
                 }
@@ -1194,12 +1238,12 @@ const DocumentForm = () => {
                 // Upload file đính kèm nếu có (type = 3)
                 if (formData.attachedFiles && formData.attachedFiles.length > 0) {
                     console.log('Uploading attached files...');
-                    
+
                     for (const file of formData.attachedFiles) {
                         try {
                             // Upload file to MinIO
                             const attachUploadResponse = await contractService.uploadDocument(file);
-                            
+
                             if (attachUploadResponse.code === 'SUCCESS' && attachUploadResponse.data) {
                                 // Save document record (type = 3: file đính kèm)
                                 const attachDocData = {
@@ -1210,7 +1254,7 @@ const DocumentForm = () => {
                                     path: attachUploadResponse.data.path,
                                     status: 1
                                 };
-                                
+
                                 await contractService.createDocument(attachDocData);
                                 console.log('Attached file uploaded:', file.name);
                             }
@@ -1222,7 +1266,7 @@ const DocumentForm = () => {
                 }
 
                 showToast('Tạo hợp đồng thành công! Contract ID: ' + newContractId, 'success', 3000);
-                
+
                 // Move to next step
                 setCurrentStep(currentStep + 1);
 
@@ -1288,7 +1332,7 @@ const DocumentForm = () => {
         // Bước 4: Xác Nhận và Hoàn Tất
         // 4.1. Tạo Fields
         // 4.2. Thay đổi trạng thái hợp đồng sang CREATED (status = 10)
-        
+
         if (!contractId || !documentId) {
             showToast('Không tìm thấy thông tin hợp đồng. Vui lòng quay lại bước 1.', 'error');
             return;
@@ -1305,7 +1349,7 @@ const DocumentForm = () => {
             // 4.1. Tạo Fields
             console.log('[Step 4] Creating fields...', fieldsData);
             const fieldsResponse = await contractService.createField(fieldsData);
-            
+
             if (fieldsResponse.code !== 'SUCCESS') {
                 throw new Error(fieldsResponse.message || 'Không thể tạo fields');
             }
@@ -1315,7 +1359,7 @@ const DocumentForm = () => {
             // 4.2. Thay đổi trạng thái hợp đồng sang CREATED (status = 10)
             console.log('[Step 4] Changing contract status to CREATED (10)...');
             const statusResponse = await contractService.changeContractStatus(contractId, 10);
-            
+
             if (statusResponse.code !== 'SUCCESS') {
                 throw new Error(statusResponse.message || 'Không thể cập nhật trạng thái hợp đồng');
             }
@@ -1323,12 +1367,12 @@ const DocumentForm = () => {
             console.log('[Step 4] Contract status updated:', statusResponse.data);
 
             showToast('✅ Tạo hợp đồng thành công! Hợp đồng đã được tạo với trạng thái "Đã tạo".', 'success', 5000);
-            
+
             // Redirect về dashboard sau 2 giây để user có thể thấy toast
             setTimeout(() => {
                 navigate('/main/dashboard');
             }, 1500);
-            
+
         } catch (err) {
             console.error('[Step 4] Error completing contract:', err);
             showToast(err.message || 'Không thể hoàn tất hợp đồng. Vui lòng thử lại.', 'error');
@@ -1349,7 +1393,7 @@ const DocumentForm = () => {
                     return renderStep1();
             }
         }
-        
+
         // Normal flow với 4 bước
         switch (currentStep) {
             case 1:
@@ -1522,8 +1566,8 @@ const DocumentForm = () => {
             {!!toasts.length && (
                 <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 10000, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {toasts.map((t) => (
-                        <div 
-                            key={t.id} 
+                        <div
+                            key={t.id}
                             style={{
                                 minWidth: 260,
                                 maxWidth: 420,
@@ -1563,42 +1607,42 @@ const DocumentForm = () => {
             <div className="document-form-container">
                 <div className="document-form-wrapper">
                     <div className="form-header">
-                    <div className="step-indicator">
-                        {steps.map((step) => (
-                            <div key={step.id} className={`step ${step.active ? 'active' : ''}`}>
-                                <div className={`step-circle ${step.active ? 'active' : ''}`}>
-                                    {step.id}
+                        <div className="step-indicator">
+                            {steps.map((step) => (
+                                <div key={step.id} className={`step ${step.active ? 'active' : ''}`}>
+                                    <div className={`step-circle ${step.active ? 'active' : ''}`}>
+                                        {step.id}
+                                    </div>
+                                    <div className="step-title">{step.title}</div>
                                 </div>
-                                <div className="step-title">{step.title}</div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="form-body">
+                        {loading && <div className="loading-overlay">Đang xử lý...</div>}
+                        {renderStepContent()}
+                    </div>
+
+                    <div className="form-footer">
+                        {currentStep > 1 && currentStep < maxStep && (
+                            <button className="back-btn" onClick={handleBack} disabled={loading}>
+                                Quay lại
+                            </button>
+                        )}
+                        {currentStep < maxStep && (
+                            <div className="footer-right">
+                                <button className="save-draft-btn" onClick={handleSaveDraft} disabled={loading}>
+                                    Lưu nháp
+                                </button>
+                                <button className="next-btn" onClick={handleNext} disabled={loading}>
+                                    Tiếp theo
+                                </button>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
-
-                <div className="form-body">
-                    {loading && <div className="loading-overlay">Đang xử lý...</div>}
-                    {renderStepContent()}
-                </div>
-
-                <div className="form-footer">
-                    {currentStep > 1 && currentStep < maxStep && (
-                        <button className="back-btn" onClick={handleBack} disabled={loading}>
-                            Quay lại
-                        </button>
-                    )}
-                    {currentStep < maxStep && (
-                        <div className="footer-right">
-                            <button className="save-draft-btn" onClick={handleSaveDraft} disabled={loading}>
-                                Lưu nháp
-                            </button>
-                            <button className="next-btn" onClick={handleNext} disabled={loading}>
-                                Tiếp theo
-                            </button>
-                        </div>
-                    )}
-                </div>
             </div>
-        </div>
         </>
     );
 };

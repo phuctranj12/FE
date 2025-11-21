@@ -41,7 +41,9 @@ function App() {
         <Route path="created-document" element={<CreatedDocument />} />
         <Route path="server-certificate" element={<ServerCertificateList />} />
         <Route path="c/:type/:contractId" element={<ContractDetail />} />
-        <Route path="document/edit/:id" element={<EditDocumentForm />} />
+        <Route path="contract/create/:status/:id" element={<EditDocumentForm />} />
+
+
 
       </Route>
     </Routes>
