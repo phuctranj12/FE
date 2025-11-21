@@ -439,6 +439,28 @@ const contractService = {
         }
     },
 
+    // 7.10.5. Phê duyệt hợp đồng (process approval)
+    approvalProcess: async (contractId) => {
+        try {
+            const response = await apiClient.put(`/contracts/processes/approval/${contractId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.10.6. Từ chối hợp đồng (process reject)
+    rejectProcess: async (contractId, reason = '') => {
+        try {
+            const response = await apiClient.put(`/contracts/processes/reject/${contractId}`, {
+                reason: reason
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // ========== SHARE API ==========
 
     // 7.7.1. Tạo chia sẻ hợp đồng

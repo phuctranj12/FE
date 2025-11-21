@@ -40,6 +40,7 @@ function ContractDetail() {
     const [highlightType, setHighlightType] = useState(null); // 'sign' | 'info' | null
     const [reviewDecision, setReviewDecision] = useState(''); // 'agree' | 'disagree' | ''
     const [showReviewDialog, setShowReviewDialog] = useState(false);
+    const [showDisagreeDialog, setShowDisagreeDialog] = useState(false);
 
     // Load contract data
     useEffect(() => {
@@ -184,21 +185,20 @@ function ContractDetail() {
             return;
         }
 
-        setShowReviewDialog(true);
+        if (reviewDecision === 'agree') {
+            setShowReviewDialog(true);
+        } else {
+            setShowDisagreeDialog(true);
+        }
     };
 
     const handleReviewConfirm = async () => {
-        if (!reviewDecision) {
-            alert('Vui lòng chọn Đồng ý hoặc Không đồng ý');
-            return;
-        }
-
         try {
             setLoading(true);
-            const response = await contractService.review(recipientId);
+            const response = await contractService.approve(recipientId);
 
             if (response?.code === 'SUCCESS') {
-                alert(`Đã xác nhận ${reviewDecision === 'agree' ? 'đồng ý' : 'không đồng ý'} với hợp đồng thành công!`);
+                alert('Đã xác nhận đồng ý với hợp đồng thành công!');
                 setReviewDecision('');
                 setShowReviewDialog(false);
                 navigate('/main/dashboard');
@@ -215,6 +215,7 @@ function ContractDetail() {
 
     const handleReviewCancel = () => {
         setShowReviewDialog(false);
+        setShowDisagreeDialog(false);
     };
 
     const handleCoordinate = () => {
@@ -604,6 +605,52 @@ function ContractDetail() {
                                 {loading ? 'Đang xử lý...' : 'Xác nhận'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Disagree Placeholder Dialog */}
+            {showDisagreeDialog && (
+                <div className="review-dialog-overlay" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div className="review-dialog" style={{
+                        background: 'white',
+                        padding: '30px',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                        minWidth: '380px',
+                        maxWidth: '480px',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ margin: '0 0 12px 0', color: '#333' }}>
+                            Tính năng từ chối đang phát triển
+                        </h3>
+                        <p style={{ margin: '0 0 24px 0', color: '#555', lineHeight: 1.5 }}>
+                            Dialog xử lý cho lựa chọn "Không đồng ý" sẽ được cập nhật trong phiên bản tiếp theo.
+                        </p>
+                        <button
+                            className="edit-btn"
+                            onClick={handleReviewCancel}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: '#f5f5f5',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Đóng
+                        </button>
                     </div>
                 </div>
             )}
