@@ -114,8 +114,9 @@ const certificateService = {
             const token = localStorage.getItem('token');
             const res = await apiClient.post("/certs/import-cert", form, {
                 headers: {
-                    "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data",
+
                 },
             });
             return res.data?.data || res.data;

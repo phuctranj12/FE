@@ -1,7 +1,7 @@
 // src/components/certificate/AssignUsersModal.jsx
 import React, { useState } from "react";
 import serverCertificateService from "../../api/serverCertificateService";
-
+import "../../styles/assignUsersModal.css";
 function AssignUsersModal({ open, certificateId, onClose, onAssigned }) {
     const [emailsText, setEmailsText] = useState("");
     const [status, setStatus] = useState(1);
