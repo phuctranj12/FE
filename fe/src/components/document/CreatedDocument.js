@@ -6,6 +6,7 @@ import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
 import SearchBar from "../common/SearchBar";
 import createdDocumentService from "../../api/createdDocumentService";
+import customerService from "../../api/customerService";
 
 function CreatedDocument({ selectedStatus, onDocumentClick }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -15,8 +16,27 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [totalDocs, setTotalDocs] = useState(0);
+    const [organizationId, setOrganizationId] = useState(null);
 
     const totalPages = Math.ceil(totalDocs / itemsPerPage);
+
+    // Lấy organizationId từ user token khi component mount
+    useEffect(() => {
+        const fetchUserInfo = async () => {
+            try {
+                const response = await customerService.getCustomerByToken();
+                if (response.code === 'SUCCESS' && response.data) {
+                    const orgId = response.data.organizationId;
+                    if (orgId) {
+                        setOrganizationId(orgId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+            }
+        };
+        fetchUserInfo();
+    }, []);
 
     const extractListAndTotal = (response) => {
         const payload = response?.data ?? response ?? {};
@@ -51,11 +71,25 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
             fromDate: advancedFilters.fromDate || "",
             toDate: advancedFilters.toDate || "",
             page: currentPage - 1,
-            size: itemsPerPage
+            size: itemsPerPage,
+            organizationId: organizationId // Thêm organizationId vào filter
         };
 
         try {
-            const response = await createdDocumentService.getCreatedContracts(filter);
+            let response;
+            // Gọi API tương ứng với selectedStatus
+            if (selectedStatus === "cho-xu-ly") {
+                // Chờ xử lý: status = 1
+                response = await createdDocumentService.getWaitProcessingContracts(filter);
+            } else if (selectedStatus === "da-xu-ly") {
+                // Đã xử lý: status = 2
+                response = await createdDocumentService.getProcessedContracts(filter);
+            } else if (selectedStatus === "duoc-chia-se") {
+                // Được chia sẻ: gọi API shares với organizationId
+                response = await createdDocumentService.getSharedContracts(filter);
+            } else {
+                response = await createdDocumentService.getCreatedContracts(filter);
+            }
             const { list, total } = extractListAndTotal(response);
             setDocs(list);
             setTotalDocs(total);
@@ -67,8 +101,16 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
     };
 
     useEffect(() => {
-        fetchDocuments();
-    }, [searchTerm, selectedStatus, advancedFilters, currentPage]);
+        // Đối với "duoc-chia-se", cần đợi organizationId
+        // Các trường hợp khác có thể fetch ngay
+        if (selectedStatus === "duoc-chia-se") {
+            if (organizationId !== null) {
+                fetchDocuments();
+            }
+        } else {
+            fetchDocuments();
+        }
+    }, [searchTerm, selectedStatus, advancedFilters, currentPage, organizationId]);
 
     useEffect(() => {
         setCurrentPage(1);

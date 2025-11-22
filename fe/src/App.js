@@ -15,6 +15,7 @@ import DocTypeList from './components/configuration/DocTypeList';
 import Document from './components/document/document';
 import DocumentStatusRoute from './components/document/DocumentStatusRoute';
 import CreatedDocument from './components/document/CreatedDocument';
+import CreatedDocumentRoute from './components/document/CreatedDocumentRoute';
 import DocumentForm from './components/createContract/DocumentForm';
 import ServerCertificateList from './components/certificate/ServerCertificateList';
 import ContractDetail from './components/contract_coordinate/ContractDetail';
@@ -39,6 +40,9 @@ function App() {
         <Route path="document" element={<Document />} />
         <Route path="contract/create/:filter" element={<DocumentStatusRoute />} />
         <Route path="created-document" element={<CreatedDocument />} />
+        <Route path="contract/receive/wait-processing" element={<CreatedDocumentRoute />} />
+        <Route path="contract/receive/processed" element={<CreatedDocumentRoute />} />
+        <Route path="contract/receive/shared" element={<CreatedDocumentRoute />} />
         <Route path="server-certificate" element={<ServerCertificateList />} />
         <Route path="c/:type/:contractId" element={<ContractDetail />} />
         <Route path="contract/create/:status/:id" element={<EditDocumentForm />} />
