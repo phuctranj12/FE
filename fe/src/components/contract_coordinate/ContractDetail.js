@@ -4,6 +4,7 @@ import '../../styles/documentDetail.css';
 import PDFViewer from '../document/PDFViewer';
 import CoordinateAssigners from './CoordinateAssigners';
 import RejectReviewDialog from './RejectReviewDialog';
+import SignDialog from './SignDialog';
 import contractService from '../../api/contractService';
 
 function ContractDetail() {
@@ -42,7 +43,9 @@ function ContractDetail() {
     const [reviewDecision, setReviewDecision] = useState(''); // 'agree' | 'disagree' | ''
     const [showReviewDialog, setShowReviewDialog] = useState(false);
     const [showRejectDialog, setShowRejectDialog] = useState(false);
+    const [showSignDialog, setShowSignDialog] = useState(false);
     const [documentMeta, setDocumentMeta] = useState(null);
+    const [recipient, setRecipient] = useState(null);
 
     // Load contract data
     useEffect(() => {
@@ -99,6 +102,14 @@ function ContractDetail() {
                     const fieldsResponse = await contractService.getFieldsByContract(contractId);
                     if (fieldsResponse?.code === 'SUCCESS') {
                         setFields(fieldsResponse.data || []);
+                    }
+
+                    // Lấy thông tin recipient nếu có recipientId
+                    if (urlRecipientId) {
+                        const recipientResponse = await contractService.getRecipientById(urlRecipientId);
+                        if (recipientResponse?.code === 'SUCCESS') {
+                            setRecipient(recipientResponse.data);
+                        }
                     }
                 } else {
                     throw new Error(contractResponse?.message || 'Không thể tải thông tin hợp đồng');
@@ -241,6 +252,52 @@ function ContractDetail() {
         setReviewDecision('');
         // Navigate back to dashboard or reload
         navigate('/main/dashboard');
+    };
+
+    const handleSignClick = () => {
+        if (!recipientId) {
+            alert('Không tìm thấy thông tin người ký');
+            return;
+        }
+
+        // Kiểm tra recipient có quyền ký không (signType = 6)
+        if (recipient && recipient.signType !== 6) {
+            alert('Người này không có quyền ký số. Vui lòng kiểm tra lại.');
+            return;
+        }
+
+        setShowSignDialog(true);
+    };
+
+    const handleSignSuccess = async (signedData) => {
+        console.log('Contract signed successfully:', signedData);
+        alert('Ký hợp đồng thành công!');
+        
+        // Reload contract data để cập nhật trạng thái
+        try {
+            const contractResponse = await contractService.getContractById(contractId);
+            if (contractResponse?.code === 'SUCCESS') {
+                setContract(contractResponse.data);
+            }
+
+            // Reload fields để cập nhật trạng thái field đã ký
+            const fieldsResponse = await contractService.getFieldsByContract(contractId);
+            if (fieldsResponse?.code === 'SUCCESS') {
+                setFields(fieldsResponse.data || []);
+            }
+
+            // Reload recipient
+            if (recipientId) {
+                const recipientResponse = await contractService.getRecipientById(recipientId);
+                if (recipientResponse?.code === 'SUCCESS') {
+                    setRecipient(recipientResponse.data);
+                }
+            }
+        } catch (err) {
+            console.error('Error reloading data after signing:', err);
+        }
+
+        setShowSignDialog(false);
     };
 
     const handleCoordinate = () => {
@@ -467,6 +524,20 @@ function ContractDetail() {
                                     </div>
                                 </div>
                             )}
+
+                            {type === 'sign' && (
+                                <div className="sign-confirmation-section">
+                                    <h3 className="section-title">KÝ TÀI LIỆU</h3>
+                                    <div className="confirmation-content">
+                                        <p className="confirmation-question">
+                                            Bạn có đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch không?
+                                        </p>
+                                        <p className="confirmation-note">
+                                            Vui lòng nhấn nút "Ký hợp đồng" để thực hiện ký số bằng chứng thư số.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -553,6 +624,10 @@ function ContractDetail() {
                     {type === 'review' ? (
                         <button className="approve-btn" onClick={handleReviewClick}>
                             Xác nhận
+                        </button>
+                    ) : type === 'sign' ? (
+                        <button className="approve-btn" onClick={handleSignClick}>
+                            Ký hợp đồng
                         </button>
                     ) : (
                         <button className="finish-btn" onClick={handleCoordinate}>
@@ -642,6 +717,16 @@ function ContractDetail() {
                 recipientId={recipientId}
                 documentMeta={documentMeta}
                 onRejected={handleRejectSuccess}
+            />
+
+            {/* Sign Dialog */}
+            <SignDialog
+                open={showSignDialog}
+                onClose={() => setShowSignDialog(false)}
+                contractId={contractId}
+                recipientId={recipientId}
+                fields={fields}
+                onSigned={handleSignSuccess}
             />
         </div>
     );

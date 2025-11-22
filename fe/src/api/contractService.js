@@ -429,6 +429,18 @@ const contractService = {
         }
     },
 
+    // 7.14.3. Ký hợp đồng bằng chứng thư số
+    certificate: async (recipientId, certData) => {
+        try {
+            const response = await apiClient.post('/contracts/processes/certificate', certData, {
+                params: { recipientId }
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 7.10.4. Phê duyệt hợp đồng
     approve: async (recipientId) => {
         try {
