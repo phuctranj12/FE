@@ -1,4 +1,3 @@
-// 📁 src/components/certificate/ServerCertificateList.jsx
 import React, { useState, useEffect } from "react";
 import "../../styles/document.css";
 import "../../styles/table.css";
@@ -6,6 +5,11 @@ import SearchBar from "../common/SearchBar";
 import Button from "../common/Button";
 import ActionMenu from "../document/ActionMenu";
 import certificateService from "../../api/serverCertificateService";
+
+// Modals
+import CertificateDetailsModal from "./CertificateDetailsModal";
+import AssignUsersModal from "./AssignUsersModal";
+import ImportCertModal from "./ImportCertModal";
 
 function ServerCertificateList() {
     const [signSearch, setSignSearch] = useState("");
@@ -17,24 +21,29 @@ function ServerCertificateList() {
     const [allCertificates, setAllCertificates] = useState([]);
     const [filtered, setFiltered] = useState([]);
 
-    // Lấy chứng thư số của user đang đăng nhập
-    useEffect(() => {
-        const fetchCertificates = async () => {
-            try {
-                const data = await certificateService.getAllCertificates();
-                // console.log("DATA API TRẢ VỀ = ", data);
-                // console.log("Có phải array không? ", Array.isArray(data));
+    // MODAL STATES
+    const [openDetails, setOpenDetails] = useState(false);
+    const [openAssign, setOpenAssign] = useState(false);
+    const [openImport, setOpenImport] = useState(false);
+    const [selectedCertId, setSelectedCertId] = useState(null);
 
-                setAllCertificates(data.certificates || []);
-                setFiltered(data.certificates || []);
-            } catch (error) {
-                console.error("Lỗi khi tải chứng thư số:", error);
-            }
-        };
-        fetchCertificates();
+    // Load list cert
+    const loadCertificates = async () => {
+        try {
+            const data = await certificateService.getAllCertificates();
+            const arr = data.certificates || [];
+            setAllCertificates(arr);
+            setFiltered(arr);
+        } catch (error) {
+            console.error("Lỗi khi tải chứng thư số:", error);
+        }
+    };
+
+    useEffect(() => {
+        loadCertificates();
     }, []);
 
-    //  Bộ lọc
+    // Filtering
     useEffect(() => {
         let filteredData = [...allCertificates];
 
@@ -60,6 +69,7 @@ function ServerCertificateList() {
         setCurrentPage(1);
     }, [signSearch, subjectSearch, statusFilter, allCertificates]);
 
+    // Paging
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentCerts = filtered.slice(indexOfFirstItem, indexOfLastItem);
@@ -67,6 +77,21 @@ function ServerCertificateList() {
 
     const formatDate = (date) =>
         date ? new Date(date).toLocaleString("vi-VN") : "";
+
+    // === ACTION HANDLERS ===
+    const handleOpenDetails = (id) => {
+        setSelectedCertId(id);
+        setOpenDetails(true);
+    };
+
+    const handleOpenAssign = (id) => {
+        setSelectedCertId(id);
+        setOpenAssign(true);
+    };
+
+    const handleOpenImport = () => {
+        setOpenImport(true);
+    };
 
     return (
         <div className="document-wrapper">
@@ -125,13 +150,13 @@ function ServerCertificateList() {
                         </select>
                     </div>
 
-                    {/* Nút thêm mới */}
+                    {/* Nút Import */}
                     <div style={{ marginLeft: "auto" }}>
                         <Button
                             outlineColor="#0B57D0"
                             backgroundColor="rgb(11, 87, 208)"
-                            text="Thêm mới"
-                            onClick={() => console.log("Thêm chứng thư số")}
+                            text="Import chứng thư"
+                            onClick={handleOpenImport}
                         />
                     </div>
                 </div>
@@ -164,11 +189,9 @@ function ServerCertificateList() {
                                         <td>{c.status || "Hoạt động"}</td>
                                         <td>
                                             <ActionMenu
-                                                onEdit={() => console.log("Sửa chứng thư:", c.signId)}
-                                                onDelete={() => console.log("Xóa chứng thư:", c.signId)}
-                                                onViewFlow={() =>
-                                                    console.log("Xem chi tiết:", c.signId)
-                                                }
+                                                onViewFlow={() => handleOpenDetails(c.id)}
+                                                onEdit={() => handleOpenAssign(c.id)}
+                                                onDelete={() => console.log("Xóa:", c.id)}
                                             />
                                         </td>
                                     </tr>
@@ -200,6 +223,26 @@ function ServerCertificateList() {
                     </>
                 )}
             </div>
+
+            {/* === MODALS === */}
+            <CertificateDetailsModal
+                open={openDetails}
+                certificateId={selectedCertId}
+                onClose={() => setOpenDetails(false)}
+            />
+
+            <AssignUsersModal
+                open={openAssign}
+                certificateId={selectedCertId}
+                onClose={() => setOpenAssign(false)}
+                onAssigned={loadCertificates}
+            />
+
+            <ImportCertModal
+                open={openImport}
+                onClose={() => setOpenImport(false)}
+                onImported={loadCertificates}
+            />
         </div>
     );
 }

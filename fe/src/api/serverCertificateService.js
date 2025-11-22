@@ -1,5 +1,6 @@
 // 📁 src/services/certificateService.js
 import apiClient from './apiClient';
+import qs from 'qs';
 
 const certificateService = {
 
@@ -86,6 +87,109 @@ const certificateService = {
             throw error.response?.data || error;
         }
     },
+
+    // 6️⃣ Tìm kiếm + phân trang server-side -> /find-cert
+    findCerts: async ({ subject = "", serial_number = "", status = 1, size = 10, page = 0 }) => {
+        try {
+            const params = { subject, serial_number, status, size, page };
+            const res = await apiClient.get("/certs/find-cert", { params });
+            return res.data?.data || res.data;
+        } catch (error) {
+            console.error('❌ Lỗi khi tìm kiếm chứng thư số:', error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 7️⃣ Import file .p12
+    importCert: async ({ file, emails = [], password, status }) => {
+        try {
+            const form = new FormData();
+            form.append("file", file);
+            if (emails && emails.length) {
+                emails.forEach((e) => form.append("list_email", e));
+            }
+            form.append("password", password);
+            form.append("status", status);
+
+            const token = localStorage.getItem('token');
+            const res = await apiClient.post("/certs/import-cert", form, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            return res.data?.data || res.data;
+        } catch (error) {
+            console.error('❌ Lỗi khi import chứng thư số:', error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 8️⃣ Update user from cert
+    updateUserFromCert: async ({ certificateId, status, emails = [] }) => {
+        try {
+            const form = new FormData();
+            form.append("certificateId", certificateId);
+            form.append("status", status);
+            emails.forEach((e) => form.append("list_email", e));
+
+            const token = localStorage.getItem('token');
+            const res = await apiClient.post("/certs/update-user-from-cert", form, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return res.data?.data || res.data;
+        } catch (error) {
+            console.error('❌ Lỗi khi cập nhật user từ cert:', error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 9️⃣ Remove user from cert
+    removeUserFromCert: async ({ certificateId, customerIds = [] }) => {
+        try {
+            const params = { certificateId, customerIds };
+            const token = localStorage.getItem('token');
+            const res = await apiClient.delete("/certs/remove-user-from-cert", {
+                headers: { Authorization: `Bearer ${token}` },
+                params,
+                paramsSerializer: (p) => qs.stringify(p, { arrayFormat: 'repeat' }),
+            });
+            return res.data?.data || res.data;
+        } catch (error) {
+            console.error('❌ Lỗi khi xóa user khỏi cert:', error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 🔟 Get cert info by id
+    certInformation: async (certificateId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await apiClient.get("/certs/cert-information", {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { certificateId }
+            });
+            return res.data?.data || res.data;
+        } catch (error) {
+            console.error('❌ Lỗi khi lấy thông tin cert:', error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 1️⃣1️⃣ Find cert by id
+    findCertById: async (certificateId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await apiClient.get("/certs/find-cert-by-id", {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { certificateId }
+            });
+            return res.data?.data || res.data;
+        } catch (error) {
+            console.error('❌ Lỗi khi tìm cert theo ID:', error);
+            throw error.response?.data || error;
+        }
+    }
 };
 
 export default certificateService;
