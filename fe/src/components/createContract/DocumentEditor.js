@@ -42,6 +42,9 @@ function DocumentEditor({
     const [suggestionLoading, setSuggestionLoading] = useState(false);
     const [recipientSearchValue, setRecipientSearchValue] = useState('');
     const suggestionTimeoutRef = useRef(null);
+    
+    // Ref cho PDF viewer container để scroll
+    const pdfViewerContainerRef = useRef(null);
 
     // Map component types sang field types theo CreateContractFlow.md
     const getFieldType = (componentId) => {
@@ -529,13 +532,23 @@ function DocumentEditor({
         
         setComponentProperties(newProperties);
         
-        // Nếu đang edit component (autoCreate), tự động cập nhật component trong documentComponents
-        if (editingComponentId && selectedComponent?.autoCreate) {
-            setDocumentComponents(prev => prev.map(comp => 
-                comp.id === editingComponentId 
-                    ? { ...comp, properties: { ...comp.properties, ...newProperties } }
-                    : comp
-            ));
+        // Tự động cập nhật component trong documentComponents khi đang edit
+        if (editingComponentId) {
+            const editingComponent = documentComponents.find(comp => comp.id === editingComponentId);
+            if (editingComponent && !editingComponent.locked) {
+                setDocumentComponents(prev => prev.map(comp => 
+                    comp.id === editingComponentId 
+                        ? { 
+                            ...comp, 
+                            properties: { 
+                                ...comp.properties, 
+                                ...newProperties,
+                                page: currentPage // Đảm bảo page được cập nhật
+                            } 
+                        }
+                        : comp
+                ));
+            }
         }
     };
 
@@ -591,29 +604,70 @@ function DocumentEditor({
             icon: foundComponent?.icon || '📄',
             autoCreate: foundComponent?.autoCreate || false
         });
+        
+        // Scroll đến component ở giữa màn hình
+        scrollToComponent(component);
+    };
+    
+    // Hàm scroll đến component ở giữa màn hình
+    const scrollToComponent = (component) => {
+        // Đợi một chút để đảm bảo component đã được render
+        setTimeout(() => {
+            const componentPage = component.properties?.page || component.page || currentPage;
+            
+            // Chuyển đến trang chứa component nếu cần
+            if (componentPage !== currentPage) {
+                setCurrentPage(componentPage);
+                // Đợi trang load xong rồi mới scroll
+                setTimeout(() => {
+                    performScroll(component, componentPage);
+                }, 500);
+            } else {
+                performScroll(component, componentPage);
+            }
+        }, 150);
+    };
+    
+    const performScroll = (component, pageNumber) => {
+        // Tìm component element bằng data-component-id
+        const componentElement = document.querySelector(`[data-component-id="${component.id}"]`);
+        if (!componentElement) {
+            // Retry sau một chút nếu chưa tìm thấy
+            setTimeout(() => performScroll(component, pageNumber), 200);
+            return;
+        }
+        
+        // Lấy PDF viewer container - thử nhiều selector
+        const pdfContainer = pdfViewerContainerRef.current?.querySelector('.pdf-viewer-container') ||
+                            pdfViewerContainerRef.current ||
+                            document.querySelector('.pdf-viewer-container') ||
+                            document.querySelector('.pdf-viewer-inner') ||
+                            document.querySelector('.pdf-viewer');
+        
+        if (!pdfContainer) {
+            console.warn('PDF container not found for scrolling');
+            return;
+        }
+        
+        // Lấy vị trí của component element
+        const componentRect = componentElement.getBoundingClientRect();
+        const containerRect = pdfContainer.getBoundingClientRect();
+        
+        // Tính toán vị trí scroll để component ở giữa viewport
+        const componentTopRelativeToContainer = componentRect.top - containerRect.top + pdfContainer.scrollTop;
+        const containerHeight = containerRect.height;
+        const componentHeight = componentRect.height;
+        
+        // Scroll để component ở giữa màn hình
+        const targetScrollTop = componentTopRelativeToContainer - (containerHeight / 2) + (componentHeight / 2);
+        
+        // Scroll với smooth animation
+        pdfContainer.scrollTo({
+            top: Math.max(0, targetScrollTop),
+            behavior: 'smooth'
+        });
     };
 
-    const handleUpdateComponent = () => {
-        if (editingComponentId) {
-            const editingComponent = documentComponents.find(comp => comp.id === editingComponentId);
-            if (editingComponent?.locked) {
-                return;
-            }
-            const recipientId = parseInt(componentProperties.signer);
-            setDocumentComponents(prev => prev.map(comp => 
-                comp.id === editingComponentId 
-                    ? { 
-                        ...comp, 
-                        properties: { 
-                            ...componentProperties,
-                            recipientId: recipientId,
-                            page: currentPage
-                        } 
-                    }
-                    : comp
-            ));
-        }
-    };
 
     const handleSignatureOptionClick = (option) => {
         console.log('handleSignatureOptionClick', option);
@@ -695,37 +749,47 @@ function DocumentEditor({
             const newX = (e.clientX - pageRect.left) - dragStart.offsetX;
             const newY = (e.clientY - pageRect.top) - dragStart.offsetY;
             
-            setDocumentComponents(prev => prev.map(comp => 
-                comp.id === draggedComponent.id 
-                    ? { 
-                        ...comp, 
-                        properties: { 
-                            ...comp.properties, 
-                            x: Math.max(0, newX), 
-                            y: Math.max(0, newY),
-                            page: pageNumber
-                        } 
+            setDocumentComponents(prev => prev.map(comp => {
+                if (comp.id === draggedComponent.id) {
+                    const updatedProperties = { 
+                        ...comp.properties, 
+                        x: Math.max(0, newX), 
+                        y: Math.max(0, newY),
+                        page: pageNumber
+                    };
+                    
+                    // Cập nhật componentProperties để sidebar hiển thị giá trị mới ngay lập tức
+                    if (editingComponentId === draggedComponent.id) {
+                        setComponentProperties(updatedProperties);
                     }
-                    : comp
-            ));
+                    
+                    return { ...comp, properties: updatedProperties };
+                }
+                return comp;
+            }));
         } else {
             // Fallback: dùng logic cũ
             const newX = e.clientX - dragStart.offsetX;
             const newY = e.clientY - dragStart.offsetY;
 
-            setDocumentComponents(prev => prev.map(comp => 
-                comp.id === draggedComponent.id 
-                    ? { 
-                        ...comp, 
-                        properties: { 
-                            ...comp.properties, 
-                            x: Math.max(0, newX), 
-                            y: Math.max(0, newY),
-                            page: currentPage
-                        } 
+            setDocumentComponents(prev => prev.map(comp => {
+                if (comp.id === draggedComponent.id) {
+                    const updatedProperties = { 
+                        ...comp.properties, 
+                        x: Math.max(0, newX), 
+                        y: Math.max(0, newY),
+                        page: currentPage
+                    };
+                    
+                    // Cập nhật componentProperties để sidebar hiển thị giá trị mới ngay lập tức
+                    if (editingComponentId === draggedComponent.id) {
+                        setComponentProperties(updatedProperties);
                     }
-                    : comp
-            ));
+                    
+                    return { ...comp, properties: updatedProperties };
+                }
+                return comp;
+            }));
         }
     };
 
@@ -796,11 +860,18 @@ function DocumentEditor({
 
         console.log('New size:', { newWidth, newHeight });
 
+        const updatedProperties = { ...currentComponent.properties, width: newWidth, height: newHeight };
+        
         setDocumentComponents(prev => prev.map(comp => 
             comp.id === draggedComponent.id 
-                ? { ...comp, properties: { ...comp.properties, width: newWidth, height: newHeight } }
+                ? { ...comp, properties: updatedProperties }
                 : comp
         ));
+
+        // Cập nhật componentProperties để sidebar hiển thị giá trị mới ngay lập tức
+        if (editingComponentId === draggedComponent.id) {
+            setComponentProperties(updatedProperties);
+        }
 
         // Update dragStart for next calculation
         setDragStart({ x: e.clientX, y: e.clientY });
@@ -1006,7 +1077,7 @@ function DocumentEditor({
                             )}
                             
                             {pdfUrl && !pdfLoading && !pdfError && (
-                                <div className="pdf-viewer">
+                                <div className="pdf-viewer" ref={pdfViewerContainerRef}>
                                     <PDFViewer
                                         document={{ pdfUrl: pdfUrl }}
                                         currentPage={currentPage}
@@ -1268,17 +1339,17 @@ function DocumentEditor({
                                     </div>
                                 </div>
 
-                                {/* Chỉ hiển thị nút Tạo/Cập nhật nếu không phải autoCreate component hoặc đang edit */}
-                                {(!selectedComponent?.autoCreate || editingComponentId) && (
+                                {/* Chỉ hiển thị nút Tạo nếu không phải autoCreate component và không đang edit */}
+                                {!selectedComponent?.autoCreate && !editingComponentId && (
                                     <button 
                                         className="add-component-btn"
-                                        onClick={editingComponentId ? handleUpdateComponent : handleAddComponent}
+                                        onClick={handleAddComponent}
                                         disabled={
                                             !componentProperties.signer || 
                                             (selectedComponent.id === 'text' && !componentProperties.fieldName)
                                         }
                                     >
-                                        {editingComponentId ? 'Cập nhật component' : 'Thêm vào tài liệu'}
+                                        Thêm vào tài liệu
                                     </button>
                                 )}
                             </div>

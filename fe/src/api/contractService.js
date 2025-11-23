@@ -343,7 +343,7 @@ const contractService = {
     // 7.4.4. Lấy thông tin participant theo recipient ID (Coordination Flow)
     getParticipantByRecipientId: async (recipientId) => {
         try {
-            const response = await apiClient.get(`/contracts/participants/by-recipient/${recipientId}`);
+            const response = await apiClient.get(`/contracts/participants/byRecipientId/${recipientId}`);
             return response;
         } catch (error) {
             throw error;

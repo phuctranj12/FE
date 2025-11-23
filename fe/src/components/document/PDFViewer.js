@@ -233,6 +233,7 @@ function PDFViewer({
                                     return (
                                         <div
                                             key={component.id}
+                                            data-component-id={component.id}
                                             className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''} ${isLocked ? 'locked' : ''} ${component.highlight ? `highlight-${component.highlightType}` : ''}`}
                                             style={{
                                                 position: 'absolute',
@@ -243,7 +244,7 @@ function PDFViewer({
                                                 fontSize: `${component.properties?.size || 13}px`,
                                                 fontFamily: component.properties?.font || 'Times New Roman',
                                                 cursor: isLocked ? 'not-allowed' : (isDragging ? 'grabbing' : 'grab'),
-                                                zIndex: 10
+                                                zIndex: editingComponentId === component.id ? 100 : 10
                                             }}
                                         onMouseEnter={() => onComponentMouseEnter && onComponentMouseEnter(component.id)}
                                         onMouseLeave={() => onComponentMouseLeave && onComponentMouseLeave()}

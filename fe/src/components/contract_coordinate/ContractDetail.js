@@ -397,17 +397,35 @@ function ContractDetail() {
 
     if (loading) {
         return (
-            <div className="document-detail-container" style={{ padding: '20px', textAlign: 'center' }}>
-                <p>Đang tải dữ liệu...</p>
+            <div className="contract-loading-container">
+                <div className="contract-loading-content">
+                    <div className="contract-loading-spinner"></div>
+                    <p className="contract-loading-text">Đang tải dữ liệu...</p>
+                    <p className="contract-loading-subtext">Vui lòng đợi trong giây lát</p>
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="document-detail-container" style={{ padding: '20px' }}>
-                <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>
-                <button onClick={handleBack}>Quay lại</button>
+            <div className="contract-error-container">
+                <div className="contract-error-content">
+                    <div className="contract-error-icon">⚠</div>
+                    <h2 className="contract-error-title">Không thể tải dữ liệu</h2>
+                    <p className="contract-error-message">{error}</p>
+                    <div className="contract-error-actions">
+                        <button className="contract-error-btn contract-error-btn-primary" onClick={handleBack}>
+                            Quay lại
+                        </button>
+                        <button 
+                            className="contract-error-btn contract-error-btn-secondary" 
+                            onClick={() => window.location.reload()}
+                        >
+                            Tải lại
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
