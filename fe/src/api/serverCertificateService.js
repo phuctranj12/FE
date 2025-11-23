@@ -105,6 +105,7 @@ const certificateService = {
         try {
             const form = new FormData();
             form.append("file", file);
+            console.log("🚀 ~ file: serverCertificateService.js:161 ~ importCert: ~ emails:", form);
             if (emails && emails.length) {
                 emails.forEach((e) => form.append("list_email", e));
             }
@@ -112,19 +113,20 @@ const certificateService = {
             form.append("status", status);
 
             const token = localStorage.getItem('token');
-            const res = await apiClient.post("/certs/import-cert", form, {
+
+            const res = await apiClient.post("/contracts/import-cert", form, {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    "Content-Type": "multipart/form-data",
-
                 },
             });
+
             return res.data?.data || res.data;
         } catch (error) {
             console.error('❌ Lỗi khi import chứng thư số:', error);
             throw error.response?.data || error;
         }
     },
+
 
     // 8️⃣ Update user from cert
     updateUserFromCert: async ({ certificateId, status, emails = [] }) => {
