@@ -375,7 +375,7 @@ const contractService = {
     // 7.5.2. Lấy tất cả field của hợp đồng (Coordination Flow)
     getFieldsByContract: async (contractId) => {
         try {
-            const response = await apiClient.get(`/contracts/${contractId}/fields`);
+            const response = await apiClient.get(`/contracts/fields/by-contract/${contractId}`);
             return response;
         } catch (error) {
             throw error;
