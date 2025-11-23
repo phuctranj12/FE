@@ -122,9 +122,18 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 </div>
                 {activeMenu === "nhan" && (
                     <div className="submenu">
-                        <div className="subitem" onClick={() => handleSelect("cho-xu-ly")}>Chờ xử lý</div>
-                        <div className="subitem" onClick={() => handleSelect("da-xu-ly")}>Đã xử lý</div>
-                        <div className="subitem" onClick={() => handleSelect("duoc-chia-se")}>Được chia sẻ</div>
+                        <div className="subitem" onClick={() => {
+                            handleSelect("cho-xu-ly");
+                            handleNavigation('/main/contract/receive/wait-processing');
+                        }}>Chờ xử lý</div>
+                        <div className="subitem" onClick={() => {
+                            handleSelect("da-xu-ly");
+                            handleNavigation('/main/contract/receive/processed');
+                        }}>Đã xử lý</div>
+                        <div className="subitem" onClick={() => {
+                            handleSelect("duoc-chia-se");
+                            handleNavigation('/main/contract/receive/shared');
+                        }}>Được chia sẻ</div>
                     </div>
                 )}
 

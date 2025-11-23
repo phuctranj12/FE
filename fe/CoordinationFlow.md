@@ -4,15 +4,18 @@
 - [I. Tổng Quan](#i-tổng-quan)
 - [II. Điều Phối](#ii-điều-phối)
 - [III. Xem Xét](#iii-xem-xét)
-- [IV. Ký và Văn Thư](#iv-ký-và-văn-thư)
-- [V. Các API Chung](#v-các-api-chung)
-- [VI. Sơ Đồ Luồng Điều Phối](#vi-sơ-đồ-luồng-điều-phối)
-- [VII. Sơ Đồ Luồng Xem Xét](#vii-sơ-đồ-luồng-xem-xét)
-- [VIII. Sơ Đồ Luồng Ký](#viii-sơ-đồ-luồng-ký)
-- [IX. Lưu Ý Quan Trọng](#ix-lưu-ý-quan-trọng)
-- [X. Checklist Điều Phối](#x-checklist-điều-phối)
-- [XI. Checklist Xem Xét](#xi-checklist-xem-xét)
-- [XII. Checklist Ký](#xii-checklist-ký)
+- [IV. Từ Chối](#iv-từ-chối)
+- [V. Ký và Văn Thư](#v-ký-và-văn-thư)
+- [VI. Các API Chung](#vi-các-api-chung)
+- [VII. Sơ Đồ Luồng Điều Phối](#vii-sơ-đồ-luồng-điều-phối)
+- [VIII. Sơ Đồ Luồng Xem Xét](#viii-sơ-đồ-luồng-xem-xét)
+- [IX. Sơ Đồ Luồng Từ Chối](#ix-sơ-đồ-luồng-từ-chối)
+- [X. Sơ Đồ Luồng Ký](#x-sơ-đồ-luồng-ký)
+- [XI. Lưu Ý Quan Trọng](#xi-lưu-ý-quan-trọng)
+- [XII. Checklist Điều Phối](#xii-checklist-điều-phối)
+- [XIII. Checklist Xem Xét](#xiii-checklist-xem-xét)
+- [XIV. Checklist Từ Chối](#xiv-checklist-từ-chối)
+- [XV. Checklist Ký](#xv-checklist-ký)
 
 ---
 
@@ -21,8 +24,9 @@
 Luồng điều phối bao gồm các bước xử lý hợp đồng:
 1. **Điều phối**: Phân công người xử lý tiếp theo
 2. **Xem xét**: Xem xét và phê duyệt hợp đồng
-3. **Ký**: Ký số hợp đồng
-4. **Văn thư**: Hoàn tất thủ tục
+3. **Từ chối**: Từ chối hợp đồng với lý do và chú thích PDF (nếu có)
+4. **Ký**: Ký số hợp đồng bằng chứng thư số
+5. **Văn thư**: Hoàn tất thủ tục
 
 ---
 
@@ -556,7 +560,115 @@ POST /contracts/recipients/{recipientId}/review
 
 ---
 
-## IV. Ký và Văn Thư
+## IV. Từ Chối
+
+### BƯỚC 1: Lấy Thông Tin Cần Thiết
+
+Các API lấy thông tin contract, field, participant, recipient tương tự như phần [Điều Phối](#ii-điều-phối).
+
+---
+
+### BƯỚC 2: Xem Xét Với Tùy Chọn Từ Chối
+
+**Giao diện**: RejectReviewDialog (fullscreen modal)
+
+Người xem xét có thể:
+- Chọn **"Đồng ý"** → Tiếp tục luồng xem xét bình thường
+- Chọn **"Không đồng ý"** → Mở RejectReviewDialog để từ chối với lý do chi tiết
+
+---
+
+### BƯỚC 3: Annotate PDF (Tùy Chọn)
+
+**Công cụ annotation có sẵn:**
+- **Line**: Vẽ đường thẳng
+- **Freehand**: Vẽ tự do
+- **Rectangle**: Vẽ hình chữ nhật
+- **Text**: Thêm văn bản chú thích
+- **Eraser**: Xóa chú thích gần nhất trên trang hiện tại
+
+**Thao tác:**
+- Click để chọn công cụ
+- Drag để vẽ trên PDF
+- Double-click để nhập text
+- Ctrl+Z để undo, Ctrl+Y để redo
+
+---
+
+### BƯỚC 4: Nhập Lý Do Từ Chối
+
+**Form validation:**
+- **Required field**: Lý do từ chối (textarea)
+- **Placeholder**: "Nhập lý do từ chối"
+- **Validation error**: "Vui lòng nhập lý do từ chối"
+
+---
+
+### BƯỚC 5: Xử Lý và Upload PDF
+
+**Quy trình:**
+1. **Load PDF gốc** từ presigned URL
+2. **Merge annotations** lên PDF sử dụng pdf-lib
+3. **Export PDF** đã chú thích thành Blob
+4. **Upload** lên MinIO storage
+5. **Create document record** với type = 3 (DINH_KEM - file đính kèm)
+
+**API Upload Document:**
+```
+POST /contracts/documents/upload-document
+Content-Type: multipart/form-data
+
+Request: file (Blob/File)
+Response: { url, fileName, path }
+```
+
+**API Create Document Record:**
+```
+POST /contracts/documents/create-document
+
+Request Body:
+{
+  "name": "Rejection_{contractName}",
+  "contractId": {contractId},
+  "type": 3,
+  "fileName": "{fileName}",
+  "path": "{path}",
+  "status": 1
+}
+```
+
+---
+
+### BƯỚC 6: Từ Chối Hợp Đồng
+
+**API: Thay đổi trạng thái hợp đồng**
+```
+PUT /contracts/change-status/{contractId}?status=31
+
+Request Body:
+{
+  "reason": "Lý do từ chối chi tiết từ người dùng"
+}
+```
+
+**Response Success:**
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "data": "Cập nhật trạng thái hợp đồng thành công"
+}
+```
+
+**📝 Lưu ý**:
+- Contract status sẽ chuyển thành `31` (REJECTED)
+- `reasonReject` sẽ được lưu trong contract record
+- PDF đã chú thích sẽ được lưu như file đính kèm
+- Recipient status vẫn là `2` (Đã xử lý)
+
+---
+
+## V. Ký và Văn Thư
 
 ### BƯỚC 1: Lấy Thông Tin Cần Thiết
 
@@ -600,19 +712,26 @@ GET /contracts/certs/find-cert-user
 
 ### BƯỚC 3: API Ký
 
-**API: Ký hợp đồng**
+**API: Ký hợp đồng bằng chứng thư số**
 ```
-POST /contracts/recipients/{recipientId}/sign
+POST /contracts/processes/certificate
 Content-Type: application/json
 ```
 
-**Đầu vào**: 
-- `recipientId` (path): ID của người đang ký
+**Mô tả**: Thực hiện ký số bằng certificate đã import. Email người ký được lấy từ JWT và tự gán vào request.
+
+**Query Parameters**:
+- `recipientId` (required): ID của người đang ký
+
+**Đầu vào**:
+- `recipientId` (query param): ID của người đang ký
+- Email người ký được tự động lấy từ JWT token
 - Body:
 
 ```json
 {
     "certId": 1,
+    "isTimestamp": "false",
     "imageBase64": null,
     "field": {
         "id": 3,
@@ -624,27 +743,20 @@ Content-Type: application/json
     },
     "width": null,
     "height": null,
-    "isTimestamp": "false",
     "type": 3
 }
 ```
 
 **Tham số**:
-| Tham số | Kiểu dữ liệu | Mô tả |
-|---------|--------------|-------|
-| `certId` | int | ID của chứng thư số |
-| `imageBase64` | string/null | Ảnh chữ ký dạng base64 (nếu có) |
-| `field` | object | Thông tin field cần ký |
-| `field.id` | int | ID của field |
-| `field.page` | int | Số trang |
-| `field.boxX` | float | Tọa độ X |
-| `field.boxY` | float | Tọa độ Y |
-| `field.boxW` | float | Chiều rộng |
-| `field.boxH` | float | Chiều cao |
-| `width` | int/null | Chiều rộng ảnh chữ ký |
-| `height` | int/null | Chiều cao ảnh chữ ký |
-| `isTimestamp` | string | Có đóng dấu thời gian hay không ("true"/"false") |
-| `type` | int | Loại ký (3 = Ký số) |
+| Tham số | Kiểu dữ liệu | Bắt buộc | Mô tả |
+|---------|--------------|----------|-------|
+| `certId` | integer | ✅ | ID của chứng thư số |
+| `isTimestamp` | string | ❌ | Có đóng dấu thời gian hay không ("true"/"false", default: "false") |
+| `imageBase64` | string | ❌ | Ảnh chữ ký dạng base64 (nếu có) |
+| `field` | object | ✅ | Thông tin field cần ký |
+| `width` | number | ❌ | Chiều rộng ảnh chữ ký |
+| `height` | number | ❌ | Chiều cao ảnh chữ ký |
+| `type` | integer | ❌ | Loại ký (3 = Ký số) |
 
 **Đầu ra**:
 ```json
@@ -828,10 +940,11 @@ GET /contracts/recipients/{recipientId}
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  BƯỚC 2: XEM XÉT                                            │
-│  └─ POST /contracts/recipients/{recipientId}/review        │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
+│  ├─ Chọn "Đồng ý" → POST /contracts/recipients/{id}/review │
+│  └─ Chọn "Không đồng ý" → RejectReviewDialog               │
+└──────────────────────┬─────────────┬────────────────────────┘
+                       │             │
+                       ▼             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              HOÀN TẤT XEM XÉT                                │
 └─────────────────────────────────────────────────────────────┘
@@ -839,7 +952,61 @@ GET /contracts/recipients/{recipientId}
 
 ---
 
-## VIII. Sơ Đồ Luồng Ký
+## VIII. Sơ Đồ Luồng Từ Chối
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              BẮT ĐẦU LUỒNG TỪ CHỐI                           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BƯỚC 1: LẤY THÔNG TIN CẦN THIẾT                           │
+│  ├─ GET /contracts/{contractId}                            │
+│  ├─ GET /contracts/{contractId}/participants              │
+│  ├─ GET /contracts/{contractId}/fields                    │
+│  └─ GET /contracts/recipients/{recipientId}                │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BƯỚC 2: ANNOTATE PDF (TÙY CHỌN)                           │
+│  ├─ Sử dụng AnnotationToolbar                              │
+│  ├─ Vẽ chú thích: Line, Freehand, Rectangle, Text         │
+│  └─ Undo/Redo: Ctrl+Z, Ctrl+Y                              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BƯỚC 3: NHẬP LÝ DO TỪ CHỐI                               │
+│  └─ Required field: Lý do từ chối chi tiết                │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BƯỚC 4: XỬ LÝ PDF & UPLOAD                                │
+│  ├─ Load PDF gốc từ presigned URL                          │
+│  ├─ Merge annotations với pdf-lib                          │
+│  ├─ Upload PDF đã chú thích                                │
+│  └─ Create document record (type=3)                        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BƯỚC 5: TỪ CHỐI HỢP ĐỒNG                                  │
+│  └─ PUT /contracts/change-status/{id}?status=31           │
+│  Body: { reason: "lý do từ chối" }                        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              HOÀN TẤT TỪ CHỐI                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## X. Sơ Đồ Luồng Ký
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -864,8 +1031,9 @@ GET /contracts/recipients/{recipientId}
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  BƯỚC 3: KÝ HỢP ĐỒNG                                        │
-│  └─ POST /contracts/recipients/{recipientId}/sign          │
-│  Body: { certId, field, type, ... }                        │
+│  └─ POST /contracts/processes/certificate                  │
+│  Query: recipientId={id}                                   │
+│  Body: { certId, field, isTimestamp, ... }                │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
@@ -882,17 +1050,24 @@ GET /contracts/recipients/{recipientId}
 
 ---
 
-## IX. Lưu Ý Quan Trọng
+## XI. Lưu Ý Quan Trọng
 
-### 1. Trạng Thái Recipient
+### 1. Trạng Thái Contract
 
 | Value | Mô tả |
 |-------|-------|
-| `0` | Chưa xử lý |
-| `1` | Đang xử lý |
-| `2` | Đã xử lý |
+| `0` | DRAFT (Bản nháp) |
+| `10` | CREATED (Tạo) |
+| `20` | PROCESSING (Đang xử lý) |
+| `30` | SIGNED (Hoàn thành) |
+| `31` | REJECTED (Từ chối) |
+| `32` | CANCEL (Hủy bỏ) |
+| `35` | SCAN (Lưu trữ) |
+| `40` | LIQUIDATED (Thanh lý) |
+| `1` | ABOUT_EXPIRE (Sắp hết hạn) |
+| `2` | EXPIRE (Quá hạn) |
 
-### 2. Vai Trò (Role)
+### 2. Trạng Thái Recipient
 
 | Value | Mô tả |
 |-------|-------|
@@ -929,7 +1104,7 @@ GET /contracts/recipients/{recipientId}
 
 ---
 
-## X. Checklist Điều Phối
+## XII. Checklist Điều Phối
 
 - [ ] Lấy thông tin hợp đồng theo ID
 - [ ] Lấy thông tin participant theo recipient ID
@@ -945,7 +1120,7 @@ GET /contracts/recipients/{recipientId}
 
 ---
 
-## XI. Checklist Xem Xét
+## XIII. Checklist Xem Xét
 
 - [ ] Lấy thông tin hợp đồng
 - [ ] Lấy thông tin participant
@@ -956,7 +1131,35 @@ GET /contracts/recipients/{recipientId}
 
 ---
 
-## XII. Checklist Ký
+## XIV. Checklist Từ Chối
+
+- [ ] Lấy thông tin hợp đồng theo ID
+- [ ] Lấy thông tin participant và recipient
+- [ ] Lấy thông tin fields của hợp đồng
+- [ ] Mở RejectReviewDialog khi chọn "Không đồng ý"
+- [ ] Annotate PDF với các công cụ vẽ (tùy chọn):
+  - [ ] Line tool
+  - [ ] Freehand tool
+  - [ ] Rectangle tool
+  - [ ] Text tool
+  - [ ] Eraser tool
+  - [ ] Undo/Redo (Ctrl+Z, Ctrl+Y)
+- [ ] Nhập lý do từ chối (required field)
+- [ ] Xử lý PDF và upload:
+  - [ ] Load PDF gốc từ presigned URL
+  - [ ] Merge annotations sử dụng pdf-lib
+  - [ ] Export PDF đã chú thích
+  - [ ] Upload lên MinIO storage
+  - [ ] Create document record với type=3
+- [ ] Từ chối hợp đồng:
+  - [ ] Gọi API changeContractStatus với status=31
+  - [ ] Truyền reason trong body
+  - [ ] Xử lý response và cập nhật UI
+- [ ] Kiểm tra kết quả và đóng dialog
+
+---
+
+## XV. Checklist Ký
 
 - [ ] Lấy thông tin hợp đồng
 - [ ] Lấy thông tin participant
@@ -964,16 +1167,20 @@ GET /contracts/recipients/{recipientId}
 - [ ] Lấy thông tin recipient
 - [ ] Lấy danh sách chứng thư số (cert)
 - [ ] Chọn chứng thư số và field cần ký
-- [ ] Gọi API ký với đầy đủ thông tin:
+- [ ] Gọi API certificate với đầy đủ thông tin:
+  - [ ] recipientId (query parameter)
   - [ ] certId
   - [ ] field (id, page, boxX, boxY, boxW, boxH)
+  - [ ] isTimestamp ("true"/"false")
+  - [ ] imageBase64 (optional)
+  - [ ] width/height (optional)
   - [ ] type = 3 (ký số)
-  - [ ] isTimestamp
 - [ ] Gọi API phê duyệt (nếu cần)
 - [ ] Kiểm tra kết quả và cập nhật UI
 
 ---
 
 **📅 Ngày tạo**: 2025-11-16
-**📝 Version**: 1.0
+**📅 Ngày cập nhật**: 2025-11-21
+**📝 Version**: 1.2 - Sửa API ký sang certificate
 

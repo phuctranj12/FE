@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../../styles/documentDetail.css';
+import '../../styles/templateDetail.css';
 import PDFViewer from '../document/PDFViewer';
 
 function TemplateDetail({ template, onBack, mode = 'view' }) {
@@ -204,7 +204,7 @@ function TemplateDetail({ template, onBack, mode = 'view' }) {
                     </div>
 
                     {/* PDF Viewer */}
-                    <div className="pdf-viewer">
+                    <div className="pdf-viewer template-detail-pdf-viewer">
                         <PDFViewer 
                             document={template}
                             currentPage={currentPage}

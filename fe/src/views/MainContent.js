@@ -28,6 +28,9 @@ function MainContent() {
         if (location.pathname.startsWith('/main/role')) return "Quản lý người dùng > Danh sách vai trò";
         if (location.pathname.startsWith('/main/document')) return "Tài liệu đã tạo";
         if (location.pathname.startsWith('/main/created-document')) return "Tài liệu đã nhận";
+        if (location.pathname.startsWith('/main/contract/receive/wait-processing')) return "Tài liệu đã nhận > Chờ xử lý";
+        if (location.pathname.startsWith('/main/contract/receive/processed')) return "Tài liệu đã nhận > Đã xử lý";
+        if (location.pathname.startsWith('/main/contract/receive/shared')) return "Tài liệu đã nhận > Được chia sẻ";
         if (location.pathname.startsWith('/main/server-certificate')) return "Cấu hình > Danh sách chứng thư số Server";
         if (location.pathname.startsWith('/main/c/')) return "Chi tiết hợp đồng";
 

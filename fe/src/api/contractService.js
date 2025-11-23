@@ -429,10 +429,44 @@ const contractService = {
         }
     },
 
+    // 7.14.3. Ký hợp đồng bằng chứng thư số
+    certificate: async (recipientId, certData) => {
+        try {
+            const response = await apiClient.post('/contracts/processes/certificate', certData, {
+                params: { recipientId }
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 7.10.4. Phê duyệt hợp đồng
     approve: async (recipientId) => {
         try {
             const response = await apiClient.post(`/contracts/recipients/${recipientId}/approve`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.10.5. Phê duyệt hợp đồng (process approval)
+    approvalProcess: async (contractId) => {
+        try {
+            const response = await apiClient.put(`/contracts/processes/approval/${contractId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.10.6. Từ chối hợp đồng (process reject)
+    rejectProcess: async (contractId, reason = '') => {
+        try {
+            const response = await apiClient.put(`/contracts/processes/reject/${contractId}`, {
+                reason: reason
+            });
             return response;
         } catch (error) {
             throw error;
