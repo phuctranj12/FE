@@ -23,7 +23,8 @@ function PDFViewer({
     onResizeStart,
     onRemoveComponent,
     autoFitWidth = false, // New prop to enable auto-fit-to-width
-    onScaleChange = null // Callback to notify parent of scale changes
+    onScaleChange = null, // Callback to notify parent of scale changes
+    focusComponentId = null
 }) {
     const [numPages, setNumPages] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -107,6 +108,15 @@ function PDFViewer({
             onScaleChange(currentScale);
         }
     }, [autoScale, zoom, autoFitWidth, onScaleChange]);
+
+    // Scroll to focused component when requested
+    useEffect(() => {
+        if (!focusComponentId || !containerRef.current) return;
+        const targetEl = containerRef.current.querySelector(`[data-component-id="${focusComponentId}"]`);
+        if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
+    }, [focusComponentId, numPages]);
 
     // Scroll tới trang khi currentPage thay đổi từ bên ngoài (khác trang do scroll tính ra)
     useEffect(() => {
@@ -259,7 +269,7 @@ function PDFViewer({
                                             }
                                         }}
                                     >
-                                        <div className="component-content">
+                                        <div className="component-content" style={{ color: '#000' }}>
                                             {component.type === 'text' && component.properties?.fieldName 
                                                 ? `[${component.properties.fieldName}]` 
                                                 : component.signatureType 
@@ -268,8 +278,17 @@ function PDFViewer({
                                             }
                                         </div>
                                         
-                                        {isLocked && (
-                                            <div className="locked-badge">Đối tác</div>
+                                        {isLocked && (component.recipient?.name || component.name) && (
+                                            <div
+                                                className="locked-badge"
+                                                style={{
+                                                    color: '#1f1f1f',
+                                                    background: 'rgba(255,255,255,0.8)',
+                                                    border: '1px solid rgba(0,0,0,0.1)'
+                                                }}
+                                            >
+                                                {component.recipient?.name || component.name}
+                                            </div>
                                         )}
                                         
                                         {/* Resize handles */}

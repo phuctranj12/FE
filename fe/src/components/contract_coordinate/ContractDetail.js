@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import '../../styles/documentDetail.css';
 import PDFViewer from '../document/PDFViewer';
@@ -46,6 +46,8 @@ function ContractDetail() {
     const [showSignDialog, setShowSignDialog] = useState(false);
     const [documentMeta, setDocumentMeta] = useState(null);
     const [recipient, setRecipient] = useState(null);
+    const [currentSignFieldIndex, setCurrentSignFieldIndex] = useState(0);
+    const [focusComponentId, setFocusComponentId] = useState(null);
 
     // Load contract data
     useEffect(() => {
@@ -88,10 +90,11 @@ function ContractDetail() {
                         // Lấy presigned URL cho document
                         const urlResponse = await contractService.getPresignedUrl(document.id);
                         if (urlResponse?.code === 'SUCCESS') {
+                            const presignedUrl = urlResponse?.data?.message || urlResponse?.data;
                             setDocumentMeta({
                                 id: document.id,
                                 name: document.name,
-                                presignedUrl: urlResponse.data,
+                                presignedUrl,
                                 totalPages: document.page || 1
                             });
                             setTotalPages(document.page || 1);
@@ -160,12 +163,33 @@ function ContractDetail() {
     };
 
     const handleFindSignFields = () => {
-        console.log('Tìm ô ký');
-        // Filter fields có type là IMAGE_SIGN (2) hoặc DIGITAL_SIGN (3)
-        const signFields = fields.filter(field => field.type === 2 || field.type === 3);
+        if (!recipientId) {
+            alert('Không tìm thấy thông tin người ký hiện tại.');
+            return;
+        }
+
+        const signFields = fields.filter(field =>
+            (field.type === 2 || field.type === 3) &&
+            Number(field.recipientId) === Number(recipientId)
+        );
+
+        if (!signFields.length) {
+            alert('Không tìm thấy ô ký dành cho bạn.');
+            return;
+        }
+
+        const targetIndex = currentSignFieldIndex % signFields.length;
+        const targetField = signFields[targetIndex];
+
         setHighlightedFields(signFields);
         setHighlightType('sign');
-        console.log('Found sign fields:', signFields);
+        setFocusComponentId(`highlight-${targetField.id}`);
+
+        if (targetField.page) {
+            setCurrentPage(targetField.page);
+        }
+
+        setCurrentSignFieldIndex((targetIndex + 1) % signFields.length);
     };
 
     const handleFindInfoFields = () => {
@@ -177,8 +201,19 @@ function ContractDetail() {
         console.log('Found info fields:', infoFields);
     };
 
+    useEffect(() => {
+        setCurrentSignFieldIndex(0);
+    }, [fields, recipientId]);
+
+    useEffect(() => {
+        if (reviewDecision === 'disagree') {
+            setFocusComponentId(null);
+        }
+    }, [reviewDecision]);
+
     // Convert highlighted fields to components for PDFViewer
     const getHighlightComponents = () => {
+        if (reviewDecision === 'disagree') return [];
         if (!highlightedFields.length) return [];
 
         return highlightedFields.map(field => ({
@@ -192,6 +227,7 @@ function ContractDetail() {
                 height: field.boxH || 30
             },
             name: field.name || '',
+            recipient: field.recipient || null,
             highlight: true,
             highlightType: highlightType,
             locked: true // Không cho phép edit highlight fields
@@ -224,7 +260,7 @@ function ContractDetail() {
     const handleReviewConfirm = async () => {
         try {
             setLoading(true);
-            const response = await contractService.approve(recipientId);
+            const response = await contractService.approvalProcess(recipientId);
 
             if (response?.code === 'SUCCESS') {
                 alert('Đã xác nhận đồng ý với hợp đồng thành công!');
@@ -394,6 +430,16 @@ function ContractDetail() {
     const handleBack = () => {
         navigate(-1);
     };
+
+    const pdfDocument = useMemo(() => {
+        if (documentMeta?.presignedUrl) {
+            return { pdfUrl: documentMeta.presignedUrl };
+        }
+        if (contract?.pdfUrl) {
+            return { pdfUrl: contract.pdfUrl };
+        }
+        return null;
+    }, [documentMeta, contract]);
 
     if (loading) {
         return (
@@ -615,23 +661,28 @@ function ContractDetail() {
 
                 {/* PDF Viewer */}
                 <div className="pdf-viewer">
-                    <PDFViewer
-                        document={contract}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        zoom={zoom}
-                        onPageChange={handlePageChange}
-                        components={getHighlightComponents()}
-                    />
+                    {pdfDocument ? (
+                        <PDFViewer
+                            document={pdfDocument}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            zoom={zoom}
+                            onPageChange={handlePageChange}
+                            components={getHighlightComponents()}
+                            focusComponentId={focusComponentId}
+                        />
+                    ) : (
+                        <div className="pdf-loading">
+                            <div className="loading-spinner"></div>
+                            <p>Đang chuẩn bị URL tài liệu...</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Nút hành động */}
                 <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <button className="edit-btn" onClick={handleDelegate}>
                         Ủy quyền/Chuyển tiếp
-                    </button>
-                    <button className="edit-btn" onClick={handleReject}>
-                        Từ chối
                     </button>
                     <button className="edit-btn" onClick={handleFindSignFields}>
                         Tìm ô ký

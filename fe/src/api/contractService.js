@@ -441,15 +441,6 @@ const contractService = {
         }
     },
 
-    // 7.10.4. Phê duyệt hợp đồng
-    approve: async (recipientId) => {
-        try {
-            const response = await apiClient.post(`/contracts/recipients/${recipientId}/approve`);
-            return response;
-        } catch (error) {
-            throw error;
-        }
-    },
 
     // 7.10.5. Phê duyệt hợp đồng (process approval)
     approvalProcess: async (contractId) => {
