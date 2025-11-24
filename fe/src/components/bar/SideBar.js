@@ -83,7 +83,6 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 {/* Tài liệu đã nhận */}
                 <div className="menu-item" onClick={() => {
                     toggleMenu("nhan");
-                    handleNavigation('/main/created-document');
                 }}>
                     Tài liệu đã nhận{" "}
                     <i
