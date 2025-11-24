@@ -11,7 +11,7 @@
     z-index: 1000;
 }
 
-.modal {
+.modal-backdrop .modal {
     background: #fff;
     border-radius: 12px;
     padding: 25px 30px;
@@ -23,19 +23,19 @@
     gap: 15px;
 }
 
-.modal h3 {
+.modal-backdrop .modal h3 {
     margin: 0;
     font-size: 1.5rem;
     text-align: center;
 }
 
-.modal label {
+.modal-backdrop .modal label {
     font-weight: 500;
     display: block;
     margin-bottom: 5px;
 }
 
-.modal textarea {
+.modal-backdrop .modal textarea {
     width: 100%;
     min-height: 80px;
     padding: 8px 10px;
@@ -46,12 +46,12 @@
     transition: border-color 0.2s;
 }
 
-.modal textarea:focus {
+.modal-backdrop .modal textarea:focus {
     outline: none;
     border-color: #007bff;
 }
 
-.modal select {
+.modal-backdrop .modal select {
     width: 100%;
     padding: 6px 10px;
     border-radius: 6px;
@@ -61,12 +61,12 @@
     transition: border-color 0.2s;
 }
 
-.modal select:focus {
+.modal-backdrop .modal select:focus {
     outline: none;
     border-color: #007bff;
 }
 
-.modal div:last-child {
+.modal-backdrop .modal div:last-child {
     display: flex;
     justify-content: flex-end;
     gap: 10px;

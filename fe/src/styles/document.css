@@ -65,7 +65,23 @@
     color: #0B57D0;
     font-weight: 500;
 }
+.document-title-cell svg{
+  margin: 10px;
+}
+.document-title-cell .svg-container .doc-name{
+  margin: auto;
+}
+.document-title-cell .svg-container .svg-bg{
+  border-radius: 5px;
+  padding: 10px;
+  background-color: #f4fafe;
 
+}
+.document-title-cell .svg-container{
+  display: flex;
+  
+  padding: 3px;
+}
 .document-title-cell:hover {
     text-decoration: underline;
 }
@@ -201,4 +217,8 @@
     z-index: 10;
 
 
+}
+.advanced-modal {
+  width: 100%!important;
+  max-width: 100%!important;
 }

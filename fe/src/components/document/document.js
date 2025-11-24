@@ -303,7 +303,70 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                         className="tr-row"
                                         onClick={() => onDocumentClick && onDocumentClick(doc)}
                                     >
-                                        <td className="document-title-cell">{doc.name}</td>
+
+                                        <td className="document-title-cell">
+                                            <div className="svg-container">
+                                                <div className="svg-bg">
+                                                    <svg
+                                                        className="contract-icon"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                    >
+                                                        <path
+                                                            d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+                                                            stroke="url(#gradient)"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        />
+                                                        <polyline
+                                                            points="14 2 14 8 20 8"
+                                                            stroke="url(#gradient)"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        />
+                                                        <line
+                                                            x1="8"
+                                                            y1="12"
+                                                            x2="16"
+                                                            y2="12"
+                                                            stroke="url(#gradient)"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                        />
+                                                        <line
+                                                            x1="8"
+                                                            y1="16"
+                                                            x2="16"
+                                                            y2="16"
+                                                            stroke="url(#gradient)"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                        />
+                                                        <line
+                                                            x1="8"
+                                                            y1="20"
+                                                            x2="12"
+                                                            y2="20"
+                                                            stroke="url(#gradient)"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                        />
+                                                        <defs>
+                                                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                                <stop offset="0%" stopColor="#0B57D0" stopOpacity="0.8" />
+                                                                <stop offset="100%" stopColor="#9333EA" stopOpacity="0.8" />
+                                                            </linearGradient>
+                                                        </defs>
+                                                    </svg>
+                                                </div>
+                                                <div className="doc-name">    {doc.name}</div>
+
+                                            </div>
+
+                                        </td>
                                         <td>{doc.id}</td>
                                         <td>{doc.contractNo || "-"}</td>
                                         <td>
@@ -353,12 +416,15 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                         )}
                     </>
                 )}
-
                 <AdvancedSearchModal
+                    className="advanced-modal"
                     show={showAdvanced}
                     onClose={() => setShowAdvanced(false)}
                     onSearch={handleAdvancedSearch}
                 />
+
+
+
 
                 <ViewFlowModal
                     show={showViewFlow}
@@ -393,7 +459,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                     contractId={selectedContract?.id}
                 />
             </div>
-        </div>
+        </div >
     );
 }
 
