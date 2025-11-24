@@ -204,6 +204,15 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
         }
     };
 
+    const getSelectedStatusLabel = (status) => {
+        switch (status) {
+            case "cho-xu-ly": return "Chờ xử lý";
+            case "da-xu-ly": return "Đã xử lý";
+            case "duoc-chia-se": return "Được chia sẻ";
+            default: return "";
+        }
+    };
+
     const getTypeLabel = (type) => {
         const typeMap = {
             1: "Tài liệu gốc",
@@ -276,7 +285,7 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                     <h2>
                         Danh sách tài liệu đã nhận{" "}
                         {selectedStatus !== "all" && selectedStatus !== undefined
-                            ? `(${getStatusLabel(Number(selectedStatus))})`
+                            ? `(${getSelectedStatusLabel(selectedStatus)})`
                             : ""}
                     </h2>
                 </div>

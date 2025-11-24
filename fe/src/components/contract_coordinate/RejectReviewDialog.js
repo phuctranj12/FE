@@ -54,6 +54,75 @@ function RejectReviewDialog({
     const [reasonError, setReasonError] = useState('');
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
+
+    const ToastStack = () => (
+        <>
+            {!!toasts.length && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 24,
+                        right: 24,
+                        zIndex: 11000,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8
+                    }}
+                >
+                    {toasts.map((t) => (
+                        <div
+                            key={t.id}
+                            style={{
+                                minWidth: 240,
+                                maxWidth: 380,
+                                padding: '10px 14px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '18px',
+                                    cursor: 'pointer',
+                                    marginLeft: 10,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </>
+    );
 
     useEffect(() => {
         if (!open) {
@@ -121,11 +190,66 @@ function RejectReviewDialog({
         if (pageStrokes.length > 0) {
             const lastPageStroke = pageStrokes[pageStrokes.length - 1];
             const strokeIndex = strokes.lastIndexOf(lastPageStroke);
-            const newStrokes = [...strokes];
-            const removed = newStrokes.splice(strokeIndex, 1);
-            setStrokes(newStrokes);
-            setUndoStack([...undoStack, removed[0]]);
+            if (strokeIndex !== -1) {
+                const newStrokes = strokes.filter((_, idx) => idx !== strokeIndex);
+                const removedStroke = strokes[strokeIndex];
+                setStrokes(newStrokes);
+                setUndoStack([...undoStack, removedStroke]);
+            }
         }
+    };
+
+    const getStrokeBounds = (stroke) => {
+        if (!stroke?.points?.length) return null;
+
+        if (stroke.type === 'rectangle' && stroke.points.length >= 2) {
+            const [p1, p2] = stroke.points;
+            return {
+                minX: Math.min(p1.x, p2.x),
+                maxX: Math.max(p1.x, p2.x),
+                minY: Math.min(p1.y, p2.y),
+                maxY: Math.max(p1.y, p2.y)
+            };
+        }
+
+        const xs = stroke.points.map(p => p.x);
+        const ys = stroke.points.map(p => p.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        if (stroke.type === 'text') {
+            return {
+                minX,
+                maxX: maxX + 60,
+                minY: minY - 14,
+                maxY
+            };
+        }
+
+        return { minX, maxX, minY, maxY };
+    };
+
+    const findStrokeAtPosition = (pos) => {
+        const tolerance = 6;
+        const pageStrokes = strokes.filter(s => s.page === activePage);
+
+        for (let i = pageStrokes.length - 1; i >= 0; i--) {
+            const stroke = pageStrokes[i];
+            const bounds = getStrokeBounds(stroke);
+            if (!bounds) continue;
+
+            if (
+                pos.x >= bounds.minX - tolerance &&
+                pos.x <= bounds.maxX + tolerance &&
+                pos.y >= bounds.minY - tolerance &&
+                pos.y <= bounds.maxY + tolerance
+            ) {
+                return stroke;
+            }
+        }
+        return null;
     };
 
     // Canvas drawing handlers
@@ -141,9 +265,20 @@ function RejectReviewDialog({
     };
 
     const handleMouseDown = (e) => {
-        if (!currentTool || currentTool === 'eraser') return;
+        if (!currentTool) return;
         
         const pos = getMousePos(e);
+        
+        if (currentTool === 'eraser') {
+            const strokeToRemove = findStrokeAtPosition(pos);
+            if (strokeToRemove) {
+                setStrokes(prev => prev.filter(stroke => stroke.id !== strokeToRemove.id));
+                setUndoStack(prev => [...prev, strokeToRemove]);
+                setRedoStack([]);
+            }
+            return;
+        }
+        
         const newStroke = {
             id: Date.now(),
             type: currentTool,
@@ -371,13 +506,15 @@ function RejectReviewDialog({
             }
             
             // Success
-            alert('Từ chối hợp đồng thành công!');
-            onRejected();
-            onClose();
+            showToast('Từ chối hợp đồng thành công!', 'success');
+            setTimeout(() => {
+                onRejected();
+                onClose();
+            }, 1200);
             
         } catch (error) {
             console.error('Error submitting rejection:', error);
-            alert(error.message || 'Có lỗi xảy ra khi xử lý từ chối');
+            showToast(error.message || 'Có lỗi xảy ra khi xử lý từ chối', 'error');
         } finally {
             setLoading(false);
             setUploadProgress('');
@@ -390,12 +527,13 @@ function RejectReviewDialog({
     const getCursorStyle = () => {
         if (!currentTool) return 'default';
         if (currentTool === 'text') return 'text';
-        if (currentTool === 'eraser') return 'not-allowed';
+        if (currentTool === 'eraser') return 'pointer';
         return 'crosshair';
     };
 
     return (
         <div className="reject-dialog-overlay">
+            <ToastStack />
             <div className="reject-dialog-container">
                 {/* Header */}
                 <div className="reject-dialog-header">

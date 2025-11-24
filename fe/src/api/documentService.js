@@ -91,7 +91,7 @@ const documentService = {
     // Xem luồng ký
     getSignFlow: async (contractId) => {
         try {
-            const response = await apiClient.get(`/contracts/${contractId}/sign-flow`);
+            const response = await apiClient.get(`/contracts/bpmn-flow/${contractId}`);
             return response;
         } catch (error) {
             throw error;

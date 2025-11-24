@@ -525,6 +525,121 @@ Document Content
     font-weight: 500;
 }
 
+/* Loading and Error States */
+.contract-loading-container,
+.contract-error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f5f5f5;
+    padding: 40px 20px;
+}
+
+.contract-loading-content,
+.contract-error-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 60px 40px;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+
+.contract-loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #e3f2fd;
+    border-top-color: #0B57D0;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 24px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.contract-loading-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+    margin: 0;
+}
+
+.contract-loading-subtext {
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+}
+
+.contract-error-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: #fee;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #dc3545;
+}
+
+.contract-error-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 12px 0;
+}
+
+.contract-error-message {
+    font-size: 15px;
+    color: #666;
+    line-height: 1.6;
+    margin: 0 0 32px 0;
+    word-break: break-word;
+}
+
+.contract-error-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.contract-error-btn {
+    padding: 12px 32px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.contract-error-btn-primary {
+    background: #0B57D0;
+    color: white;
+}
+
+.contract-error-btn-primary:hover {
+    background: #0a4bb8;
+}
+
+.contract-error-btn-secondary {
+    background: white;
+    color: #666;
+    border: 1px solid #ddd;
+}
+
+.contract-error-btn-secondary:hover {
+    background: #f5f5f5;
+    border-color: #bbb;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .document-sidebar {
@@ -547,5 +662,18 @@ Document Content
     
     .zoom-controls {
         justify-content: center;
+    }
+
+    .contract-loading-content,
+    .contract-error-content {
+        padding: 40px 24px;
+    }
+
+    .contract-error-actions {
+        flex-direction: column;
+    }
+
+    .contract-error-btn {
+        width: 100%;
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import '../../styles/documentDetail.css';
 import PDFViewer from '../document/PDFViewer';
@@ -46,6 +46,77 @@ function ContractDetail() {
     const [showSignDialog, setShowSignDialog] = useState(false);
     const [documentMeta, setDocumentMeta] = useState(null);
     const [recipient, setRecipient] = useState(null);
+    const [currentSignFieldIndex, setCurrentSignFieldIndex] = useState(0);
+    const [focusComponentId, setFocusComponentId] = useState(null);
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
+
+    const ToastStack = () => (
+        <>
+            {!!toasts.length && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 16,
+                        right: 16,
+                        zIndex: 10000,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8
+                    }}
+                >
+                    {toasts.map((t) => (
+                        <div
+                            key={t.id}
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    marginLeft: 12,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </>
+    );
 
     // Load contract data
     useEffect(() => {
@@ -88,10 +159,11 @@ function ContractDetail() {
                         // Lấy presigned URL cho document
                         const urlResponse = await contractService.getPresignedUrl(document.id);
                         if (urlResponse?.code === 'SUCCESS') {
+                            const presignedUrl = urlResponse?.data?.message || urlResponse?.data;
                             setDocumentMeta({
                                 id: document.id,
                                 name: document.name,
-                                presignedUrl: urlResponse.data,
+                                presignedUrl,
                                 totalPages: document.page || 1
                             });
                             setTotalPages(document.page || 1);
@@ -149,7 +221,7 @@ function ContractDetail() {
     const handleDelegate = () => {
         console.log('Ủy quyền/Chuyển tiếp');
         // TODO: Implement delegate logic - có thể mở modal chọn người nhận ủy quyền
-        alert('Chức năng ủy quyền đang được phát triển');
+        showToast('Chức năng ủy quyền đang được phát triển', 'warning');
     };
 
     const handleReject = () => {
@@ -160,12 +232,33 @@ function ContractDetail() {
     };
 
     const handleFindSignFields = () => {
-        console.log('Tìm ô ký');
-        // Filter fields có type là IMAGE_SIGN (2) hoặc DIGITAL_SIGN (3)
-        const signFields = fields.filter(field => field.type === 2 || field.type === 3);
+        if (!recipientId) {
+            showToast('Không tìm thấy thông tin người ký hiện tại.', 'warning');
+            return;
+        }
+
+        const signFields = fields.filter(field =>
+            (field.type === 2 || field.type === 3) &&
+            Number(field.recipientId) === Number(recipientId)
+        );
+
+        if (!signFields.length) {
+            showToast('Không tìm thấy ô ký dành cho bạn.', 'warning');
+            return;
+        }
+
+        const targetIndex = currentSignFieldIndex % signFields.length;
+        const targetField = signFields[targetIndex];
+
         setHighlightedFields(signFields);
         setHighlightType('sign');
-        console.log('Found sign fields:', signFields);
+        setFocusComponentId(`highlight-${targetField.id}`);
+
+        if (targetField.page) {
+            setCurrentPage(targetField.page);
+        }
+
+        setCurrentSignFieldIndex((targetIndex + 1) % signFields.length);
     };
 
     const handleFindInfoFields = () => {
@@ -177,8 +270,19 @@ function ContractDetail() {
         console.log('Found info fields:', infoFields);
     };
 
+    useEffect(() => {
+        setCurrentSignFieldIndex(0);
+    }, [fields, recipientId]);
+
+    useEffect(() => {
+        if (reviewDecision === 'disagree') {
+            setFocusComponentId(null);
+        }
+    }, [reviewDecision]);
+
     // Convert highlighted fields to components for PDFViewer
     const getHighlightComponents = () => {
+        if (reviewDecision === 'disagree') return [];
         if (!highlightedFields.length) return [];
 
         return highlightedFields.map(field => ({
@@ -192,6 +296,7 @@ function ContractDetail() {
                 height: field.boxH || 30
             },
             name: field.name || '',
+            recipient: field.recipient || null,
             highlight: true,
             highlightType: highlightType,
             locked: true // Không cho phép edit highlight fields
@@ -200,12 +305,12 @@ function ContractDetail() {
 
     const handleReviewClick = () => {
         if (!recipientId) {
-            alert('Không tìm thấy thông tin người xem xét');
+            showToast('Không tìm thấy thông tin người xem xét', 'warning');
             return;
         }
 
         if (!reviewDecision) {
-            alert('Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận');
+            showToast('Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận', 'warning');
             return;
         }
 
@@ -214,7 +319,7 @@ function ContractDetail() {
         } else {
             // Open reject dialog with document metadata
             if (!documentMeta) {
-                alert('Không tìm thấy thông tin tài liệu');
+                showToast('Không tìm thấy thông tin tài liệu', 'error');
                 return;
             }
             setShowRejectDialog(true);
@@ -224,19 +329,21 @@ function ContractDetail() {
     const handleReviewConfirm = async () => {
         try {
             setLoading(true);
-            const response = await contractService.approve(recipientId);
+            const response = await contractService.approvalProcess(recipientId);
 
             if (response?.code === 'SUCCESS') {
-                alert('Đã xác nhận đồng ý với hợp đồng thành công!');
+                showToast('Đã xác nhận đồng ý với hợp đồng thành công!', 'success');
                 setReviewDecision('');
                 setShowReviewDialog(false);
-                navigate('/main/dashboard');
+                setTimeout(() => {
+                    navigate('/main/dashboard');
+                }, 1200);
             } else {
                 throw new Error(response?.message || 'Xác nhận xem xét thất bại');
             }
         } catch (error) {
             console.error('Error reviewing contract:', error);
-            alert(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi xác nhận xem xét');
+            showToast(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi xác nhận xem xét', 'error');
         } finally {
             setLoading(false);
         }
@@ -256,13 +363,13 @@ function ContractDetail() {
 
     const handleSignClick = () => {
         if (!recipientId) {
-            alert('Không tìm thấy thông tin người ký');
+            showToast('Không tìm thấy thông tin người ký', 'warning');
             return;
         }
 
         // Kiểm tra recipient có quyền ký không (signType = 6)
         if (recipient && recipient.signType !== 6) {
-            alert('Người này không có quyền ký số. Vui lòng kiểm tra lại.');
+            showToast('Người này không có quyền ký số. Vui lòng kiểm tra lại.', 'warning');
             return;
         }
 
@@ -271,7 +378,7 @@ function ContractDetail() {
 
     const handleSignSuccess = async (signedData) => {
         console.log('Contract signed successfully:', signedData);
-        alert('Ký hợp đồng thành công!');
+        showToast('Ký hợp đồng thành công!', 'success');
         
         // Reload contract data để cập nhật trạng thái
         try {
@@ -382,7 +489,7 @@ function ContractDetail() {
 
     const handleCoordinateSuccess = (data) => {
         console.log('Điều phối thành công:', data);
-        alert('Điều phối thành công!');
+        showToast('Điều phối thành công!', 'success');
         // Có thể reload contract data hoặc navigate
         setShowCoordinate(false);
     };
@@ -395,59 +502,98 @@ function ContractDetail() {
         navigate(-1);
     };
 
+    const pdfDocument = useMemo(() => {
+        if (documentMeta?.presignedUrl) {
+            return { pdfUrl: documentMeta.presignedUrl };
+        }
+        if (contract?.pdfUrl) {
+            return { pdfUrl: contract.pdfUrl };
+        }
+        return null;
+    }, [documentMeta, contract]);
+
     if (loading) {
         return (
-            <div className="document-detail-container" style={{ padding: '20px', textAlign: 'center' }}>
-                <p>Đang tải dữ liệu...</p>
-            </div>
+            <>
+                <ToastStack />
+                <div className="contract-loading-container">
+                    <div className="contract-loading-content">
+                        <div className="contract-loading-spinner"></div>
+                        <p className="contract-loading-text">Đang tải dữ liệu...</p>
+                        <p className="contract-loading-subtext">Vui lòng đợi trong giây lát</p>
+                    </div>
+                </div>
+            </>
         );
     }
 
     if (error) {
         return (
-            <div className="document-detail-container" style={{ padding: '20px' }}>
-                <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>
-                <button onClick={handleBack}>Quay lại</button>
-            </div>
+            <>
+                <ToastStack />
+                <div className="contract-error-container">
+                    <div className="contract-error-content">
+                        <div className="contract-error-icon">⚠</div>
+                        <h2 className="contract-error-title">Không thể tải dữ liệu</h2>
+                        <p className="contract-error-message">{error}</p>
+                        <div className="contract-error-actions">
+                            <button className="contract-error-btn contract-error-btn-primary" onClick={handleBack}>
+                                Quay lại
+                            </button>
+                            <button 
+                                className="contract-error-btn contract-error-btn-secondary" 
+                                onClick={() => window.location.reload()}
+                            >
+                                Tải lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </>
         );
     }
 
     // Nếu đang hiển thị CoordinateAssigners
     if (showCoordinate) {
         return (
-            <div className="document-detail-container">
-                <CoordinateAssigners
-                    partner={partner}
-                    onPartnerChange={setPartner}
-                    reviewers={reviewers}
-                    addReviewer={addReviewer}
-                    updateReviewer={updateReviewer}
-                    removeReviewer={removeReviewer}
-                    signers={signers}
-                    addSigner={addSigner}
-                    updateSigner={updateSigner}
-                    removeSigner={removeSigner}
-                    clerks={clerks}
-                    addClerk={addClerk}
-                    updateClerk={updateClerk}
-                    removeClerk={removeClerk}
-                    onBack={handleBackFromCoordinate}
-                    onNext={handleNextCoordinate}
-                    currentStep={coordinateStep}
-                    totalSteps={3}
-                    contractId={contractId}
-                    recipientId={recipientId}
-                    participantId={participantId}
-                    coordinatorRecipient={coordinatorRecipient}
-                    onCoordinateSuccess={handleCoordinateSuccess}
-                    onCoordinateError={handleCoordinateError}
-                />
-            </div>
+            <>
+                <ToastStack />
+                <div className="document-detail-container">
+                    <CoordinateAssigners
+                        partner={partner}
+                        onPartnerChange={setPartner}
+                        reviewers={reviewers}
+                        addReviewer={addReviewer}
+                        updateReviewer={updateReviewer}
+                        removeReviewer={removeReviewer}
+                        signers={signers}
+                        addSigner={addSigner}
+                        updateSigner={updateSigner}
+                        removeSigner={removeSigner}
+                        clerks={clerks}
+                        addClerk={addClerk}
+                        updateClerk={updateClerk}
+                        removeClerk={removeClerk}
+                        onBack={handleBackFromCoordinate}
+                        onNext={handleNextCoordinate}
+                        currentStep={coordinateStep}
+                        totalSteps={3}
+                        contractId={contractId}
+                        recipientId={recipientId}
+                        participantId={participantId}
+                        coordinatorRecipient={coordinatorRecipient}
+                        onCoordinateSuccess={handleCoordinateSuccess}
+                        onCoordinateError={handleCoordinateError}
+                    />
+                </div>
+            </>
         );
     }
 
     return (
-        <div className="document-detail-container">
+        <>
+            <ToastStack />
+            <div className="document-detail-container">
             {/* Sidebar bên trái */}
             <div className={`document-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
                 <button className="sidebar-toggle" onClick={toggleSidebar}>
@@ -597,23 +743,28 @@ function ContractDetail() {
 
                 {/* PDF Viewer */}
                 <div className="pdf-viewer">
-                    <PDFViewer
-                        document={contract}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        zoom={zoom}
-                        onPageChange={handlePageChange}
-                        components={getHighlightComponents()}
-                    />
+                    {pdfDocument ? (
+                        <PDFViewer
+                            document={pdfDocument}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            zoom={zoom}
+                            onPageChange={handlePageChange}
+                            components={getHighlightComponents()}
+                            focusComponentId={focusComponentId}
+                        />
+                    ) : (
+                        <div className="pdf-loading">
+                            <div className="loading-spinner"></div>
+                            <p>Đang chuẩn bị URL tài liệu...</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Nút hành động */}
                 <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <button className="edit-btn" onClick={handleDelegate}>
                         Ủy quyền/Chuyển tiếp
-                    </button>
-                    <button className="edit-btn" onClick={handleReject}>
-                        Từ chối
                     </button>
                     <button className="edit-btn" onClick={handleFindSignFields}>
                         Tìm ô ký
@@ -638,6 +789,7 @@ function ContractDetail() {
                         Đóng
                     </button>
                 </div>
+            </div>
             </div>
             
             {/* Review Confirmation Dialog */}
@@ -728,7 +880,7 @@ function ContractDetail() {
                 fields={fields}
                 onSigned={handleSignSuccess}
             />
-        </div>
+        </>
     );
 }
 

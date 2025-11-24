@@ -1305,7 +1305,12 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 }
             } catch (err) {
                 console.error('Error saving participants:', err);
-                showToast(err.message || 'Không thể lưu người xử lý. Vui lòng thử lại.', 'error');
+                // Ưu tiên lấy message từ response, sau đó mới đến err.message
+                const errorMessage = err.response?.data?.message || 
+                                   err.response?.data?.error || 
+                                   err.message || 
+                                   'Không thể lưu người xử lý. Vui lòng thử lại.';
+                showToast(errorMessage, 'error');
             } finally {
                 setLoading(false);
             }

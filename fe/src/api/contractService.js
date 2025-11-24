@@ -343,7 +343,7 @@ const contractService = {
     // 7.4.4. Lấy thông tin participant theo recipient ID (Coordination Flow)
     getParticipantByRecipientId: async (recipientId) => {
         try {
-            const response = await apiClient.get(`/contracts/participants/by-recipient/${recipientId}`);
+            const response = await apiClient.get(`/contracts/participants/byRecipientId/${recipientId}`);
             return response;
         } catch (error) {
             throw error;
@@ -375,7 +375,7 @@ const contractService = {
     // 7.5.2. Lấy tất cả field của hợp đồng (Coordination Flow)
     getFieldsByContract: async (contractId) => {
         try {
-            const response = await apiClient.get(`/contracts/${contractId}/fields`);
+            const response = await apiClient.get(`/contracts/fields/by-contract/${contractId}`);
             return response;
         } catch (error) {
             throw error;
@@ -441,15 +441,6 @@ const contractService = {
         }
     },
 
-    // 7.10.4. Phê duyệt hợp đồng
-    approve: async (recipientId) => {
-        try {
-            const response = await apiClient.post(`/contracts/recipients/${recipientId}/approve`);
-            return response;
-        } catch (error) {
-            throw error;
-        }
-    },
 
     // 7.10.5. Phê duyệt hợp đồng (process approval)
     approvalProcess: async (contractId) => {
