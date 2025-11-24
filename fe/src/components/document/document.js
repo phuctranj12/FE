@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/document.css";
-import "../../styles/table.css";
+// import "../../styles/table.css";
 import Button from "../common/Button";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
@@ -12,6 +12,7 @@ import UploadAttachmentModal from "./UploadAttachmentModal";
 import RelatedContractsModal from "./RelatedContractsModal";
 import documentService from "../../api/documentService";
 import { useNavigate } from "react-router-dom";
+import ContractFilterHeader from "./ContractFilterHeader";
 console.log({
     AdvancedSearchModal,
     ActionMenu,
@@ -41,7 +42,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
     const [totalDocs, setTotalDocs] = useState(0);
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-
+    const [scope, setScope] = useState("my"); // "my" = tài liệu của tôi, "org" = tài liệu tổ chức
     const totalPages = Math.ceil(totalDocs / itemsPerPage);
     const navigate = useNavigate();
 
@@ -70,7 +71,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                             list.length;
         return { list, total };
     };
-
+    const [organizationId] = useState(1); // ID mặc định tổ chức
     const fetchDocuments = async () => {
         setErrorMessage("");
         setSuccessMessage("");
@@ -85,10 +86,20 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         };
 
         try {
-            const data = await documentService.getMyContracts(filter);
+            let data;
+
+            if (scope === "my") {
+                // Tài liệu của tôi
+                data = await documentService.getMyContracts(filter);
+            } else if (scope === "org") {
+                // Tài liệu của tổ chức
+                data = await documentService.getOrganizationContracts({ ...filter, organizationId });
+            }
+
             const { list, total } = extractListAndTotal(data);
             setDocs(list);
             setTotalDocs(total);
+
         } catch (error) {
             if (error.response) {
                 if (error.response.status === 401) {
@@ -106,9 +117,10 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         }
     };
 
+
     useEffect(() => {
         fetchDocuments();
-    }, [searchTerm, selectedStatus, advancedFilters, currentPage]);
+    }, [searchTerm, selectedStatus, advancedFilters, currentPage, scope]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -226,8 +238,11 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         setAdvancedFilters(filters);
     };
 
+
+
     return (
         <div className="document-wrapper">
+
             <div className="table-container">
                 <div>
                     <h2>
@@ -237,6 +252,11 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                             : ""}
                     </h2>
                 </div>
+                <div className="ContractFilterHeader">
+                    <ContractFilterHeader scope={scope} setScope={setScope} />
+                </div>
+
+
 
                 <div className="documnent-head">
                     <SearchBar
@@ -264,7 +284,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                     <p className="no-docs">Không có tài liệu nào phù hợp với tìm kiếm.</p>
                 ) : (
                     <>
-                        <table className="data-table">
+                        <table className="content-table">
                             <thead>
                                 <tr>
                                     <th>Tên tài liệu</th>
@@ -280,7 +300,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                 {docs.map(doc => (
                                     <tr
                                         key={doc.id}
-                                        className="document-row"
+                                        className="tr-row"
                                         onClick={() => onDocumentClick && onDocumentClick(doc)}
                                     >
                                         <td className="document-title-cell">{doc.name}</td>

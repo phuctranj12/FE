@@ -1,0 +1,47 @@
+.header-filter {
+    
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+/* Khối chứa 2 nút */
+.filter-scope {
+    width: 100%;
+    display: flex;
+    /* background: #F1F4F9; */
+    /* padding: 4px; */
+    /* border-radius: 12px; */
+       background-color: #f1f2f4f7;
+}
+
+/* Style nút */
+.filter-scope button {
+ 
+    width: 50%;
+    padding: 9px 18px;
+    /* border-radius: 10px; */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+     color: #9da0a2a5;
+    /* color: #4A4F63; */
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.25s ease;
+}
+
+/* Hover */
+.filter-scope button:hover {
+    background-color: #edf0f4a5;
+    color: #4A4F63;
+}
+
+/* Nút active giống hệt mobifone */
+.filter-scope button.active {
+    background: #fff;
+    color: black;
+    font-weight: 600;
+    /* box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.12); */
+}
