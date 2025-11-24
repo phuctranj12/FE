@@ -49,14 +49,15 @@ const documentService = {
                 toDate: filterContractDTO.toDate || null,
                 page: filterContractDTO.page ?? 0,
                 size: filterContractDTO.size ?? 10,
-                organizationId: filterContractDTO.organizationId // bắt buộc truyền
+                organizationId: filterContractDTO.organizationId || 1 // mặc định id = 1
             };
-            const response = await apiClient.post('/contracts/organization-contracts', body);
+            const response = await apiClient.post('/contracts/contract-by-organization', body);
             return response;
         } catch (error) {
             throw error;
         }
     },
+
 
     // Danh sách hợp đồng chia sẻ
     getSharedContracts: async (params = {}) => {

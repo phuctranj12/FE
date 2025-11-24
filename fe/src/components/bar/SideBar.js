@@ -74,16 +74,25 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                             className="subitem"
                             onClick={() => {
                                 handleSelect(2);
-                                handleNavigation('/main/contract/create/complete');
+                                handleNavigation('/main/contract/create/expiring-soon');
                             }}
                         >
-                            Đã xử lý
+                            Sắp hết hạn
                         </div>
                         <div
                             className="subitem"
                             onClick={() => {
                                 handleSelect(3);
-                                handleNavigation('/main/contract/create/fail');
+                                handleNavigation('/main/contract/create/expired');
+                            }}
+                        >
+                            Quá hạn
+                        </div>
+                        <div
+                            className="subitem"
+                            onClick={() => {
+                                handleSelect(4);
+                                handleNavigation('/main/contract/create/rejected');
                             }}
                         >
                             Từ chối
@@ -91,20 +100,11 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                         <div
                             className="subitem"
                             onClick={() => {
-                                handleSelect(4);
-                                handleNavigation('/main/contract/create/validate');
-                            }}
-                        >
-                            Xác Thực
-                        </div>
-                        <div
-                            className="subitem"
-                            onClick={() => {
                                 handleSelect(5);
-                                handleNavigation('/main/contract/create/waiting');
+                                handleNavigation('/main/contract/create/canceled');
                             }}
                         >
-                            Chờ
+                            Huỷ bỏ
                         </div>
                     </div>
                 )}
