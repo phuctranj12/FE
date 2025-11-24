@@ -101,25 +101,15 @@ const certificateService = {
     },
 
     // 7️⃣ Import file .p12
-    importCert: async ({ file, emails = [], password, status }) => {
+    importCert: async (formData) => {
         try {
-            const form = new FormData();
-            form.append("file", file);
-            console.log("🚀 ~ file: serverCertificateService.js:161 ~ importCert: ~ emails:", form);
-            if (emails && emails.length) {
-                emails.forEach((e) => form.append("list_email", e));
-            }
-            form.append("password", password);
-            form.append("status", status);
-
             const token = localStorage.getItem('token');
-
-            const res = await apiClient.post("/contracts/import-cert", form, {
+            console.log('🚀 Importing cert with formData:', formData);
+            const res = await apiClient.post("/contracts/certs/import-cert", formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-
             return res.data?.data || res.data;
         } catch (error) {
             console.error('❌ Lỗi khi import chứng thư số:', error);
