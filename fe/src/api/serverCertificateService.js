@@ -8,7 +8,7 @@ const certificateService = {
     getAllCertificates: async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await apiClient.get('/contracts/find-cert-user', {
+            const response = await apiClient.get('/contracts/certs/find-cert-user', {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     Accept: 'application/json',
@@ -45,7 +45,6 @@ const certificateService = {
             const response = await apiClient.post('/certificates/create', certificateData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
                 },
             });
             return response.data;
@@ -62,7 +61,6 @@ const certificateService = {
             const response = await apiClient.put(`/certificates/update/${certificateId}`, certificateData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
                 },
             });
             return response.data;
@@ -101,18 +99,27 @@ const certificateService = {
     },
 
     // 7️⃣ Import file .p12
+    // 7️⃣ Import file .p12 - FIXED VERSION
     importCert: async (formData) => {
         try {
             const token = localStorage.getItem('token');
             console.log('🚀 Importing cert with formData:', formData);
+
+            // Debug: In ra nội dung FormData
+            for (let pair of formData.entries()) {
+                console.log(pair[0], pair[1]);
+            }
+
             const res = await apiClient.post("/contracts/certs/import-cert", formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data',
                 },
             });
             return res.data?.data || res.data;
         } catch (error) {
             console.error('❌ Lỗi khi import chứng thư số:', error);
+            console.error('❌ Error response:', error.response?.data);
             throw error.response?.data || error;
         }
     },
