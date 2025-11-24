@@ -353,7 +353,7 @@ const contractService = {
     // 7.4.5. Lấy tất cả participant của hợp đồng (Coordination Flow)
     getAllParticipantsByContract: async (contractId) => {
         try {
-            const response = await apiClient.get(`/contracts/${contractId}/participants`);
+            const response = await apiClient.get(`/contracts/participants/by-contract/${contractId}`);
             return response;
         } catch (error) {
             throw error;

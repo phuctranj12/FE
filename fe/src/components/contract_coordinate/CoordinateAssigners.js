@@ -35,6 +35,8 @@ function CoordinateAssigners({
     const [error, setError] = useState(null);
     const [contractInfo, setContractInfo] = useState(null);
     const [participantInfo, setParticipantInfo] = useState(null);
+    const [existingPartnerRecipients, setExistingPartnerRecipients] = useState([]);
+    const [initialParticipantEmails, setInitialParticipantEmails] = useState(new Set());
     const [allParticipants, setAllParticipants] = useState([]);
     const [fields, setFields] = useState([]);
     const [documents, setDocuments] = useState([]);
@@ -42,6 +44,8 @@ function CoordinateAssigners({
     const [pendingFields, setPendingFields] = useState([]);
     const [createdRecipients, setCreatedRecipients] = useState([]);
     const [coordinatorDetail, setCoordinatorDetail] = useState(null);
+    const [duplicateWarning, setDuplicateWarning] = useState(null);
+    const [toasts, setToasts] = useState([]);
     const currentParticipantId = participantId || participantInfo?.id;
 
     const lockedFieldIds = useMemo(() => {
@@ -53,6 +57,19 @@ function CoordinateAssigners({
             .filter(field => field.participantId !== currentParticipantId)
             .map(field => field.id);
     }, [fields, currentParticipantId]);
+
+    const showToast = useCallback((message, variant = 'error', durationMs = 4000) => {
+        if (!message) return;
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, durationMs);
+    }, []);
+
+    const removeToast = useCallback((id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    }, []);
 
     const loadFieldsByContract = useCallback(async (id) => {
         if (!id) return;
@@ -66,6 +83,34 @@ function CoordinateAssigners({
             setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải field');
         }
     }, []);
+
+    const isEmailDuplicate = (email, entryType, entryId) => {
+        if (!email) return false;
+        const normalized = email.trim().toLowerCase();
+        if (initialParticipantEmails.has(normalized)) {
+            return true;
+        }
+
+        const checkList = (list) =>
+            list.some(item =>
+                item?.email &&
+                item.email.trim().toLowerCase() === normalized &&
+                item.id !== entryId
+            );
+
+        if (checkList(reviewers)) return true;
+        if (checkList(signers)) return true;
+        if (checkList(clerks)) return true;
+        return false;
+    };
+
+    useEffect(() => {
+        if (error) {
+            showToast(error, 'error');
+            const timer = setTimeout(() => setError(null), 0);
+            return () => clearTimeout(timer);
+        }
+    }, [error, showToast]);
 
     const loadDocumentsByContract = useCallback(async (id) => {
         if (!id) return;
@@ -121,8 +166,13 @@ function CoordinateAssigners({
                 if (recipientId) {
                     const participantResponse = await contractService.getParticipantByRecipientId(recipientId);
                     if (participantResponse?.code === 'SUCCESS') {
-                        setParticipantInfo(participantResponse.data);
+                        const participantData = participantResponse.data;
+                        setParticipantInfo(participantData);
+                        setExistingPartnerRecipients(participantData?.recipients || []);
                         // participantId sẽ được lấy từ participantInfo nếu chưa được truyền vào
+                        if (participantData?.name && typeof onPartnerChange === 'function') {
+                            onPartnerChange(participantData.name);
+                        }
                     }
                 }
 
@@ -130,7 +180,17 @@ function CoordinateAssigners({
                 if (contractId) {
                     const allParticipantsResponse = await contractService.getAllParticipantsByContract(contractId);
                     if (allParticipantsResponse?.code === 'SUCCESS') {
-                        setAllParticipants(allParticipantsResponse.data || []);
+                        const participantsData = allParticipantsResponse.data || [];
+                        setAllParticipants(participantsData);
+                        const emailSet = new Set();
+                        participantsData.forEach(participant => {
+                            participant.recipients?.forEach(recipient => {
+                                if (recipient.email) {
+                                    emailSet.add(recipient.email.trim().toLowerCase());
+                                }
+                            });
+                        });
+                        setInitialParticipantEmails(emailSet);
                     }
                 }
 
@@ -138,7 +198,7 @@ function CoordinateAssigners({
                 await loadFieldsByContract(contractId);
 
                 // Lấy thông tin tài liệu của hợp đồng
-                await loadDocumentsByContract(contractId);
+                // await loadDocumentsByContract(contractId);
             } catch (err) {
                 console.error('Error loading coordination data:', err);
                 setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu');
@@ -148,7 +208,7 @@ function CoordinateAssigners({
         };
 
         loadData();
-    }, [contractId, recipientId, loadDocumentsByContract, loadFieldsByContract]);
+    }, [contractId, recipientId, loadDocumentsByContract, loadFieldsByContract, onPartnerChange]);
 
     // Lấy chi tiết coordinator từ recipientId
     useEffect(() => {
@@ -187,6 +247,30 @@ function CoordinateAssigners({
         }
         const numericValue = Number(value);
         setActiveDocumentId(Number.isNaN(numericValue) ? value : numericValue);
+    };
+
+    const handleUpdateReviewer = (id, field, value) => {
+        if (field === 'email' && isEmailDuplicate(value, 'reviewer', id)) {
+            setDuplicateWarning(value);
+            return;
+        }
+        updateReviewer && updateReviewer(id, field, value);
+    };
+
+    const handleUpdateSigner = (id, field, value) => {
+        if (field === 'email' && isEmailDuplicate(value, 'signer', id)) {
+            setDuplicateWarning(value);
+            return;
+        }
+        updateSigner && updateSigner(id, field, value);
+    };
+
+    const handleUpdateClerk = (id, field, value) => {
+        if (field === 'email' && isEmailDuplicate(value, 'clerk', id)) {
+            setDuplicateWarning(value);
+            return;
+        }
+        updateClerk && updateClerk(id, field, value);
     };
 
     // Xử lý điều phối hợp đồng
@@ -267,21 +351,41 @@ function CoordinateAssigners({
                     setLoading(true);
                     setError(null);
 
+                    const existingRecipientPayload = existingPartnerRecipients.map(recipient => ({
+                        id: recipient.id,
+                        name: recipient.name || '',
+                        email: recipient.email || '',
+                        phone: recipient.phone || '',
+                        cardId: recipient.cardId || recipient.card_id || '',
+                        role: recipient.role,
+                        ordering: recipient.ordering || 1,
+                        status: typeof recipient.status === 'number' ? recipient.status : 1,
+                        signType: recipient.signType || 6
+                    }));
+
+                    const newRecipientsPayload = allRecipients.map(person => ({
+                        name: person.fullName || person.name || '',
+                        email: person.email || '',
+                        phone: person.phone || '',
+                        cardId: person.cardId || person.card_id || '',
+                        role: person.role,
+                        ordering: person.ordering || 1,
+                        status: 0,
+                        signType: person.signType === 'hsm' ? 6 : person.signType || 6
+                    }));
+
                     // Chuẩn bị payload cho API tạo participant
                     const participantPayload = [{
-                        name: partner || 'Đối tác',
-                        type: 2, // Type 2: Đối tác
-                        ordering: 2, // Thứ tự sau "Tổ chức của tôi" (ordering = 1)
-                        status: 1, // Status 1: Active
-                        recipients: allRecipients.map(person => ({
-                            name: person.fullName || person.name || '',
-                            email: person.email || '',
-                            phone: person.phone || '',
-                            role: person.role,
-                            ordering: person.ordering || 1,
-                            status: 0, // Người tham gia mới có status = 0 (chờ xử lý)
-                            signType: person.signType === 'hsm' ? 6 : person.signType || 6
-                        }))
+                        name: partner || participantInfo?.name || 'Đối tác',
+                        id: participantInfo?.id,
+                        type: participantInfo?.type || 2, // Type 2: Đối tác
+                        ordering: participantInfo?.ordering || 2, // Thứ tự sau "Tổ chức của tôi" (ordering = 1)
+                        status: participantInfo?.status ?? 1, // Status 1: Active
+                        contractId: contractId,
+                        recipients: [
+                            ...existingRecipientPayload,
+                            ...newRecipientsPayload
+                        ]
                     }];
 
                     const response = await contractService.createParticipant(contractId, participantPayload);
@@ -523,8 +627,32 @@ function CoordinateAssigners({
         );
     };
 
+    const ToastStack = () => (
+        <>
+            {!!toasts.length && (
+                <div className="coordinate-toast-stack">
+                    {toasts.map((toast) => (
+                        <div
+                            key={toast.id}
+                            className={`coordinate-toast coordinate-toast--${toast.variant}`}
+                        >
+                            <span>{toast.message}</span>
+                            <button
+                                onClick={() => removeToast(toast.id)}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </>
+    );
+
     return (
         <div className="coordinate-assigners-container">
+            <ToastStack />
             {/* Timer */}
             {timer && (
                 <div className="coordinate-timer">
@@ -532,17 +660,36 @@ function CoordinateAssigners({
                 </div>
             )}
 
+            {duplicateWarning && (
+                <div className="coordinate-duplicate-overlay">
+                    <div className="coordinate-duplicate-dialog">
+                        <h4>Email đã tồn tại</h4>
+                        <p>
+                            Địa chỉ email <strong>{duplicateWarning}</strong> đã nằm trong danh sách người tham gia của hợp đồng.
+                            Vui lòng sử dụng email khác.
+                        </p>
+                        <button onClick={() => setDuplicateWarning(null)}>
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Error Message */}
             {error && (
-                <div className="coordinate-error-message" style={{
-                    padding: '10px',
-                    marginBottom: '15px',
-                    backgroundColor: '#fee',
-                    color: '#c33',
-                    borderRadius: '4px',
-                    border: '1px solid #fcc'
-                }}>
-                    {error}
+                <div className="coordinate-error-banner" onClick={() => setError(null)}>
+                    <div className="coordinate-error-banner__title">Thông báo lỗi</div>
+                    <div className="coordinate-error-banner__message">{error}</div>
+                    <button
+                        className="coordinate-error-banner__close"
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setError(null);
+                        }}
+                    >
+                        Đóng
+                    </button>
                 </div>
             )}
 
@@ -574,6 +721,26 @@ function CoordinateAssigners({
                         onChange={(e) => onPartnerChange && onPartnerChange(e.target.value)}
                         placeholder="aaaaa"
                     />
+                </div>
+            )}
+
+            {currentStep === 1 && existingPartnerRecipients.length > 0 && (
+                <div className="coordinate-existing-participants">
+                    <h4>Người tham gia đã thêm</h4>
+                    <div className="coordinate-existing-list">
+                        {existingPartnerRecipients.map(recipient => (
+                            <div key={recipient.id} className="coordinate-existing-item">
+                                <div className="coordinate-existing-name">{recipient.name || '—'}</div>
+                                <div className="coordinate-existing-email">{recipient.email || '—'}</div>
+                                <div className="coordinate-existing-role">
+                                    {recipient.role === 1 ? 'Điều phối' :
+                                     recipient.role === 2 ? 'Xem xét' :
+                                     recipient.role === 3 ? 'Ký' :
+                                     recipient.role === 4 ? 'Văn thư' : 'Khác'}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -609,7 +776,7 @@ function CoordinateAssigners({
                                                 type="number"
                                                 min="1"
                                                 value={reviewer.ordering || index + 1}
-                                                onChange={(e) => updateReviewer && updateReviewer(reviewer.id, 'ordering', parseInt(e.target.value) || 1)}
+                                                onChange={(e) => handleUpdateReviewer(reviewer.id, 'ordering', parseInt(e.target.value) || 1)}
                                             />
                                         </div>
                                         <h4>Người xem xét {index + 1}</h4>
@@ -628,7 +795,7 @@ function CoordinateAssigners({
                                             <input
                                                 type="text"
                                                 value={reviewer.fullName || ''}
-                                                onChange={(e) => updateReviewer && updateReviewer(reviewer.id, 'fullName', e.target.value)}
+                                                onChange={(e) => handleUpdateReviewer(reviewer.id, 'fullName', e.target.value)}
                                                 placeholder="Nhập họ và tên"
                                             />
                                         </div>
@@ -637,7 +804,7 @@ function CoordinateAssigners({
                                             <input
                                                 type="email"
                                                 value={reviewer.email || ''}
-                                                onChange={(e) => updateReviewer && updateReviewer(reviewer.id, 'email', e.target.value)}
+                                                onChange={(e) => handleUpdateReviewer(reviewer.id, 'email', e.target.value)}
                                                 placeholder="Nhập email"
                                             />
                                         </div>
@@ -651,7 +818,7 @@ function CoordinateAssigners({
                                             <input
                                                 type="tel"
                                                 value={reviewer.phone || ''}
-                                                onChange={(e) => updateReviewer && updateReviewer(reviewer.id, 'phone', e.target.value)}
+                                                onChange={(e) => handleUpdateReviewer(reviewer.id, 'phone', e.target.value)}
                                                 placeholder="Nhập số điện thoại"
                                             />
                                         </div>
@@ -687,7 +854,7 @@ function CoordinateAssigners({
                                             type="radio"
                                             name={`signer-login-${signer.id}`}
                                             checked={!signer.loginByPhone}
-                                            onChange={() => updateSigner && updateSigner(signer.id, 'loginByPhone', false)}
+                                            onChange={() => handleUpdateSigner(signer.id, 'loginByPhone', false)}
                                         />
                                         <span>Đăng nhập bằng email</span>
                                     </label>
@@ -696,7 +863,7 @@ function CoordinateAssigners({
                                             type="radio"
                                             name={`signer-login-${signer.id}`}
                                             checked={signer.loginByPhone}
-                                            onChange={() => updateSigner && updateSigner(signer.id, 'loginByPhone', true)}
+                                            onChange={() => handleUpdateSigner(signer.id, 'loginByPhone', true)}
                                         />
                                         <span>Đăng nhập bằng số điện thoại</span>
                                     </label>
@@ -708,7 +875,7 @@ function CoordinateAssigners({
                                                 type="number"
                                                 min="1"
                                                 value={signer.ordering || index + 1}
-                                                onChange={(e) => updateSigner && updateSigner(signer.id, 'ordering', parseInt(e.target.value) || 1)}
+                                                onChange={(e) => handleUpdateSigner(signer.id, 'ordering', parseInt(e.target.value) || 1)}
                                             />
                                         </div>
                                         <h4>Người ký {index + 1}</h4>
@@ -729,7 +896,7 @@ function CoordinateAssigners({
                                             <input
                                                 type="text"
                                                 value={signer.fullName || ''}
-                                                onChange={(e) => updateSigner && updateSigner(signer.id, 'fullName', e.target.value)}
+                                                onChange={(e) => handleUpdateSigner(signer.id, 'fullName', e.target.value)}
                                                 placeholder="Nhập họ và tên"
                                             />
                                         </div>
@@ -739,14 +906,14 @@ function CoordinateAssigners({
                                                 <input
                                                     type="tel"
                                                     value={signer.phone || ''}
-                                                    onChange={(e) => updateSigner && updateSigner(signer.id, 'phone', e.target.value)}
+                                                    onChange={(e) => handleUpdateSigner(signer.id, 'phone', e.target.value)}
                                                     placeholder="Nhập số điện thoại"
                                                 />
                                             ) : (
                                                 <input
                                                     type="email"
                                                     value={signer.email || ''}
-                                                    onChange={(e) => updateSigner && updateSigner(signer.id, 'email', e.target.value)}
+                                                    onChange={(e) => handleUpdateSigner(signer.id, 'email', e.target.value)}
                                                     placeholder="Nhập email"
                                                 />
                                             )}
@@ -757,7 +924,7 @@ function CoordinateAssigners({
                                             <label>Loại ký *</label>
                                             <select
                                                 value={signer.signType || 'hsm'}
-                                                onChange={(e) => updateSigner && updateSigner(signer.id, 'signType', e.target.value)}
+                                                onChange={(e) => handleUpdateSigner(signer.id, 'signType', e.target.value)}
                                                 className="coordinate-select"
                                             >
                                                 <option value="hsm">Chứng thư số HSM</option>
@@ -775,7 +942,7 @@ function CoordinateAssigners({
                                                 <input
                                                     type="tel"
                                                     value={signer.phone || ''}
-                                                    onChange={(e) => updateSigner && updateSigner(signer.id, 'phone', e.target.value)}
+                                                    onChange={(e) => handleUpdateSigner(signer.id, 'phone', e.target.value)}
                                                     placeholder="Nhập số điện thoại"
                                                 />
                                             </div>
@@ -812,7 +979,7 @@ function CoordinateAssigners({
                                                 type="number"
                                                 min="1"
                                                 value={clerk.ordering || index + 1}
-                                                onChange={(e) => updateClerk && updateClerk(clerk.id, 'ordering', parseInt(e.target.value) || 1)}
+                                                onChange={(e) => handleUpdateClerk(clerk.id, 'ordering', parseInt(e.target.value) || 1)}
                                             />
                                         </div>
                                         <h4>Văn thư {index + 1}</h4>
@@ -831,7 +998,7 @@ function CoordinateAssigners({
                                             <input
                                                 type="text"
                                                 value={clerk.fullName || ''}
-                                                onChange={(e) => updateClerk && updateClerk(clerk.id, 'fullName', e.target.value)}
+                                                onChange={(e) => handleUpdateClerk(clerk.id, 'fullName', e.target.value)}
                                                 placeholder="Nhập họ và tên"
                                             />
                                         </div>
@@ -840,7 +1007,7 @@ function CoordinateAssigners({
                                             <input
                                                 type="email"
                                                 value={clerk.email || ''}
-                                                onChange={(e) => updateClerk && updateClerk(clerk.id, 'email', e.target.value)}
+                                                onChange={(e) => handleUpdateClerk(clerk.id, 'email', e.target.value)}
                                                 placeholder="Nhập email"
                                             />
                                         </div>
@@ -850,7 +1017,7 @@ function CoordinateAssigners({
                                             <label>Loại ký *</label>
                                             <select
                                                 value={clerk.signType || 'hsm'}
-                                                onChange={(e) => updateClerk && updateClerk(clerk.id, 'signType', e.target.value)}
+                                                onChange={(e) => handleUpdateClerk(clerk.id, 'signType', e.target.value)}
                                                 className="coordinate-select"
                                             >
                                                 <option value="hsm">Chứng thư số HSM</option>
@@ -867,7 +1034,7 @@ function CoordinateAssigners({
                                             <input
                                                 type="tel"
                                                 value={clerk.phone || ''}
-                                                onChange={(e) => updateClerk && updateClerk(clerk.id, 'phone', e.target.value)}
+                                                onChange={(e) => handleUpdateClerk(clerk.id, 'phone', e.target.value)}
                                                 placeholder="Nhập số điện thoại"
                                             />
                                         </div>
