@@ -54,6 +54,75 @@ function RejectReviewDialog({
     const [reasonError, setReasonError] = useState('');
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, durationMs);
+    };
+
+    const removeToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
+
+    const ToastStack = () => (
+        <>
+            {!!toasts.length && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 24,
+                        right: 24,
+                        zIndex: 11000,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8
+                    }}
+                >
+                    {toasts.map((t) => (
+                        <div
+                            key={t.id}
+                            style={{
+                                minWidth: 240,
+                                maxWidth: 380,
+                                padding: '10px 14px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : t.variant === 'warning' ? '#664d03' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : t.variant === 'warning' ? '#fff3cd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : t.variant === 'warning' ? '#ffecb5' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '18px',
+                                    cursor: 'pointer',
+                                    marginLeft: 10,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </>
+    );
 
     useEffect(() => {
         if (!open) {
@@ -437,13 +506,15 @@ function RejectReviewDialog({
             }
             
             // Success
-            alert('Từ chối hợp đồng thành công!');
-            onRejected();
-            onClose();
+            showToast('Từ chối hợp đồng thành công!', 'success');
+            setTimeout(() => {
+                onRejected();
+                onClose();
+            }, 1200);
             
         } catch (error) {
             console.error('Error submitting rejection:', error);
-            alert(error.message || 'Có lỗi xảy ra khi xử lý từ chối');
+            showToast(error.message || 'Có lỗi xảy ra khi xử lý từ chối', 'error');
         } finally {
             setLoading(false);
             setUploadProgress('');
@@ -462,6 +533,7 @@ function RejectReviewDialog({
 
     return (
         <div className="reject-dialog-overlay">
+            <ToastStack />
             <div className="reject-dialog-container">
                 {/* Header */}
                 <div className="reject-dialog-header">
