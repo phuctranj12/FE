@@ -4,11 +4,14 @@ import Document from './document';
 
 const STATUS_ROUTE_MAP = {
     draft: 0,
-    processing: 1,
-    complete: 2,
-    fail: 3,
-    validate: 4,
-    waiting: 5
+    created: 10,
+    processing: 20,
+    signed: 30,
+    liquidated: 40,
+    rejected: 31,
+    cancel: 32,
+    "about-expire": 1,
+    expire: 2,
 };
 
 function DocumentStatusRoute() {

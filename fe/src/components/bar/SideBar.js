@@ -2,6 +2,19 @@ import React, { useState } from "react";
 import "../../styles/sideBar.css";
 import { useNavigate } from "react-router-dom";
 import Button from "../common/Button";
+
+const CREATED_MENU_ITEMS = [
+    { status: 0, slug: "draft", label: "Bản nháp" },
+    { status: 10, slug: "created", label: "Đã tạo" },
+    { status: 20, slug: "processing", label: "Đang xử lý" },
+    { status: 30, slug: "signed", label: "Hoàn thành" },
+    { status: 40, slug: "liquidated", label: "Thanh lý" },
+    { status: 31, slug: "rejected", label: "Từ chối" },
+    { status: 32, slug: "cancel", label: "Hủy bỏ" },
+    { status: 1, slug: "about-expire", label: "Sắp hết hạn" },
+    { status: 2, slug: "expire", label: "Hết hạn" },
+];
+
 function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus, setBreadcrumb }) {
     const [activeMenu, setActiveMenu] = useState(null);
     const navigate = useNavigate();
@@ -52,60 +65,18 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 </div>
                 {activeMenu === "tao" && (
                     <div className="submenu">
-                        <div
-                            className="subitem"
-                            onClick={() => {
-                                handleSelect(0);
-                                handleNavigation('/main/contract/create/draft');
-                            }}
-                        >
-                            Bản nháp
-                        </div>
-                        <div
-                            className="subitem"
-                            onClick={() => {
-                                handleSelect(1);
-                                handleNavigation('/main/contract/create/processing');
-                            }}
-                        >
-                            Đang xử lý
-                        </div>
-                        <div
-                            className="subitem"
-                            onClick={() => {
-                                handleSelect(2);
-                                handleNavigation('/main/contract/create/complete');
-                            }}
-                        >
-                            Đã xử lý
-                        </div>
-                        <div
-                            className="subitem"
-                            onClick={() => {
-                                handleSelect(3);
-                                handleNavigation('/main/contract/create/fail');
-                            }}
-                        >
-                            Từ chối
-                        </div>
-                        <div
-                            className="subitem"
-                            onClick={() => {
-                                handleSelect(4);
-                                handleNavigation('/main/contract/create/validate');
-                            }}
-                        >
-                            Xác Thực
-                        </div>
-                        <div
-                            className="subitem"
-                            onClick={() => {
-                                handleSelect(5);
-                                handleNavigation('/main/contract/create/waiting');
-                            }}
-                        >
-                            Chờ
-                        </div>
+                        {CREATED_MENU_ITEMS.map((item) => (
+                            <div
+                                key={item.status}
+                                className="subitem"
+                                onClick={() => {
+                                    handleSelect(item.status);
+                                    handleNavigation(`/main/contract/create/${item.slug}`);
+                                }}
+                            >
+                                {item.label}
+                            </div>
+                        ))}
                     </div>
                 )}
 
