@@ -267,6 +267,64 @@ function CoordinateAssigners({
         updateClerk && updateClerk(id, field, value);
     };
 
+    const mapRecipientForPayload = (recipient) => ({
+        id: recipient.id,
+        name: recipient.name || recipient.fullName || '',
+        email: recipient.email || '',
+        phone: recipient.phone || '',
+        cardId: recipient.cardId || recipient.card_id || '',
+        role: recipient.role,
+        ordering: recipient.ordering || 1,
+        status: typeof recipient.status === 'number' ? recipient.status : 1,
+        signType: recipient.signType === 'hsm' ? 6 : recipient.signType || 6
+    });
+
+    const buildParticipantPayload = (newRecipientsPayload) => {
+        const participants = [];
+        const existingParticipants = Array.isArray(allParticipants) ? allParticipants : [];
+        let partnerHandled = false;
+
+        existingParticipants.forEach((participant) => {
+            const isPartner = participantInfo?.id && participant.id === participantInfo.id;
+            const baseRecipients = (participant.recipients || []).map(mapRecipientForPayload);
+            const recipients = isPartner
+                ? [...baseRecipients, ...newRecipientsPayload]
+                : baseRecipients;
+
+            participants.push({
+                name: participant.name || '',
+                id: participant.id,
+                type: participant.type || 2,
+                ordering: participant.ordering || 1,
+                status: participant.status ?? 1,
+                contractId,
+                recipients
+            });
+
+            if (isPartner) {
+                partnerHandled = true;
+            }
+        });
+
+        if (!partnerHandled) {
+            const existingRecipients = (existingPartnerRecipients || []).map(mapRecipientForPayload);
+            participants.push({
+                name: partner || participantInfo?.name || 'Đối tác',
+                id: participantInfo?.id,
+                type: participantInfo?.type || 2,
+                ordering: participantInfo?.ordering || 2,
+                status: participantInfo?.status ?? 1,
+                contractId,
+                recipients: [
+                    ...existingRecipients,
+                    ...newRecipientsPayload
+                ]
+            });
+        }
+
+        return participants;
+    };
+
     // Xử lý điều phối hợp đồng
     const handleCoordinate = async () => {
         if (!currentParticipantId || !recipientId) {
@@ -340,22 +398,22 @@ function CoordinateAssigners({
                 ...clerks.map(c => ({ ...c, role: 4 })) // Role 4: Văn thư
             ];
 
+            const signersMissingCardId = signers.filter((signer) => {
+                const hasInfo = signer.fullName?.trim() || signer.email?.trim() || signer.phone?.trim();
+                if (!hasInfo) return false;
+                const cardValue = signer.card_id ?? signer.cardId;
+                return !cardValue || !cardValue.toString().trim();
+            });
+
+            if (signersMissingCardId.length > 0) {
+                setError('Vui lòng nhập Mã số thuế/CMT/CCCD cho tất cả người ký.');
+                return;
+            }
+
             if (allRecipients.length > 0) {
                 try {
                     setLoading(true);
                     setError(null);
-
-                    const existingRecipientPayload = existingPartnerRecipients.map(recipient => ({
-                        id: recipient.id,
-                        name: recipient.name || '',
-                        email: recipient.email || '',
-                        phone: recipient.phone || '',
-                        cardId: recipient.cardId || recipient.card_id || '',
-                        role: recipient.role,
-                        ordering: recipient.ordering || 1,
-                        status: typeof recipient.status === 'number' ? recipient.status : 1,
-                        signType: recipient.signType || 6
-                    }));
 
                     const newRecipientsPayload = allRecipients.map(person => ({
                         name: person.fullName || person.name || '',
@@ -368,25 +426,19 @@ function CoordinateAssigners({
                         signType: person.signType === 'hsm' ? 6 : person.signType || 6
                     }));
 
-                    // Chuẩn bị payload cho API tạo participant
-                    const participantPayload = [{
-                        name: partner || participantInfo?.name || 'Đối tác',
-                        id: participantInfo?.id,
-                        type: participantInfo?.type || 2, // Type 2: Đối tác
-                        ordering: participantInfo?.ordering || 2, // Thứ tự sau "Tổ chức của tôi" (ordering = 1)
-                        status: participantInfo?.status ?? 1, // Status 1: Active
-                        contractId: contractId,
-                        recipients: [
-                            ...existingRecipientPayload,
-                            ...newRecipientsPayload
-                        ]
-                    }];
+                    // Chuẩn bị payload cho API tạo participant (bao gồm tất cả tổ chức)
+                    const participantPayload = buildParticipantPayload(newRecipientsPayload);
 
                     const response = await contractService.createParticipant(contractId, participantPayload);
                     if (response?.code === 'SUCCESS') {
+                        // Cập nhật lại danh sách tất cả participants cho step 2
+                        const participantsFromResponse = response.data || [];
+                        setAllParticipants(participantsFromResponse);
+
                         // Lưu lại recipients đã được tạo với ID từ backend
-                        const newRecipients = response.data?.flatMap(p => p.recipients) || [];
+                        const newRecipients = participantsFromResponse.flatMap(p => p.recipients || []);
                         setCreatedRecipients(newRecipients);
+
                         if (onNext) {
                             onNext();
                         }
@@ -506,6 +558,7 @@ function CoordinateAssigners({
                 onFieldsChange={handleDocumentFieldsChange}
                 hideFooter={true}
                 lockedFieldIds={lockedFieldIds}
+                showLockedBadge={false}
             />
         </div>
     );
@@ -926,7 +979,7 @@ function CoordinateAssigners({
                                                 onChange={(e) => handleUpdateSigner(signer.id, 'signType', e.target.value)}
                                                 className="coordinate-select"
                                             >
-                                                <option value="hsm">Chứng thư số HSM</option>
+                                                <option value="hsm">Chứng thư số server</option>
                                             </select>
                                             <div className="coordinate-warning-text">
                                                 Lưu ý: bạn chỉ được phép chọn 1 kiểu ký số!
@@ -946,6 +999,17 @@ function CoordinateAssigners({
                                                 />
                                             </div>
                                         )}
+                                    </div>
+                                    <div className="coordinate-form-row">
+                                        <div className="coordinate-form-group">
+                                            <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
+                                            <input
+                                                type="text"
+                                                value={signer.card_id || signer.cardId || ''}
+                                                onChange={(e) => handleUpdateSigner(signer.id, 'card_id', e.target.value)}
+                                                placeholder="Nhập Mã số thuế/CMT/CCCD"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

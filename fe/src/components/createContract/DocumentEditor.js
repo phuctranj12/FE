@@ -17,7 +17,8 @@ function DocumentEditor({
     onSaveDraft, 
     hideFooter = false,
     lockedFieldIds = [],
-    onAssignmentStateChange = null
+    onAssignmentStateChange = null,
+    showLockedBadge = true
 }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -153,8 +154,8 @@ function DocumentEditor({
     const recipientsList = useMemo(() => getRecipientsList(), [participantsData]);
     const SIGNER_ALLOWED_ROLES = [3, 4];
     const signerRecipients = recipientsList.filter(recipient => SIGNER_ALLOWED_ROLES.includes(recipient.role));
-    const getActiveRecipientList = () => {
-        if (selectedComponent && (selectedComponent.id === 'digital-signature' || selectedComponent.id === 'image-signature')) {
+    const getActiveRecipientList = (componentId = selectedComponent?.id) => {
+        if (componentId === 'digital-signature' || componentId === 'image-signature') {
             return signerRecipients;
         }
         return recipientsList;
@@ -1211,6 +1212,7 @@ function DocumentEditor({
                                 onResizeStart={handleResizeStart}
                                 onRemoveComponent={handleRemoveComponent}
                                 autoFitWidth={true}
+                                showLockedBadge={showLockedBadge}
                             />
                                 </div>
                             )}
@@ -1348,7 +1350,7 @@ function DocumentEditor({
                                 {(selectedComponent.id === 'image-signature' || selectedComponent.id === 'digital-signature') && (
                                         <div className="property-group">
                                             <label className="property-label">
-                                                NGƯỜI KÝ: <span className="required">*</span>
+                                                NGƯỜI KÝ / VĂN THƯ: <span className="required">*</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -1358,7 +1360,7 @@ function DocumentEditor({
                                                 onChange={(e) => handleRecipientSearchChange(e.target.value)}
                                                 onBlur={() => {
                                                     // Nếu không tìm thấy recipient, reset về giá trị hiện tại
-                                                    if (!recipientSearchValue || !recipientsList.find(r => r.name === recipientSearchValue)) {
+                                                    if (!recipientSearchValue || !signerRecipients.find(r => r.name === recipientSearchValue)) {
                                                         setRecipientSearchValue(getRecipientNameById(componentProperties.signer));
                                                     }
                                                 }}
@@ -1369,7 +1371,7 @@ function DocumentEditor({
                                                     <option key={idx} value={suggestion} onClick={() => handleSuggestionSelect(suggestion)} />
                                                 ))}
                                             </datalist>
-                                            {recipientsList.length > 0 && (
+                                            {signerRecipients.length > 0 && (
                                                 <select 
                                                     className="property-input"
                                                     style={{ marginTop: '8px' }}
@@ -1380,7 +1382,7 @@ function DocumentEditor({
                                                     }}
                                                 >
                                                     <option value="">Hoặc chọn từ danh sách</option>
-                                                    {recipientsList.map(recipient => (
+                                                    {signerRecipients.map(recipient => (
                                                         <option key={recipient.id} value={recipient.id}>
                                                             {recipient.name} ({recipient.roleName})
                                                         </option>

@@ -22,9 +22,10 @@ function PDFViewer({
     onComponentMouseLeave,
     onResizeStart,
     onRemoveComponent,
-    autoFitWidth = false, // New prop to enable auto-fit-to-width
+    autoFitWidth = false, // New prop to enable auto-fit-to-width,
     onScaleChange = null, // Callback to notify parent of scale changes
-    focusComponentId = null
+    focusComponentId = null,
+    showLockedBadge = true
 }) {
     const [numPages, setNumPages] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -288,7 +289,7 @@ function PDFViewer({
                                             }
                                         </div>
                                         
-                                        {isLocked && (component.recipient?.name || component.name) && (
+                                        {showLockedBadge && isLocked && (component.recipient?.name || component.name) && (
                                             <div
                                                 className="locked-badge"
                                                 style={{
