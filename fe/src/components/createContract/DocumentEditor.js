@@ -46,6 +46,74 @@ function DocumentEditor({
     // Ref cho PDF viewer container để scroll
     const pdfViewerContainerRef = useRef(null);
 
+    const DEFAULT_COMPONENT_WIDTH = 260;
+    const DEFAULT_COMPONENT_HEIGHT = 70;
+
+    const createCenteredProperties = (overrides = {}) => {
+        const minWidth = 50;
+        const minHeight = 20;
+        const width = Math.max(overrides.width ?? DEFAULT_COMPONENT_WIDTH, minWidth);
+        const height = Math.max(overrides.height ?? DEFAULT_COMPONENT_HEIGHT, minHeight);
+        const { x, y } = getCenteredPosition(width, height);
+
+        return {
+            signer: '',
+            recipientId: null,
+            font: 'Times New Roman',
+            size: 13,
+            x,
+            y,
+            width,
+            height,
+            page: currentPage,
+            ...overrides
+        };
+    };
+
+    const getCenteredPosition = (width = DEFAULT_COMPONENT_WIDTH, height = DEFAULT_COMPONENT_HEIGHT) => {
+        const fallbackCenter = {
+            x: Math.max(0, (800 - width) / 2),
+            y: Math.max(0, (600 - height) / 2)
+        };
+
+        const pdfContainer = pdfViewerContainerRef.current;
+        if (!pdfContainer) {
+            return fallbackCenter;
+        }
+
+        const safePageIndex = Math.max(0, (currentPage || 1) - 1);
+        const pageSelector = `[data-page-index="${safePageIndex}"]`;
+        const globalDocument = typeof document !== 'undefined' ? document : null;
+        const pageElement = pdfContainer.querySelector(pageSelector) || globalDocument?.querySelector(pageSelector);
+        const targetElement = pageElement?.querySelector('canvas, .page, .react-pdf__Page') || pageElement;
+
+        const targetWidth = targetElement?.clientWidth;
+        const targetHeight = targetElement?.clientHeight;
+
+        if (!targetElement || !targetWidth || !targetHeight) {
+            return fallbackCenter;
+        }
+
+        const pdfRect = pdfContainer.getBoundingClientRect();
+        const targetRect = targetElement.getBoundingClientRect();
+        const scrollLeft = pdfContainer.scrollLeft || 0;
+        const scrollTop = pdfContainer.scrollTop || 0;
+
+        const pageOffsetLeft = (targetRect.left - pdfRect.left) + scrollLeft;
+        const pageOffsetTop = (targetRect.top - pdfRect.top) + scrollTop;
+
+        const viewportCenterLeft = scrollLeft + (pdfContainer.clientWidth / 2);
+        const viewportCenterTop = scrollTop + (pdfContainer.clientHeight / 2);
+
+        const relativeCenterX = viewportCenterLeft - pageOffsetLeft - (width / 2);
+        const relativeCenterY = viewportCenterTop - pageOffsetTop - (height / 2);
+
+        return {
+            x: Math.max(0, Math.min(targetWidth - width, relativeCenterX)),
+            y: Math.max(0, Math.min(targetHeight - height, relativeCenterY))
+        };
+    };
+
     // Map component types sang field types theo CreateContractFlow.md
     const getFieldType = (componentId) => {
         const typeMap = {
@@ -81,6 +149,14 @@ function DocumentEditor({
     };
 
     const recipientsList = getRecipientsList();
+    const SIGNER_ALLOWED_ROLES = [3, 4];
+    const signerRecipients = recipientsList.filter(recipient => SIGNER_ALLOWED_ROLES.includes(recipient.role));
+    const getActiveRecipientList = () => {
+        if (selectedComponent && (selectedComponent.id === 'digital-signature' || selectedComponent.id === 'image-signature')) {
+            return signerRecipients;
+        }
+        return recipientsList;
+    };
 
     // Dữ liệu mẫu cho các thành phần có thể kéo thả
     const availableComponents = [
@@ -163,12 +239,10 @@ function DocumentEditor({
         if (component.autoCreate) {
             // Tính toán vị trí giữa màn hình (giả sử PDF viewer có width ~800px, height ~600px)
             // Vị trí giữa: x = 400 - width/2, y = 300 - height/2
-            const defaultWidth = 150;
-            const defaultHeight = 30;
-            const centerX = 400 - defaultWidth / 2;
-            const centerY = 300 - defaultHeight / 2;
-            
             const ordering = documentComponents.length + 1;
+            const centeredProperties = createCenteredProperties({
+                fieldName: component.id === 'document-number' ? 'Số tài liệu' : ''
+            });
             
             const newComponent = {
                 id: Date.now(),
@@ -176,15 +250,7 @@ function DocumentEditor({
                 name: component.name,
                 page: currentPage,
                 properties: {
-                    signer: '',
-                    recipientId: null,
-                    font: 'Times New Roman',
-                    size: 13,
-                    x: centerX,
-                    y: centerY,
-                    width: defaultWidth,
-                    height: defaultHeight,
-                    page: currentPage,
+                    ...centeredProperties,
                     ordering: ordering,
                     fieldName: component.id === 'document-number' ? 'Số tài liệu' : ''
                 }
@@ -193,7 +259,7 @@ function DocumentEditor({
             setDocumentComponents(prev => [...prev, newComponent]);
             setSelectedComponent(component);
             setEditingComponentId(newComponent.id);
-            setComponentProperties(newComponent.properties);
+            setComponentProperties(centeredProperties);
             setRecipientSearchValue('');
             setNameSuggestions([]);
         } else {
@@ -202,15 +268,7 @@ function DocumentEditor({
             setEditingComponentId(null);
             setRecipientSearchValue('');
             setNameSuggestions([]);
-            setComponentProperties({
-                signer: '',
-                font: 'Times New Roman',
-                size: 13,
-                x: 0,
-                y: 0,
-                width: 0,
-                height: 0
-            });
+            setComponentProperties(createCenteredProperties());
         }
     };
 
@@ -263,8 +321,10 @@ function DocumentEditor({
         setRecipientSearchValue(value);
         fetchSuggestions(value);
         
-        // Tìm recipient trong recipientsList theo tên
-        const foundRecipient = recipientsList.find(recipient => 
+        const targetList = getActiveRecipientList();
+
+        // Tìm recipient trong danh sách phù hợp theo tên
+        const foundRecipient = targetList.find(recipient => 
             recipient.name.toLowerCase().includes(value.toLowerCase())
         );
         
@@ -278,8 +338,10 @@ function DocumentEditor({
         setRecipientSearchValue(suggestionName);
         setNameSuggestions([]);
         
-        // Tìm recipient trong recipientsList theo tên chính xác
-        const foundRecipient = recipientsList.find(recipient => 
+        const targetList = getActiveRecipientList();
+
+        // Tìm recipient trong danh sách phù hợp theo tên chính xác
+        const foundRecipient = targetList.find(recipient => 
             recipient.name === suggestionName
         );
         
@@ -672,6 +734,10 @@ function DocumentEditor({
     const handleSignatureOptionClick = (option) => {
         console.log('handleSignatureOptionClick', option);
         if (selectedComponent) {
+            const width = Math.max(componentProperties.width || DEFAULT_COMPONENT_WIDTH, 50);
+            const height = Math.max(componentProperties.height || DEFAULT_COMPONENT_HEIGHT, 20);
+            const { x, y } = getCenteredPosition(width, height);
+
             const newComponent = {
                 id: Date.now(),
                 type: selectedComponent.id,
@@ -680,8 +746,12 @@ function DocumentEditor({
                 locked: false,
                 properties: { 
                     ...componentProperties,
-                    width: Math.max(componentProperties.width || 100, 50),
-                    height: Math.max(componentProperties.height || 30, 20)
+                    width,
+                    height,
+                    x,
+                    y,
+                    page: currentPage,
+                    ordering: documentComponents.length + 1
                 }
             };
             setDocumentComponents(prev => [...prev, newComponent]);
@@ -971,6 +1041,7 @@ function DocumentEditor({
                                             if (component.hasDropdown) {
                                                 e.stopPropagation();
                                                 setSelectedComponent(component);
+                                                setComponentProperties(createCenteredProperties());
                                                 const rect = e.target.getBoundingClientRect();
                                                 setDropdownPosition({
                                                     top: rect.top,
@@ -1148,7 +1219,7 @@ function DocumentEditor({
                                                     <option key={idx} value={suggestion} onClick={() => handleSuggestionSelect(suggestion)} />
                                                 ))}
                                             </datalist>
-                                            {recipientsList.length > 0 && (
+                                            {signerRecipients.length > 0 && (
                                                 <select 
                                                     className="property-input"
                                                     style={{ marginTop: '8px' }}
@@ -1159,7 +1230,7 @@ function DocumentEditor({
                                                     }}
                                                 >
                                                     <option value="">Hoặc chọn từ danh sách</option>
-                                                    {recipientsList.map(recipient => (
+                                                    {signerRecipients.map(recipient => (
                                                         <option key={recipient.id} value={recipient.id}>
                                                             {recipient.name} ({recipient.roleName})
                                                         </option>
