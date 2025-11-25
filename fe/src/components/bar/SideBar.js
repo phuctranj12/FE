@@ -5,10 +5,8 @@ import Button from "../common/Button";
 
 const CREATED_MENU_ITEMS = [
     { status: 0, slug: "draft", label: "Bản nháp" },
-    { status: 10, slug: "created", label: "Đã tạo" },
     { status: 20, slug: "processing", label: "Đang xử lý" },
     { status: 30, slug: "signed", label: "Hoàn thành" },
-    { status: 40, slug: "liquidated", label: "Thanh lý" },
     { status: 31, slug: "rejected", label: "Từ chối" },
     { status: 32, slug: "cancel", label: "Hủy bỏ" },
     { status: 1, slug: "about-expire", label: "Sắp hết hạn" },
