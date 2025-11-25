@@ -6,7 +6,6 @@ import Button from '../common/Button';
 const ViewRolePanel = ({ role, onCancel, allPermissions = [] }) => {
     const [formData, setFormData] = useState({
         roleName: '',
-        roleCode: '',
         note: '',
         permissions: []
     });
@@ -21,7 +20,6 @@ const ViewRolePanel = ({ role, onCancel, allPermissions = [] }) => {
                 : [];
         setFormData({
             roleName: role.name || '',
-            roleCode: role.code || '',
             note: role.note || '',
             permissions: permissionIds
         });
@@ -54,15 +52,6 @@ const ViewRolePanel = ({ role, onCancel, allPermissions = [] }) => {
                             <SearchBar 
                                 placeholder="Tên vai trò" 
                                 value={formData.roleName} 
-                                onChange={() => {}} 
-                                disabled
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Mã vai trò</label>
-                            <SearchBar 
-                                placeholder="Mã vai trò" 
-                                value={formData.roleCode} 
                                 onChange={() => {}} 
                                 disabled
                             />

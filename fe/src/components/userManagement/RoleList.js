@@ -15,7 +15,6 @@ const RoleList = ({ onAddNew }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(15);
     const [searchName, setSearchName] = useState('');
-    const [searchCode, setSearchCode] = useState('');
     const [showAddRole, setShowAddRole] = useState(false);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
@@ -55,7 +54,7 @@ const RoleList = ({ onAddNew }) => {
     const fetchRoles = async () => {
         setLoading(true);
         try {
-            const textSearch = (searchName || searchCode || '').trim();
+            const textSearch = (searchName || '').trim();
             const response = await customerService.getAllRoles({
                 textSearch,
                 page: currentPage - 1,
@@ -199,9 +198,6 @@ const RoleList = ({ onAddNew }) => {
                     <div style={{ flex: '1 1 320px', minWidth: 220 }}>
                         <SearchBar placeholder="Tên vai trò" value={searchName} onChange={setSearchName} />
                     </div>
-                    <div style={{ flex: '1 1 320px', minWidth: 220 }}>
-                        <SearchBar placeholder="Mã vai trò" value={searchCode} onChange={setSearchCode} />
-                    </div>
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
                         <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" onClick={handleSearch} />
                         <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => setShowAddRole(true)} />
@@ -212,7 +208,7 @@ const RoleList = ({ onAddNew }) => {
                     <div style={{ padding: '12px' }}>Đang tải...</div>
                 )}
                 <BaseTable
-                    columns={[ 'Tên vai trò', 'Mã vai trò', 'Quản lý' ]}
+                    columns={[ 'Tên vai trò', 'Chỉnh sửa / Xóa' ]}
                     data={getPaginatedData().map(role => ([
                         (<span 
                             key={`name-${role.id}`}
@@ -221,7 +217,6 @@ const RoleList = ({ onAddNew }) => {
                         >
                             {role.name}
                         </span>),
-                        role.code,
                         (
                             <div key={`actions-${role.id}`} className="action-buttons-cell">
                                 <button 
