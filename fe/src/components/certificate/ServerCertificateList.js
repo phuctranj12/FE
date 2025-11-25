@@ -3,14 +3,13 @@ import "../../styles/document.css";
 import "../../styles/table.css";
 import SearchBar from "../common/SearchBar";
 import Button from "../common/Button";
-import ActionMenu from "../document/ActionMenu";
 import certificateService from "../../api/serverCertificateService";
-
+import CertificateActionMenu from "./CertificateActionMenu";
 // Modals
 import CertificateDetailsModal from "./CertificateDetailsModal";
 import AssignUsersModal from "./AssignUsersModal";
 import ImportCertModal from "./ImportCertModal";
-
+import UpdateCertificateModal from "./UpdateCertificateModal";
 function ServerCertificateList() {
     const [signSearch, setSignSearch] = useState("");
     const [subjectSearch, setSubjectSearch] = useState("");
@@ -26,11 +25,15 @@ function ServerCertificateList() {
     const [openAssign, setOpenAssign] = useState(false);
     const [openImport, setOpenImport] = useState(false);
     const [selectedCertId, setSelectedCertId] = useState(null);
+    const [openUpdate, setOpenUpdate] = useState(false);
+    const [selectedCertificate, setSelectedCertificate] = useState(null);
+
 
     // Load list cert
     const loadCertificates = async () => {
         try {
             const data = await certificateService.getAllCertificates();
+            console.log("Danh sách chứng thư số tải về:", data);
             const arr = data.certificates || [];
             setAllCertificates(arr);
             setFiltered(arr);
@@ -50,19 +53,25 @@ function ServerCertificateList() {
         if (signSearch.trim()) {
             const term = signSearch.toLowerCase();
             filteredData = filteredData.filter((c) =>
-                c.signId?.toLowerCase().includes(term)
+                c.keyStoreFileName?.toLowerCase().includes(term)
             );
         }
 
         if (subjectSearch.trim()) {
             const term = subjectSearch.toLowerCase();
-            filteredData = filteredData.filter((c) =>
-                c.subject?.toLowerCase().includes(term)
-            );
+            filteredData = filteredData.filter((c) => {
+                const cnMatch = c.certInformation?.match(/CN=([^,]+)/);
+                const subject = cnMatch ? cnMatch[1] : "";
+                return subject.toLowerCase().includes(term);
+            });
         }
 
         if (statusFilter !== "Tất cả") {
-            filteredData = filteredData.filter((c) => c.status === statusFilter);
+            filteredData = filteredData.filter(
+                (c) =>
+                    (statusFilter === "Hoạt động" && c.status === 1) ||
+                    (statusFilter === "Không hoạt động" && c.status !== 1)
+            );
         }
 
         setFiltered(filteredData);
@@ -83,6 +92,11 @@ function ServerCertificateList() {
         setSelectedCertId(id);
         setOpenDetails(true);
     };
+    const handleOpenUpdate = (id) => {
+        setSelectedCertId(id);
+        setOpenUpdate(true);
+    };
+
 
     const handleOpenAssign = (id) => {
         setSelectedCertId(id);
@@ -179,23 +193,47 @@ function ServerCertificateList() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentCerts.map((c, index) => (
-                                    <tr key={index} className="document-row">
-                                        <td className="document-title-cell">{c.signId}</td>
-                                        <td>{c.subject}</td>
-                                        <td>{c.mst}</td>
-                                        <td>{formatDate(c.startDate)}</td>
-                                        <td>{formatDate(c.endDate)}</td>
-                                        <td>{c.status || "Hoạt động"}</td>
-                                        <td>
-                                            <ActionMenu
-                                                onViewFlow={() => handleOpenDetails(c.id)}
-                                                onEdit={() => handleOpenAssign(c.id)}
-                                                onDelete={() => console.log("Xóa:", c.id)}
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
+                                {currentCerts.map((c, index) => {
+                                    const info = c.certInformation || "";
+                                    const cnMatch = info.match(/CN=([^,]+)/);
+                                    const cccdMatch = info.match(/UID=CCCD:([^,]+)/);
+                                    const mstMatch = info.match(/UID=MST:([^,]+)/);
+
+                                    const subject = cnMatch ? cnMatch[1] : "";
+                                    const cccd = cccdMatch ? cccdMatch[1] : "";
+                                    const mst = mstMatch ? mstMatch[1] : "";
+
+                                    const statusText = c.status === 1 ? "Hoạt động" : "Không hoạt động";
+
+                                    return (
+                                        <tr key={index} className="document-row"
+                                            onClick={() => handleOpenDetails(c.id)}
+                                        >
+                                            <td className="document-title-cell">{c.keystoreSerialNumber}</td>
+                                            <td>{subject}</td>
+                                            <td>{cccd || mst}</td>
+                                            <td>{formatDate(c.keystoreDateStart)}</td>
+                                            <td>{formatDate(c.keystoreDateEnd)}</td>
+                                            <td>{statusText}</td>
+                                            <td>
+                                                {/* <CertificateActionMenu
+                                                    onViewDetails={() => handleOpenDetails(c.id)}
+                                                    onAssignUsers={() => handleOpenAssign(c.id)}
+                                                    onDelete={() => console.log("Xóa:", c.id)}
+                                                /> */}
+                                                <div
+                                                    style={{ color: "blue", cursor: "pointer" }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();         // Không mở modal Details
+                                                        handleOpenUpdate(c.id);
+                                                    }}
+                                                >
+                                                    Cập nhật
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
 
@@ -225,6 +263,13 @@ function ServerCertificateList() {
             </div>
 
             {/* === MODALS === */}
+            <UpdateCertificateModal
+                open={openUpdate}
+                certificateId={selectedCertId}
+                onClose={() => setOpenUpdate(false)}
+                onUpdated={loadCertificates}
+            />
+
             <CertificateDetailsModal
                 open={openDetails}
                 certificateId={selectedCertId}

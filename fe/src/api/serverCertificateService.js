@@ -128,21 +128,24 @@ const certificateService = {
     // 8️⃣ Update user from cert
     updateUserFromCert: async ({ certificateId, status, emails = [] }) => {
         try {
-            const form = new FormData();
-            form.append("certificateId", certificateId);
-            form.append("status", status);
-            emails.forEach((e) => form.append("list_email", e));
-
             const token = localStorage.getItem('token');
-            const res = await apiClient.post("/certs/update-user-from-cert", form, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const params = new URLSearchParams();
+            params.append("certificateId", certificateId);
+            params.append("status", status);
+            emails.forEach((e) => params.append("list_email", e));
+
+            const res = await apiClient.post(
+                `contracts/certs/update-user-from-cert?${params.toString()}`,
+                null, // body null
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             return res.data?.data || res.data;
         } catch (error) {
             console.error('❌ Lỗi khi cập nhật user từ cert:', error);
             throw error.response?.data || error;
         }
     },
+
 
     // 9️⃣ Remove user from cert
     removeUserFromCert: async ({ certificateId, customerIds = [] }) => {
@@ -180,10 +183,11 @@ const certificateService = {
     findCertById: async (certificateId) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await apiClient.get("/certs/find-cert-by-id", {
+            const res = await apiClient.get("contracts/certs/find-cert-by-id", {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { certificateId }
             });
+            console.log('🚀 Dữ liệu chứng thư theo id :', res.data);
             return res.data?.data || res.data;
         } catch (error) {
             console.error('❌ Lỗi khi tìm cert theo ID:', error);

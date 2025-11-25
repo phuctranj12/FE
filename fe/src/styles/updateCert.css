@@ -1,0 +1,124 @@
+/* certificateUpdateModal.css */
+
+/* BACKDROP */
+.update-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+/* MODAL CONTAINER */
+.update-modal-container {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 25px 30px;
+  width: 600px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  animation: slideIn 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.update-modal-container h2 {
+  margin: 0 0 15px 0;
+  font-size: 20px;
+  color: #0B57D0;
+  text-align: center;
+}
+
+/* FORM INPUTS */
+.update-modal-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px 20px;
+}
+
+.update-modal-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #333;
+}
+
+.update-modal-form input,
+.update-modal-form select {
+  margin-top: 5px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s ease;
+}
+
+.update-modal-form input:focus,
+.update-modal-form select:focus {
+  border-color: #0B57D0;
+}
+
+/* FOOTER BUTTONS */
+.update-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.update-modal-footer button {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.update-modal-footer button:first-child {
+  background-color: #0B57D0;
+  color: #fff;
+}
+
+.update-modal-footer button:first-child:hover {
+  background-color: #084B9E;
+}
+
+.update-modal-footer button:last-child {
+  background-color: #eee;
+}
+
+.update-modal-footer button:last-child:hover {
+  background-color: #ccc;
+}
+
+/* ANIMATIONS */
+@keyframes fadeIn {
+  from {opacity: 0;}
+  to {opacity: 1;}
+}
+
+@keyframes slideIn {
+  from {transform: translateY(-20px); opacity: 0;}
+  to {transform: translateY(0); opacity: 1;}
+}
+
+/* RESPONSIVE */
+@media (max-width: 700px) {
+  .update-modal-form {
+    grid-template-columns: 1fr;
+  }
+  .update-modal-container {
+    padding: 20px;
+  }
+}

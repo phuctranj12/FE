@@ -148,16 +148,13 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 {activeMenu === "cauhinh" && (
                     <div className="submenu">
                         <div className="subitem" onClick={() => handleNavigation("/main/contract-type")}>Loại tài liệu</div>
-                        <div className="subitem" onClick={() => handleSelect("gui-sms-email")}>
-                            Cấu hình gửi SMS/Email
-                        </div>
+
                         <div className="subitem" onClick={() => {
                             handleSelectMenu("certificate");
                             handleNavigation("/main/server-certificate");
                         }}>
                             Danh sách chứng thư số Server
                         </div>
-                        <div className="subitem" onClick={() => handleSelect("webhook")}>Cấu hình WebHook</div>
                     </div>
                 )}
 
