@@ -412,6 +412,28 @@ function ContractDetail() {
         setCoordinateStep(1);
     };
 
+    // Label trạng thái hiển thị trên nút ở chế độ xem chi tiết (type = 'detail')
+    const getStatusButtonLabel = () => {
+        const status = contract?.status;
+        const statusMap = {
+            0: 'Bản nháp',
+            10: 'Đã tạo',
+            20: 'Đang xử lý',
+            30: 'Hoàn thành',
+            40: 'Thanh lý',
+            31: 'Từ chối',
+            32: 'Hủy bỏ',
+            1: 'Sắp hết hạn',
+            2: 'Hết hạn',
+            35: 'Scan',
+        };
+        // Nếu backend trả sẵn text thì dùng luôn
+        if (typeof status === 'string' && isNaN(Number(status))) {
+            return status;
+        }
+        return statusMap[Number(status)] || 'Đang ký';
+    };
+
     const handleBackFromCoordinate = () => {
         if (coordinateStep > 1) {
             setCoordinateStep(coordinateStep - 1);
@@ -765,33 +787,44 @@ function ContractDetail() {
                 </div>
 
                 {/* Nút hành động */}
-                <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <button className="edit-btn" onClick={handleDelegate}>
-                        Ủy quyền/Chuyển tiếp
-                    </button>
-                    <button className="edit-btn" onClick={handleFindSignFields}>
-                        Tìm ô ký
-                    </button>
-                    <button className="edit-btn" onClick={handleFindInfoFields}>
-                        Tìm ô thông tin
-                    </button>
-                    {type === 'review' ? (
-                        <button className="approve-btn" onClick={handleReviewClick}>
-                            Xác nhận
+                {type === 'detail' ? (
+                    <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button className="edit-btn" type="button" disabled>
+                            {getStatusButtonLabel()}
                         </button>
-                    ) : type === 'sign' ? (
-                        <button className="approve-btn" onClick={handleSignClick}>
-                            Ký hợp đồng
+                        <button className="edit-btn" onClick={handleBack}>
+                            Đóng
                         </button>
-                    ) : (
-                        <button className="finish-btn" onClick={handleCoordinate}>
-                            Điều phối
+                    </div>
+                ) : (
+                    <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button className="edit-btn" onClick={handleDelegate}>
+                            Ủy quyền/Chuyển tiếp
                         </button>
-                    )}
-                    <button className="edit-btn" onClick={handleBack}>
-                        Đóng
-                    </button>
-                </div>
+                        <button className="edit-btn" onClick={handleFindSignFields}>
+                            Tìm ô ký
+                        </button>
+                        <button className="edit-btn" onClick={handleFindInfoFields}>
+                            Tìm ô thông tin
+                        </button>
+                        {type === 'review' ? (
+                            <button className="approve-btn" onClick={handleReviewClick}>
+                                Xác nhận
+                            </button>
+                        ) : type === 'sign' ? (
+                            <button className="approve-btn" onClick={handleSignClick}>
+                                Ký hợp đồng
+                            </button>
+                        ) : (
+                            <button className="finish-btn" onClick={handleCoordinate}>
+                                Điều phối
+                            </button>
+                        )}
+                        <button className="edit-btn" onClick={handleBack}>
+                            Đóng
+                        </button>
+                    </div>
+                )}
             </div>
             </div>
             
