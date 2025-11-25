@@ -41,6 +41,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const [documentId, setDocumentId] = useState(null);
     const [participantsData, setParticipantsData] = useState([]);
     const [fieldsData, setFieldsData] = useState([]); // Lưu fields data từ bước 3
+    const [unassignedComponentCount, setUnassignedComponentCount] = useState(0);
     const [isDocumentNumberValid, setIsDocumentNumberValid] = useState(true);
     const [isCheckingDocumentNumber, setIsCheckingDocumentNumber] = useState(false);
 
@@ -899,12 +900,41 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             errors.push('Email hoặc số điện thoại của người ký không hợp lệ.');
         }
 
-        const invalidReviewers = reviewers.filter((reviewer) => reviewer.fullName && reviewer.email && !validateEmail(reviewer.email));
+        // Validate cardId for signers (Mã số thuế/CMT/CCCD is required)
+        const signersWithoutCardId = signers.filter((signer) => {
+            const hasName = signer.fullName?.trim();
+            if (!hasName) return false; // Skip empty signers
+            const cardId = signer.cardId || signer.card_id || '';
+            return !cardId.trim();
+        });
+        if (signersWithoutCardId.length > 0) {
+            errors.push('Vui lòng nhập Mã số thuế/CMT/CCCD cho tất cả người ký.');
+        }
+
+        const incompleteReviewers = reviewers.filter((reviewer) =>
+            reviewer.fullName !== undefined &&
+            reviewer.email !== undefined &&
+            (!reviewer.fullName?.trim() || !reviewer.email?.trim())
+        );
+        if (incompleteReviewers.length > 0) {
+            errors.push('Vui lòng nhập đầy đủ Họ tên và Email cho tất cả người xem xét.');
+        }
+
+        const invalidReviewers = reviewers.filter((reviewer) => reviewer.email && !validateEmail(reviewer.email));
         if (invalidReviewers.length > 0) {
             errors.push('Email của người xem xét không hợp lệ.');
         }
 
-        const invalidClerks = documentClerks.filter((clerk) => clerk.fullName && clerk.email && !validateEmail(clerk.email));
+        const incompleteClerks = documentClerks.filter((clerk) =>
+            clerk.fullName !== undefined &&
+            clerk.email !== undefined &&
+            (!clerk.fullName?.trim() || !clerk.email?.trim())
+        );
+        if (incompleteClerks.length > 0) {
+            errors.push('Vui lòng nhập đầy đủ Họ tên và Email cho tất cả văn thư.');
+        }
+
+        const invalidClerks = documentClerks.filter((clerk) => clerk.email && !validateEmail(clerk.email));
         if (invalidClerks.length > 0) {
             errors.push('Email của văn thư không hợp lệ.');
         }
@@ -919,16 +949,34 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             // For organization type, validate all roles
             if (partner.type === 2) {
                 // Validate coordinators
+                const incompleteCoordinators = partner.coordinators.filter((coord) =>
+                    coord.fullName !== undefined &&
+                    coord.email !== undefined &&
+                    (!coord.fullName?.trim() || !coord.email?.trim())
+                );
+                if (incompleteCoordinators.length > 0) {
+                    errors.push(`Vui lòng nhập đầy đủ Họ tên và Email cho người điều phối trong đối tác "${partner.name}".`);
+                }
+
                 const invalidCoordinators = partner.coordinators.filter((coord) =>
-                    coord.fullName && coord.email && !validateEmail(coord.email)
+                    coord.email && !validateEmail(coord.email)
                 );
                 if (invalidCoordinators.length > 0) {
                     errors.push(`Email của người điều phối trong đối tác "${partner.name}" không hợp lệ.`);
                 }
 
                 // Validate reviewers
+                const incompletePartnerReviewers = partner.reviewers.filter((reviewer) =>
+                    reviewer.fullName !== undefined &&
+                    reviewer.email !== undefined &&
+                    (!reviewer.fullName?.trim() || !reviewer.email?.trim())
+                );
+                if (incompletePartnerReviewers.length > 0) {
+                    errors.push(`Vui lòng nhập đầy đủ Họ tên và Email cho người xem xét trong đối tác "${partner.name}".`);
+                }
+
                 const invalidReviewers = partner.reviewers.filter((reviewer) =>
-                    reviewer.fullName && reviewer.email && !validateEmail(reviewer.email)
+                    reviewer.email && !validateEmail(reviewer.email)
                 );
                 if (invalidReviewers.length > 0) {
                     errors.push(`Email của người xem xét trong đối tác "${partner.name}" không hợp lệ.`);
@@ -947,9 +995,29 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                     errors.push(`Email hoặc số điện thoại của người ký trong đối tác "${partner.name}" không hợp lệ.`);
                 }
 
+                // Validate cardId for partner signers (Mã số thuế/CMT/CCCD is required)
+                const partnerSignersWithoutCardId = partner.signers.filter((signer) => {
+                    const hasName = signer.fullName?.trim();
+                    if (!hasName) return false; // Skip empty signers
+                    const cardId = signer.cardId || signer.card_id || '';
+                    return !cardId.trim();
+                });
+                if (partnerSignersWithoutCardId.length > 0) {
+                    errors.push(`Vui lòng nhập Mã số thuế/CMT/CCCD cho tất cả người ký trong đối tác "${partner.name}".`);
+                }
+
                 // Validate clerks
+                const incompletePartnerClerks = partner.clerks.filter((clerk) =>
+                    clerk.fullName !== undefined &&
+                    clerk.email !== undefined &&
+                    (!clerk.fullName?.trim() || !clerk.email?.trim())
+                );
+                if (incompletePartnerClerks.length > 0) {
+                    errors.push(`Vui lòng nhập đầy đủ Họ tên và Email cho văn thư trong đối tác "${partner.name}".`);
+                }
+
                 const invalidClerks = partner.clerks.filter((clerk) =>
-                    clerk.fullName && clerk.email && !validateEmail(clerk.email)
+                    clerk.email && !validateEmail(clerk.email)
                 );
                 if (invalidClerks.length > 0) {
                     errors.push(`Email của văn thư trong đối tác "${partner.name}" không hợp lệ.`);
@@ -982,6 +1050,17 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 });
                 if (invalidSigners.length > 0) {
                     errors.push(`Email hoặc số điện thoại của người ký trong đối tác "${partner.name}" không hợp lệ.`);
+                }
+
+                // Validate cardId for partner signers (Mã số thuế/CMT/CCCD is required)
+                const partnerSignersWithoutCardId = partner.signers.filter((signer) => {
+                    const hasName = signer.fullName?.trim();
+                    if (!hasName) return false; // Skip empty signers
+                    const cardId = signer.cardId || signer.card_id || '';
+                    return !cardId.trim();
+                });
+                if (partnerSignersWithoutCardId.length > 0) {
+                    errors.push(`Vui lòng nhập Mã số thuế/CMT/CCCD cho tất cả người ký trong đối tác "${partner.name}".`);
                 }
             }
         });
@@ -1030,6 +1109,9 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 const email = (role === 3 && item.loginByPhone) ? '' : (item.email?.trim() || '');
                 const phone = (role === 3 && item.loginByPhone) ? (item.phone?.trim() || '') : (item.phone || '');
 
+                // cardId chỉ có cho signers (role === 3)
+                const cardId = role === 3 ? (item.cardId || item.card_id || '') : '';
+
                 // signType luôn = 6 theo CreateContractFlow.md
                 recipientsArray.push({
                     // Include id if exists (for editing when returning to step 2)
@@ -1037,7 +1119,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                     name: fullName,
                     email,
                     phone,
-                    cardId: item.cardId || item.card_id || '',
+                    cardId,
                     role,
                     ordering,
                     status: 0,
@@ -1124,8 +1206,20 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             errors.push('Ngày hết hạn ký là bắt buộc');
         }
 
-        if (!formData.pdfFile) {
+        if (documentType !== 'batch' && !formData.expirationDate) {
+            errors.push('Ngày hết hiệu lực tài liệu là bắt buộc');
+        }
+
+        if (!formData.pdfFile && documentType !== 'batch') {
             errors.push('Vui lòng tải lên file PDF');
+        }
+
+        if ((documentType === 'single-template' || documentType === 'batch') && !formData.documentTemplate?.trim()) {
+            errors.push('Vui lòng chọn mẫu tài liệu');
+        }
+
+        if (documentType === 'batch' && !formData.batchFile) {
+            errors.push('Vui lòng tải lên file tài liệu theo lô');
         }
 
         // Kiểm tra số tài liệu bắt buộc
@@ -1313,6 +1407,14 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 showToast(errorMessage, 'error');
             } finally {
                 setLoading(false);
+            }
+        } else if (currentStep === 3) {
+            if (unassignedComponentCount > 0) {
+                showToast(`Vui lòng gán người xử lý cho ${unassignedComponentCount} thành phần trước khi tiếp tục.`, 'error');
+                return;
+            }
+            if (currentStep < maxStep) {
+                setCurrentStep(currentStep + 1);
             }
         } else {
             // For other steps, just move forward
@@ -1515,6 +1617,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                     // Logic lưu nháp
                 }}
                 hideFooter={true}
+                onAssignmentStateChange={setUnassignedComponentCount}
             />
         );
     };

@@ -249,27 +249,21 @@ function CoordinateAssigners({
         setActiveDocumentId(Number.isNaN(numericValue) ? value : numericValue);
     };
 
-    const handleUpdateReviewer = (id, field, value) => {
-        if (field === 'email' && isEmailDuplicate(value, 'reviewer', id)) {
+    const handleEmailBlur = (entryType, entryId, value) => {
+        if (isEmailDuplicate(value, entryType, entryId)) {
             setDuplicateWarning(value);
-            return;
         }
+    };
+
+    const handleUpdateReviewer = (id, field, value) => {
         updateReviewer && updateReviewer(id, field, value);
     };
 
     const handleUpdateSigner = (id, field, value) => {
-        if (field === 'email' && isEmailDuplicate(value, 'signer', id)) {
-            setDuplicateWarning(value);
-            return;
-        }
         updateSigner && updateSigner(id, field, value);
     };
 
     const handleUpdateClerk = (id, field, value) => {
-        if (field === 'email' && isEmailDuplicate(value, 'clerk', id)) {
-            setDuplicateWarning(value);
-            return;
-        }
         updateClerk && updateClerk(id, field, value);
     };
 
@@ -791,7 +785,7 @@ function CoordinateAssigners({
                                 <div className="coordinate-participant-form">
                                     <div className="coordinate-form-row">
                                         <div className="coordinate-form-group">
-                                            <label>Họ tên *</label>
+                                            <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                             <input
                                                 type="text"
                                                 value={reviewer.fullName || ''}
@@ -800,11 +794,12 @@ function CoordinateAssigners({
                                             />
                                         </div>
                                         <div className="coordinate-form-group">
-                                            <label>Email *</label>
+                                            <label>Email <span style={{ color: 'red' }}>*</span></label>
                                             <input
                                                 type="email"
                                                 value={reviewer.email || ''}
                                                 onChange={(e) => handleUpdateReviewer(reviewer.id, 'email', e.target.value)}
+                                                onBlur={() => handleEmailBlur('reviewer', reviewer.id, reviewer.email)}
                                                 placeholder="Nhập email"
                                             />
                                         </div>
@@ -892,7 +887,7 @@ function CoordinateAssigners({
                                 <div className="coordinate-participant-form">
                                     <div className="coordinate-form-row">
                                         <div className="coordinate-form-group">
-                                            <label>Họ tên *</label>
+                                            <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                             <input
                                                 type="text"
                                                 value={signer.fullName || ''}
@@ -901,7 +896,10 @@ function CoordinateAssigners({
                                             />
                                         </div>
                                         <div className="coordinate-form-group">
-                                            <label>{signer.loginByPhone ? 'Số điện thoại *' : 'Email *'}</label>
+                                            <label>
+                                                {signer.loginByPhone ? 'Số điện thoại ' : 'Email '}
+                                                <span style={{ color: 'red' }}>*</span>
+                                            </label>
                                             {signer.loginByPhone ? (
                                                 <input
                                                     type="tel"
@@ -914,6 +912,7 @@ function CoordinateAssigners({
                                                     type="email"
                                                     value={signer.email || ''}
                                                     onChange={(e) => handleUpdateSigner(signer.id, 'email', e.target.value)}
+                                                    onBlur={() => handleEmailBlur('signer', signer.id, signer.email)}
                                                     placeholder="Nhập email"
                                                 />
                                             )}
@@ -921,7 +920,7 @@ function CoordinateAssigners({
                                     </div>
                                     <div className="coordinate-form-row">
                                         <div className="coordinate-form-group">
-                                            <label>Loại ký *</label>
+                                            <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
                                             <select
                                                 value={signer.signType || 'hsm'}
                                                 onChange={(e) => handleUpdateSigner(signer.id, 'signType', e.target.value)}
@@ -994,7 +993,7 @@ function CoordinateAssigners({
                                 <div className="coordinate-participant-form">
                                     <div className="coordinate-form-row">
                                         <div className="coordinate-form-group">
-                                            <label>Họ tên *</label>
+                                            <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                             <input
                                                 type="text"
                                                 value={clerk.fullName || ''}
@@ -1003,18 +1002,19 @@ function CoordinateAssigners({
                                             />
                                         </div>
                                         <div className="coordinate-form-group">
-                                            <label>Email *</label>
+                                            <label>Email <span style={{ color: 'red' }}>*</span></label>
                                             <input
                                                 type="email"
                                                 value={clerk.email || ''}
                                                 onChange={(e) => handleUpdateClerk(clerk.id, 'email', e.target.value)}
+                                                onBlur={() => handleEmailBlur('clerk', clerk.id, clerk.email)}
                                                 placeholder="Nhập email"
                                             />
                                         </div>
                                     </div>
                                     <div className="coordinate-form-row">
                                         <div className="coordinate-form-group">
-                                            <label>Loại ký *</label>
+                                            <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
                                             <select
                                                 value={clerk.signType || 'hsm'}
                                                 onChange={(e) => handleUpdateClerk(clerk.id, 'signType', e.target.value)}
