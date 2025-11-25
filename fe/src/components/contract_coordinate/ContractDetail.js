@@ -490,8 +490,11 @@ function ContractDetail() {
     const handleCoordinateSuccess = (data) => {
         console.log('Điều phối thành công:', data);
         showToast('Điều phối thành công!', 'success');
-        // Có thể reload contract data hoặc navigate
         setShowCoordinate(false);
+        // Điều phối xong quay về dashboard
+        setTimeout(() => {
+            navigate('/main/dashboard');
+        }, 800);
     };
 
     const handleCoordinateError = (error) => {
