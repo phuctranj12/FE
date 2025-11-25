@@ -328,6 +328,23 @@
     letter-spacing: 0.5px;
 }
 
+.component-assignee-badge {
+    position: absolute;
+    top: -20px;
+    left: 0;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1f1f1f;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 200px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
 /* Resize Handles */
 .resize-handle {
     position: absolute;
@@ -641,6 +658,21 @@
 .footer-right {
     display: flex;
     gap: 12px;
+}
+
+.footer-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.editor-footer-warning {
+    color: #d32f2f;
+    font-size: 12px;
+    text-align: right;
+    max-width: 320px;
+    line-height: 1.4;
 }
 
 .save-draft-btn {

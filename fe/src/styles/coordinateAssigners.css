@@ -291,6 +291,110 @@
     margin-bottom: 30px;
 }
 
+/* Confirmation Step (Step 3) */
+.coordinate-confirmation-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 4px 2px 8px;
+}
+
+.coordinate-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    border: 1px solid #e4e7ec;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.coordinate-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: #1f2933;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.coordinate-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #2563eb, #1d4ed8);
+}
+
+.coordinate-confirmation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px 20px;
+    margin-bottom: 8px;
+}
+
+.coordinate-confirmation-field label {
+    display: block;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.coordinate-confirmation-value {
+    padding: 9px 11px;
+    border-radius: 8px;
+    background: #f9fafb;
+    border: 1px dashed #e5e7eb;
+    font-size: 14px;
+    color: #111827;
+}
+
+.coordinate-confirmation-value-list {
+    padding: 9px 11px;
+    border-radius: 8px;
+    background: #f9fafb;
+    border: 1px dashed #e5e7eb;
+    font-size: 14px;
+    color: #111827;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.coordinate-party-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    background: #f9fafb;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.coordinate-party-header {
+    padding: 10px 12px;
+    background: linear-gradient(90deg, #111827, #1f2937);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.coordinate-party-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.coordinate-party-body {
+    padding: 14px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .coordinate-document-selector {
     margin-bottom: 16px;
     display: flex;

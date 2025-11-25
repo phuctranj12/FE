@@ -7,7 +7,6 @@ import customerService from '../../api/customerService';
 const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
     const [formData, setFormData] = useState({
         roleName: '',
-        roleCode: '',
         note: '',
         permissions: []
     });
@@ -39,7 +38,6 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
                   : [];
             setFormData({
                 roleName: role.name || '',
-                roleCode: role.code || '',
                 note: role.note || '',
                 permissions: permissionIds
             });
@@ -98,7 +96,6 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
             setLoading(true);
             const payload = {
                 name: formData.roleName,
-                code: formData.roleCode,
                 note: formData.note,
                 permissionIds: formData.permissions
             };
@@ -187,15 +184,6 @@ const EditRolePanel = ({ role, onCancel, onSaved, allPermissions = [] }) => {
                                 placeholder="Tên vai trò"
                                 value={formData.roleName}
                                 onChange={(value) => handleInputChange('roleName', value)}
-                                disabled
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Mã vai trò <span className="required">*</span></label>
-                            <SearchBar
-                                placeholder="Mã vai trò"
-                                value={formData.roleCode}
-                                onChange={(value) => handleInputChange('roleCode', value)}
                                 disabled
                             />
                         </div>

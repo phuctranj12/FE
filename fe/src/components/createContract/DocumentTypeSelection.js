@@ -79,7 +79,7 @@ function DocumentTypeSelection({
                 <div className="form-content">
                     <div className="left-column">
                         <div className="form-group">
-                            <label>Tên mẫu tài liệu *</label>
+                            <label>Tên mẫu tài liệu <span style={{ color: 'red' }}>*</span></label>
                             <input
                                 type="text"
                                 name="documentTemplate"
@@ -174,7 +174,7 @@ function DocumentTypeSelection({
                 <div className="form-content">
                     <div className="left-column">
                         <div className="form-group">
-                            <label>Mẫu tài liệu *</label>
+                            <label>Mẫu tài liệu <span style={{ color: 'red' }}>*</span></label>
                             <input
                                 type="text"
                                 name="documentTemplate"
@@ -184,7 +184,7 @@ function DocumentTypeSelection({
                             />
                         </div>
                         <div className="form-group">
-                            <label>Số tài liệu *</label>
+                            <label>Số tài liệu <span style={{ color: 'red' }}>*</span></label>
                             <input
                                 type="text"
                                 name="documentNumber"
@@ -220,7 +220,7 @@ function DocumentTypeSelection({
                             />
                         </div>
                         <div className="form-group">
-                            <label>Ngày hết hạn ký *</label>
+                            <label>Ngày hết hạn ký <span style={{ color: 'red' }}>*</span></label>
                             <div className="date-input-container">
                                 <input
                                     type="date"
@@ -243,7 +243,7 @@ function DocumentTypeSelection({
 
                     <div className="right-column">
                         <div className="form-group">
-                            <label>Tên tài liệu *</label>
+                            <label>Tên tài liệu <span style={{ color: 'red' }}>*</span></label>
                             <input
                                 type="text"
                                 name="documentName"
@@ -276,7 +276,7 @@ function DocumentTypeSelection({
                             />
                         </div>
                         <div className="form-group">
-                            <label>Ngày hết hiệu lực tài liệu</label>
+                            <label>Ngày hết hiệu lực tài liệu <span style={{ color: 'red' }}>*</span></label>
                             <div className="date-input-container">
                                 <input
                                     type="date"
@@ -357,7 +357,7 @@ function DocumentTypeSelection({
             <div className="form-content">
                 <div className="left-column">
                     <div className="form-group">
-                        <label>Tên tài liệu *</label>
+                        <label>Tên tài liệu <span style={{ color: 'red' }}>*</span></label>
                         <input
                             type="text"
                             name="documentName"
@@ -367,7 +367,7 @@ function DocumentTypeSelection({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Số tài liệu *</label>
+                        <label>Số tài liệu <span style={{ color: 'red' }}>*</span></label>
                         <input
                             type="text"
                             name="documentNumber"
@@ -421,7 +421,7 @@ function DocumentTypeSelection({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Ngày hết hiệu lực tài liệu</label>
+                        <label>Ngày hết hiệu lực tài liệu <span style={{ color: 'red' }}>*</span></label>
                         <div className="date-input-container">
                             <input
                                 type="date"
@@ -506,7 +506,7 @@ function DocumentTypeSelection({
                         </div>
                     </div>
                     <div className="form-group">
-                        <label>Ngày hết hạn ký *</label>
+                        <label>Ngày hết hạn ký <span style={{ color: 'red' }}>*</span></label>
                         <div className="date-input-container">
                             <input
                                 type="date"

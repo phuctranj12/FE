@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import '../../styles/documentEditor.css';
 import customerService from '../../api/customerService';
 import contractService from '../../api/contractService';
@@ -16,7 +16,9 @@ function DocumentEditor({
     onNext, 
     onSaveDraft, 
     hideFooter = false,
-    lockedFieldIds = []
+    lockedFieldIds = [],
+    onAssignmentStateChange = null,
+    showLockedBadge = true
 }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -35,6 +37,7 @@ function DocumentEditor({
     const [isResizing, setIsResizing] = useState(false);
     const [resizeHandle, setResizeHandle] = useState(null);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [nextWarning, setNextWarning] = useState('');
     const [currentScale, setCurrentScale] = useState(1); // Track PDF scale for coordinate normalization
     
     // State cho autocomplete gợi ý tên
@@ -148,11 +151,11 @@ function DocumentEditor({
         return recipients;
     };
 
-    const recipientsList = getRecipientsList();
+    const recipientsList = useMemo(() => getRecipientsList(), [participantsData]);
     const SIGNER_ALLOWED_ROLES = [3, 4];
     const signerRecipients = recipientsList.filter(recipient => SIGNER_ALLOWED_ROLES.includes(recipient.role));
-    const getActiveRecipientList = () => {
-        if (selectedComponent && (selectedComponent.id === 'digital-signature' || selectedComponent.id === 'image-signature')) {
+    const getActiveRecipientList = (componentId = selectedComponent?.id) => {
+        if (componentId === 'digital-signature' || componentId === 'image-signature') {
             return signerRecipients;
         }
         return recipientsList;
@@ -182,6 +185,22 @@ function DocumentEditor({
             hasDropdown: true
         }
     ];
+
+    const unassignedComponents = useMemo(() => {
+        return documentComponents.filter(component => {
+            if (component.locked) return false;
+            const recipientId = component.properties?.recipientId || parseInt(component.properties?.signer, 10);
+            return !recipientId || Number.isNaN(recipientId);
+        });
+    }, [documentComponents]);
+
+    const hasUnassignedComponents = unassignedComponents.length > 0;
+    
+    useEffect(() => {
+        if (typeof onAssignmentStateChange === 'function') {
+            onAssignmentStateChange(unassignedComponents.length);
+        }
+    }, [unassignedComponents.length, onAssignmentStateChange]);
 
     // Các tùy chọn chữ ký số
     const signatureOptions = [
@@ -868,6 +887,23 @@ function DocumentEditor({
         setDraggedComponent(null);
     };
 
+    useEffect(() => {
+        if (!hasUnassignedComponents && nextWarning) {
+            setNextWarning('');
+        }
+    }, [hasUnassignedComponents, nextWarning]);
+
+    const handleNextClick = () => {
+        if (hasUnassignedComponents) {
+            setNextWarning(`Vui lòng gán người xử lý cho ${unassignedComponents.length} thành phần trước khi tiếp tục.`);
+            return;
+        }
+        setNextWarning('');
+        if (onNext) {
+            onNext();
+        }
+    };
+
     // Resize handlers
     const handleResizeStart = (e, componentId, handle) => {
         e.preventDefault();
@@ -1149,26 +1185,35 @@ function DocumentEditor({
                             
                             {pdfUrl && !pdfLoading && !pdfError && (
                                 <div className="pdf-viewer" ref={pdfViewerContainerRef}>
-                                    <PDFViewer
-                                        document={{ pdfUrl: pdfUrl }}
-                                        currentPage={currentPage}
-                                        totalPages={totalPages}
-                                        zoom={zoom}
-                                        onPageChange={handlePageChange}
-                                        onScaleChange={handleScaleChange}
-                                        components={documentComponents}
-                                        editingComponentId={editingComponentId}
-                                        hoveredComponentId={hoveredComponentId}
-                                        isDragging={isDragging}
-                                        draggedComponent={draggedComponent}
-                                        onComponentClick={handleComponentClick}
-                                        onComponentMouseDown={handleMouseDown}
-                                        onComponentMouseEnter={setHoveredComponentId}
-                                        onComponentMouseLeave={() => setHoveredComponentId(null)}
-                                        onResizeStart={handleResizeStart}
-                                        onRemoveComponent={handleRemoveComponent}
-                                        autoFitWidth={true}
-                                    />
+                            <PDFViewer
+                                document={{ pdfUrl: pdfUrl }}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                zoom={zoom}
+                                onPageChange={handlePageChange}
+                                onScaleChange={handleScaleChange}
+                                components={documentComponents.map(component => {
+                                    const recipientId = component.properties?.recipientId || parseInt(component.properties?.signer, 10);
+                                    const recipientInfo = recipientsList.find(r => r.id === recipientId);
+                                    return {
+                                        ...component,
+                                        assignedRecipientName: recipientInfo?.name || '',
+                                        assignedRecipientRole: recipientInfo?.roleName || ''
+                                    };
+                                })}
+                                editingComponentId={editingComponentId}
+                                hoveredComponentId={hoveredComponentId}
+                                isDragging={isDragging}
+                                draggedComponent={draggedComponent}
+                                onComponentClick={handleComponentClick}
+                                onComponentMouseDown={handleMouseDown}
+                                onComponentMouseEnter={setHoveredComponentId}
+                                onComponentMouseLeave={() => setHoveredComponentId(null)}
+                                onResizeStart={handleResizeStart}
+                                onRemoveComponent={handleRemoveComponent}
+                                autoFitWidth={true}
+                                showLockedBadge={showLockedBadge}
+                            />
                                 </div>
                             )}
                             
@@ -1305,7 +1350,7 @@ function DocumentEditor({
                                 {(selectedComponent.id === 'image-signature' || selectedComponent.id === 'digital-signature') && (
                                         <div className="property-group">
                                             <label className="property-label">
-                                                NGƯỜI KÝ: <span className="required">*</span>
+                                                NGƯỜI KÝ / VĂN THƯ: <span className="required">*</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -1315,7 +1360,7 @@ function DocumentEditor({
                                                 onChange={(e) => handleRecipientSearchChange(e.target.value)}
                                                 onBlur={() => {
                                                     // Nếu không tìm thấy recipient, reset về giá trị hiện tại
-                                                    if (!recipientSearchValue || !recipientsList.find(r => r.name === recipientSearchValue)) {
+                                                    if (!recipientSearchValue || !signerRecipients.find(r => r.name === recipientSearchValue)) {
                                                         setRecipientSearchValue(getRecipientNameById(componentProperties.signer));
                                                     }
                                                 }}
@@ -1326,7 +1371,7 @@ function DocumentEditor({
                                                     <option key={idx} value={suggestion} onClick={() => handleSuggestionSelect(suggestion)} />
                                                 ))}
                                             </datalist>
-                                            {recipientsList.length > 0 && (
+                                            {signerRecipients.length > 0 && (
                                                 <select 
                                                     className="property-input"
                                                     style={{ marginTop: '8px' }}
@@ -1337,7 +1382,7 @@ function DocumentEditor({
                                                     }}
                                                 >
                                                     <option value="">Hoặc chọn từ danh sách</option>
-                                                    {recipientsList.map(recipient => (
+                                                    {signerRecipients.map(recipient => (
                                                         <option key={recipient.id} value={recipient.id}>
                                                             {recipient.name} ({recipient.roleName})
                                                         </option>
@@ -1438,7 +1483,20 @@ function DocumentEditor({
                         <button className="back-btn" onClick={onBack}>Quay lại</button>
                         <div className="footer-right">
                             <button className="save-draft-btn" onClick={onSaveDraft}>Lưu nháp</button>
-                            <button className="next-btn" onClick={onNext}>Tiếp theo</button>
+                            <div className="footer-actions">
+                                {(hasUnassignedComponents || nextWarning) && (
+                                    <div className="editor-footer-warning">
+                                        {nextWarning || `Vui lòng gán người xử lý cho ${unassignedComponents.length} thành phần trước khi tiếp tục.`}
+                                    </div>
+                                )}
+                                <button
+                                    className="next-btn"
+                                    onClick={handleNextClick}
+                                    disabled={hasUnassignedComponents}
+                                >
+                                    Tiếp theo
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

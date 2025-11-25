@@ -22,9 +22,10 @@ function PDFViewer({
     onComponentMouseLeave,
     onResizeStart,
     onRemoveComponent,
-    autoFitWidth = false, // New prop to enable auto-fit-to-width
+    autoFitWidth = false, // New prop to enable auto-fit-to-width,
     onScaleChange = null, // Callback to notify parent of scale changes
-    focusComponentId = null
+    focusComponentId = null,
+    showLockedBadge = true
 }) {
     const [numPages, setNumPages] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -236,6 +237,11 @@ function PDFViewer({
                                 {/* Render components trên trang này */}
                                 {pageComponents.map(component => {
                                     const isLocked = Boolean(component.locked);
+                                    const assignedName = component.assignedRecipientName;
+                                    const assignedRole = component.assignedRecipientRole;
+                                    const badgeLabel = assignedName
+                                        ? `${assignedName}${assignedRole ? ` - ${assignedRole}` : ''}`
+                                        : '';
                                     // Render component coordinates as-is
                                     // In DocumentEditor: coordinates are stored at currentScale (scaled for editing)
                                     // In other views: coordinates will be scaled based on zoom level
@@ -269,6 +275,11 @@ function PDFViewer({
                                             }
                                         }}
                                     >
+                                        {badgeLabel && (
+                                            <div className="component-assignee-badge">
+                                                {badgeLabel}
+                                            </div>
+                                        )}
                                         <div className="component-content" style={{ color: '#000' }}>
                                             {component.type === 'text' && component.properties?.fieldName 
                                                 ? `[${component.properties.fieldName}]` 
@@ -278,7 +289,7 @@ function PDFViewer({
                                             }
                                         </div>
                                         
-                                        {isLocked && (component.recipient?.name || component.name) && (
+                                        {showLockedBadge && isLocked && (component.recipient?.name || component.name) && (
                                             <div
                                                 className="locked-badge"
                                                 style={{

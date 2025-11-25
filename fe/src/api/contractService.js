@@ -399,8 +399,8 @@ const contractService = {
     // 7.10.1. Điều phối hợp đồng
     coordinate: async (participantId, recipientId, recipients) => {
         try {
-            const response = await apiClient.post(
-                `/contracts/participants/${participantId}/recipients/${recipientId}/coordinate`,
+            const response = await apiClient.put(
+                `/contracts/processes/coordinator/${participantId}/${recipientId}`,
                 recipients
             );
             return response;

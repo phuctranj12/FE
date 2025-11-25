@@ -146,6 +146,18 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         navigate(`/main/contract/create/${statusSlug}/${doc.id}`);
     };
 
+    // Mở trang chi tiết tài liệu (giống TemplateDetail nhưng cho hợp đồng)
+    const handleRowClick = (doc) => {
+        if (!doc?.id) return;
+        // Nếu parent truyền onDocumentClick thì ưu tiên dùng
+        if (onDocumentClick) {
+            onDocumentClick(doc);
+            return;
+        }
+        // Mặc định mở trang chi tiết hợp đồng, ContractDetail sẽ load PDF từ URL
+        navigate(`/main/c/detail/${doc.id}`);
+    };
+
     const handleViewFlow = (doc) => {
         if (!doc?.id) return;
         setSelectedContract(doc);
@@ -301,7 +313,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                     <tr
                                         key={doc.id}
                                         className="tr-row"
-                                        onClick={() => onDocumentClick && onDocumentClick(doc)}
+                                        onClick={() => handleRowClick(doc)}
                                     >
 
                                         <td className="document-title-cell">

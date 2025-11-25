@@ -261,7 +261,7 @@ function DocumentSigners({
                             <div className="participant-form">
                                 <div className="form-row">
                                     <div className="form-group" style={{ position: 'relative' }}>
-                                        <label>Họ tên *</label>
+                                        <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                         <input
                                             type="text"
                                             value={reviewer.fullName}
@@ -326,7 +326,7 @@ function DocumentSigners({
                                         )}
                                     </div>
                                     <div className="form-group">
-                                        <label>Email *</label>
+                                        <label>Email <span style={{ color: 'red' }}>*</span></label>
                                         <input
                                             type="email"
                                             value={reviewer.email}
@@ -343,15 +343,6 @@ function DocumentSigners({
                                             value={reviewer.phone || ''}
                                             onChange={(e) => updateReviewer(reviewer.id, 'phone', e.target.value)}
                                             placeholder="Nhập số điện thoại"
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>CMND/CCCD</label>
-                                        <input
-                                            type="text"
-                                            value={reviewer.card_id || reviewer.cardId || ''}
-                                            onChange={(e) => updateReviewer(reviewer.id, 'card_id', e.target.value)}
-                                            placeholder="Nhập số CMND/CCCD"
                                         />
                                     </div>
                                 </div>
@@ -392,7 +383,7 @@ function DocumentSigners({
                         <div className="signer-form">
                             <div className="form-row">
                                 <div className="form-group" style={{ position: 'relative' }}>
-                                    <label>Họ tên *</label>
+                                    <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                     <input
                                         type="text"
                                         value={signer.fullName}
@@ -475,7 +466,10 @@ function DocumentSigners({
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>{signer.loginByPhone ? 'Số điện thoại *' : 'Email *'}</label>
+                                    <label>
+                                        {signer.loginByPhone ? 'Số điện thoại ' : 'Email '}
+                                        <span style={{ color: 'red' }}>*</span>
+                                    </label>
                                     {signer.loginByPhone ? (
                                         <input
                                             type="tel"
@@ -493,7 +487,7 @@ function DocumentSigners({
                                     )}
                                 </div>
                                 <div className="form-group">
-                                    <label>Loại ký *</label>
+                                    <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
                                     <input
                                         type="text"
                                         value="Ký bằng chứng thư số server"
@@ -504,12 +498,12 @@ function DocumentSigners({
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>CMND/CCCD</label>
+                                    <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
                                     <input
                                         type="text"
                                         value={signer.card_id || signer.cardId || ''}
                                         onChange={(e) => updateSigner(signer.id, 'card_id', e.target.value)}
-                                        placeholder="Nhập số CMND/CCCD"
+                                        placeholder="Nhập Mã số thuế/CMT/CCCD"
                                     />
                                 </div>
                             </div>
@@ -558,7 +552,7 @@ function DocumentSigners({
                             <div className="participant-form">
                                 <div className="form-row">
                                     <div className="form-group" style={{ position: 'relative' }}>
-                                        <label>Họ tên *</label>
+                                        <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                         <input
                                             type="text"
                                             value={clerk.fullName}
@@ -623,7 +617,7 @@ function DocumentSigners({
                                         )}
                                     </div>
                                     <div className="form-group">
-                                        <label>Email *</label>
+                                        <label>Email <span style={{ color: 'red' }}>*</span></label>
                                         <input
                                             type="email"
                                             value={clerk.email}
@@ -640,15 +634,6 @@ function DocumentSigners({
                                             value={clerk.phone || ''}
                                             onChange={(e) => updateDocumentClerk(clerk.id, 'phone', e.target.value)}
                                             placeholder="Nhập số điện thoại"
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>CMND/CCCD</label>
-                                        <input
-                                            type="text"
-                                            value={clerk.card_id || clerk.cardId || ''}
-                                            onChange={(e) => updateDocumentClerk(clerk.id, 'card_id', e.target.value)}
-                                            placeholder="Nhập số CMND/CCCD"
                                         />
                                     </div>
                                 </div>
@@ -764,7 +749,7 @@ function DocumentSigners({
                                                 <div className="participant-form">
                                                     <div className="form-row">
                                                         <div className="form-group" style={{ position: 'relative' }}>
-                                                            <label>Họ tên *</label>
+                                                            <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                                             <input
                                                                 type="text"
                                                                 value={coordinator.fullName}
@@ -829,7 +814,7 @@ function DocumentSigners({
                                                             )}
                                                         </div>
                                                         <div className="form-group">
-                                                            <label>Email *</label>
+                                                            <label>Email <span style={{ color: 'red' }}>*</span></label>
                                                             <input
                                                                 type="email"
                                                                 value={coordinator.email}
@@ -846,15 +831,6 @@ function DocumentSigners({
                                                                 value={coordinator.phone || ''}
                                                                 onChange={(e) => updatePartnerCoordinator(partner.id, coordinator.id, 'phone', e.target.value)}
                                                                 placeholder="Nhập số điện thoại"
-                                                            />
-                                                        </div>
-                                                        <div className="form-group">
-                                                            <label>CMND/CCCD</label>
-                                                            <input
-                                                                type="text"
-                                                                value={coordinator.card_id || ''}
-                                                                onChange={(e) => updatePartnerCoordinator(partner.id, coordinator.id, 'card_id', e.target.value)}
-                                                                placeholder="Nhập số CMND/CCCD"
                                                             />
                                                         </div>
                                                     </div>
@@ -903,7 +879,7 @@ function DocumentSigners({
                                                 <div className="participant-form">
                                                     <div className="form-row">
                                                         <div className="form-group" style={{ position: 'relative' }}>
-                                                            <label>Họ tên *</label>
+                                                            <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                                             <input
                                                                 type="text"
                                                                 value={reviewer.fullName}
@@ -968,7 +944,7 @@ function DocumentSigners({
                                                             )}
                                                         </div>
                                                         <div className="form-group">
-                                                            <label>Email *</label>
+                                                            <label>Email <span style={{ color: 'red' }}>*</span></label>
                                                             <input
                                                                 type="email"
                                                                 value={reviewer.email}
@@ -985,15 +961,6 @@ function DocumentSigners({
                                                                 value={reviewer.phone || ''}
                                                                 onChange={(e) => updatePartnerReviewer(partner.id, reviewer.id, 'phone', e.target.value)}
                                                                 placeholder="Nhập số điện thoại"
-                                                            />
-                                                        </div>
-                                                        <div className="form-group">
-                                                            <label>CMND/CCCD</label>
-                                                            <input
-                                                                type="text"
-                                                                value={reviewer.card_id || ''}
-                                                                onChange={(e) => updatePartnerReviewer(partner.id, reviewer.id, 'card_id', e.target.value)}
-                                                                placeholder="Nhập số CMND/CCCD"
                                                             />
                                                         </div>
                                                     </div>
@@ -1035,7 +1002,7 @@ function DocumentSigners({
                                         <div className="signer-form">
                                             <div className="form-row">
                                                 <div className="form-group" style={{ position: 'relative' }}>
-                                                    <label>Họ tên *</label>
+                                                    <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                                     <input
                                                         type="text"
                                                         value={signer.fullName}
@@ -1117,7 +1084,10 @@ function DocumentSigners({
                                             </div>
                                             <div className="form-row">
                                                 <div className="form-group">
-                                                    <label>{signer.loginByPhone ? 'Số điện thoại *' : 'Email *'}</label>
+                                                    <label>
+                                                        {signer.loginByPhone ? 'Số điện thoại ' : 'Email '}
+                                                        <span style={{ color: 'red' }}>*</span>
+                                                    </label>
                                                     {signer.loginByPhone ? (
                                                         <input
                                                             type="tel"
@@ -1135,7 +1105,7 @@ function DocumentSigners({
                                                     )}
                                                 </div>
                                                 <div className="form-group">
-                                                    <label>Loại ký *</label>
+                                                    <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
                                                     <input
                                                         type="text"
                                                         value="Ký bằng chứng thư số server"
@@ -1146,12 +1116,12 @@ function DocumentSigners({
                                             </div>
                                             <div className="form-row">
                                                 <div className="form-group">
-                                                    <label>CMND/CCCD</label>
+                                                    <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
                                                     <input
                                                         type="text"
-                                                        value={signer.card_id || ''}
+                                                        value={signer.card_id || signer.cardId || ''}
                                                         onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'card_id', e.target.value)}
-                                                        placeholder="Nhập số CMND/CCCD"
+                                                        placeholder="Nhập Mã số thuế/CMT/CCCD"
                                                     />
                                                 </div>
                                             </div>
@@ -1201,7 +1171,7 @@ function DocumentSigners({
                                                 <div className="participant-form">
                                                     <div className="form-row">
                                                         <div className="form-group" style={{ position: 'relative' }}>
-                                                            <label>Họ tên *</label>
+                                                            <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
                                                             <input
                                                                 type="text"
                                                                 value={clerk.fullName}
@@ -1266,7 +1236,7 @@ function DocumentSigners({
                                                             )}
                                                         </div>
                                                         <div className="form-group">
-                                                            <label>Email *</label>
+                                                            <label>Email <span style={{ color: 'red' }}>*</span></label>
                                                             <input
                                                                 type="email"
                                                                 value={clerk.email}
@@ -1283,15 +1253,6 @@ function DocumentSigners({
                                                                 value={clerk.phone || ''}
                                                                 onChange={(e) => updatePartnerClerk(partner.id, clerk.id, 'phone', e.target.value)}
                                                                 placeholder="Nhập số điện thoại"
-                                                            />
-                                                        </div>
-                                                        <div className="form-group">
-                                                            <label>CMND/CCCD</label>
-                                                            <input
-                                                                type="text"
-                                                                value={clerk.card_id || ''}
-                                                                onChange={(e) => updatePartnerClerk(partner.id, clerk.id, 'card_id', e.target.value)}
-                                                                placeholder="Nhập số CMND/CCCD"
                                                             />
                                                         </div>
                                                     </div>

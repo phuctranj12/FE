@@ -7,7 +7,6 @@ import customerService from '../../api/customerService';
 const AddNewRolePanel = ({ onCancel, allPermissions }) => {
     const [formData, setFormData] = useState({
         roleName: '',
-        roleCode: '',
         note: '',
         permissions: []
     });
@@ -58,7 +57,7 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
 
     const handleSave = async () => {
         // Validate required fields
-        if (!formData.roleName || !formData.roleCode || formData.permissions.length === 0) {
+        if (!formData.roleName || formData.permissions.length === 0) {
             alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
             return;
         }
@@ -66,7 +65,6 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
             setLoading(true);
             const payload = {
                 name: formData.roleName,
-                code: formData.roleCode,
                 note: formData.note,
                 permissionIds: formData.permissions
             };
@@ -120,15 +118,6 @@ const AddNewRolePanel = ({ onCancel, allPermissions }) => {
                                 placeholder="Nhập tên vai trò" 
                                 value={formData.roleName} 
                                 onChange={(value) => handleInputChange('roleName', value)} 
-                            />
-                        </div>
-                        
-                        <div className="form-group">
-                            <label>Mã vai trò <span className="required">*</span></label>
-                            <SearchBar 
-                                placeholder="Nhập mã vai trò" 
-                                value={formData.roleCode} 
-                                onChange={(value) => handleInputChange('roleCode', value)} 
                             />
                         </div>
                         
