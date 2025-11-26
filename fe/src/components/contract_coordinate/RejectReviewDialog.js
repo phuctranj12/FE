@@ -46,7 +46,7 @@ function RejectReviewDialog({
     // State for drawing
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentStroke, setCurrentStroke] = useState(null);
-    const canvasRef = useRef(null);
+    const canvasRefs = useRef({});
     const containerRef = useRef(null);
     
     // State for rejection
@@ -252,9 +252,73 @@ function RejectReviewDialog({
         return null;
     };
 
+    // Scroll tới một trang cụ thể trong viewer
+    const scrollToPage = (pageNumber) => {
+        const container = containerRef.current;
+        const canvas = canvasRefs.current[pageNumber];
+        if (!container || !canvas) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+
+        const offset = canvasRect.top - containerRect.top + container.scrollTop - 20; // trừ nhẹ margin trên
+
+        container.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+    };
+
+    // Cập nhật activePage khi user scroll (dựa trên canvas gần đỉnh nhất)
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        let rafId = null;
+
+        const handleScrollNow = () => {
+            const containerTop = container.getBoundingClientRect().top;
+            let bestPage = activePage;
+            let bestDist = Infinity;
+
+            const refs = canvasRefs.current || {};
+            Object.keys(refs).forEach((pageKey) => {
+                const canvas = refs[pageKey];
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const dist = Math.abs(rect.top - containerTop);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestPage = Number(pageKey);
+                }
+            });
+
+            if (bestPage !== activePage) {
+                setActivePage(bestPage);
+            }
+        };
+
+        const handleScroll = () => {
+            if (rafId) return;
+            rafId = requestAnimationFrame(() => {
+                rafId = null;
+                handleScrollNow();
+            });
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        // Sync lần đầu
+        handleScrollNow();
+
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            if (rafId) cancelAnimationFrame(rafId);
+        };
+    }, [activePage]);
+
     // Canvas drawing handlers
-    const getMousePos = (e) => {
-        const canvas = canvasRef.current;
+    const getMousePos = (e, pageNumber) => {
+        const canvas = canvasRefs.current[pageNumber];
         if (!canvas) return { x: 0, y: 0 };
         
         const rect = canvas.getBoundingClientRect();
@@ -264,10 +328,11 @@ function RejectReviewDialog({
         };
     };
 
-    const handleMouseDown = (e) => {
+    const handleMouseDown = (e, pageNumber) => {
         if (!currentTool) return;
         
-        const pos = getMousePos(e);
+        const pos = getMousePos(e, pageNumber);
+        setActivePage(pageNumber);
         
         if (currentTool === 'eraser') {
             const strokeToRemove = findStrokeAtPosition(pos);
@@ -282,7 +347,7 @@ function RejectReviewDialog({
         const newStroke = {
             id: Date.now(),
             type: currentTool,
-            page: activePage,
+            page: pageNumber,
             points: [pos],
             color: rgb(1, 0, 0), // Red color
             text: currentTool === 'text' ? '' : undefined
@@ -304,10 +369,10 @@ function RejectReviewDialog({
         }
     };
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e, pageNumber) => {
         if (!isDrawing || !currentStroke || currentTool === 'text') return;
         
-        const pos = getMousePos(e);
+        const pos = getMousePos(e, pageNumber);
         
         if (currentTool === 'freehand') {
             setCurrentStroke({
@@ -331,23 +396,27 @@ function RejectReviewDialog({
         setRedoStack([]);
     };
 
-    // Redraw canvas with all strokes
+    // Redraw canvas with all strokes (từng trang riêng)
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw all strokes for current page
-        const pageStrokes = strokes.filter(s => s.page === activePage);
-        pageStrokes.forEach(stroke => drawStroke(ctx, stroke));
-        
-        // Draw current stroke being drawn
-        if (currentStroke && currentStroke.page === activePage) {
-            drawStroke(ctx, currentStroke);
-        }
-    }, [strokes, currentStroke, activePage, pdfScale]);
+        const refs = canvasRefs.current || {};
+        Object.keys(refs).forEach((pageKey) => {
+            const pageNum = Number(pageKey);
+            const canvas = refs[pageKey];
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw all strokes for this page
+            const pageStrokes = strokes.filter(s => s.page === pageNum);
+            pageStrokes.forEach(stroke => drawStroke(ctx, stroke));
+
+            // Draw current stroke being drawn trên trang này
+            if (currentStroke && currentStroke.page === pageNum) {
+                drawStroke(ctx, currentStroke);
+            }
+        });
+    }, [strokes, currentStroke, pdfScale]);
 
     const drawStroke = (ctx, stroke) => {
         ctx.strokeStyle = 'red';
@@ -553,66 +622,89 @@ function RejectReviewDialog({
                     <div className="pdf-annotation-column">
                         <h3 className="column-title">Ghi chú chi tiết</h3>
                         
-                        {/* Annotation Toolbar */}
-                        <AnnotationToolbar
-                            currentTool={currentTool}
-                            onSelectTool={handleToolSelect}
-                            onUndo={handleUndo}
-                            onRedo={handleRedo}
-                            onErase={handleErase}
-                            canUndo={strokes.length > 0}
-                            canRedo={undoStack.length > 0}
-                        />
-
-                        {/* PDF Viewer with Canvas Overlay */}
-                        <div 
-                            className="pdf-viewer-container" 
-                            ref={containerRef}
-                            style={{ cursor: getCursorStyle() }}
-                        >
-                            <div className="pdf-viewer-inner">
-                                <Document
-                                    file={documentMeta.presignedUrl}
-                                    onLoadSuccess={onDocumentLoadSuccess}
-                                    loading={<div className="pdf-loading">Đang tải PDF...</div>}
-                                    error={<div className="pdf-error">Lỗi tải PDF</div>}
-                                >
-                                    <Page
-                                        pageNumber={activePage}
-                                        scale={pdfScale}
-                                        renderTextLayer={false}
-                                        renderAnnotationLayer={false}
-                                    />
-                                </Document>
-                                
-                                {/* Canvas overlay for drawing */}
-                                <canvas
-                                    ref={canvasRef}
-                                    className="annotation-canvas"
-                                    width={595 * pdfScale}
-                                    height={842 * pdfScale}
-                                    onMouseDown={handleMouseDown}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseLeave={handleMouseUp}
-                                />
-                            </div>
-                            
-                            {/* Page Navigation */}
+                        {/* Annotation Toolbar + Page Controls */}
+                        <div className="annotation-toolbar-row">
+                            <AnnotationToolbar
+                                currentTool={currentTool}
+                                onSelectTool={handleToolSelect}
+                                onUndo={handleUndo}
+                                onRedo={handleRedo}
+                                onErase={handleErase}
+                                canUndo={strokes.length > 0}
+                                canRedo={undoStack.length > 0}
+                            />
                             <div className="pdf-page-controls">
                                 <button
-                                    onClick={() => setActivePage(Math.max(1, activePage - 1))}
+                                    onClick={() => {
+                                        const target = Math.max(1, activePage - 1);
+                                        setActivePage(target);
+                                        scrollToPage(target);
+                                    }}
                                     disabled={activePage === 1}
                                 >
                                     ‹ Trước
                                 </button>
                                 <span>Trang {activePage} / {numPages}</span>
                                 <button
-                                    onClick={() => setActivePage(Math.min(numPages, activePage + 1))}
+                                    onClick={() => {
+                                        const target = Math.min(numPages, activePage + 1);
+                                        setActivePage(target);
+                                        scrollToPage(target);
+                                    }}
                                     disabled={activePage === numPages}
                                 >
                                     Sau ›
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* PDF Viewer with Canvas Overlay */}
+                        <div 
+                            className="pdf-viewer-container" 
+                            style={{ cursor: getCursorStyle() }}
+                        >
+                            {/* phần scroll chính nằm ở pdf-viewer-inner */}
+                            <div className="pdf-viewer-inner" ref={containerRef}>
+                                <Document
+                                    file={documentMeta.presignedUrl}
+                                    onLoadSuccess={onDocumentLoadSuccess}
+                                    loading={<div className="pdf-loading">Đang tải PDF...</div>}
+                                    error={<div className="pdf-error">Lỗi tải PDF</div>}
+                                >
+                                    {Array.from({ length: numPages }, (_, index) => {
+                                        const pageNumber = index + 1;
+                                        return (
+                                            <div
+                                                key={pageNumber}
+                                                className="reject-pdf-page-wrapper"
+                                            >
+                                                <Page
+                                                    pageNumber={pageNumber}
+                                                    scale={pdfScale}
+                                                    renderTextLayer={false}
+                                                    renderAnnotationLayer={false}
+                                                />
+                                                {/* Canvas overlay cho từng trang riêng */}
+                                                <canvas
+                                                    ref={(el) => {
+                                                        if (el) {
+                                                            canvasRefs.current[pageNumber] = el;
+                                                        } else {
+                                                            delete canvasRefs.current[pageNumber];
+                                                        }
+                                                    }}
+                                                    className="annotation-canvas"
+                                                    width={595 * pdfScale}
+                                                    height={842 * pdfScale}
+                                                    onMouseDown={(e) => handleMouseDown(e, pageNumber)}
+                                                    onMouseMove={(e) => handleMouseMove(e, pageNumber)}
+                                                    onMouseUp={handleMouseUp}
+                                                    onMouseLeave={handleMouseUp}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </Document>
                             </div>
                         </div>
                     </div>

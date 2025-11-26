@@ -378,33 +378,12 @@ function ContractDetail() {
 
     const handleSignSuccess = async (signedData) => {
         console.log('Contract signed successfully:', signedData);
+        // Hiển thị dialog/thông báo ký thành công và điều hướng về dashboard
         showToast('Ký hợp đồng thành công!', 'success');
-        
-        // Reload contract data để cập nhật trạng thái
-        try {
-            const contractResponse = await contractService.getContractById(contractId);
-            if (contractResponse?.code === 'SUCCESS') {
-                setContract(contractResponse.data);
-            }
-
-            // Reload fields để cập nhật trạng thái field đã ký
-            const fieldsResponse = await contractService.getFieldsByContract(contractId);
-            if (fieldsResponse?.code === 'SUCCESS') {
-                setFields(fieldsResponse.data || []);
-            }
-
-            // Reload recipient
-            if (recipientId) {
-                const recipientResponse = await contractService.getRecipientById(recipientId);
-                if (recipientResponse?.code === 'SUCCESS') {
-                    setRecipient(recipientResponse.data);
-                }
-            }
-        } catch (err) {
-            console.error('Error reloading data after signing:', err);
-        }
-
         setShowSignDialog(false);
+        setTimeout(() => {
+            navigate('/main/dashboard');
+        }, 1200);
     };
 
     const handleCoordinate = () => {
@@ -660,9 +639,11 @@ function ContractDetail() {
                                 </div>
                             )}
 
-                            {type === 'review' && (
+                            {(type === 'review' || type === 'sign') && (
                                 <div className="sign-confirmation-section">
-                                    <h3 className="section-title">XEM XÉT TÀI LIỆU</h3>
+                                    <h3 className="section-title">
+                                        {type === 'review' ? 'XEM XÉT TÀI LIỆU' : 'KÝ TÀI LIỆU'}
+                                    </h3>
                                     <div className="confirmation-content">
                                         <p className="confirmation-question">
                                             Bạn có đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch không?
@@ -691,20 +672,6 @@ function ContractDetail() {
                                         </div>
                                         <p className="confirmation-note">
                                             Vui lòng lựa chọn trước khi nhấn nút Xác nhận ở phần Luồng xử lý tài liệu.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {type === 'sign' && (
-                                <div className="sign-confirmation-section">
-                                    <h3 className="section-title">KÝ TÀI LIỆU</h3>
-                                    <div className="confirmation-content">
-                                        <p className="confirmation-question">
-                                            Bạn có đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch không?
-                                        </p>
-                                        <p className="confirmation-note">
-                                            Vui lòng nhấn nút "Ký hợp đồng" để thực hiện ký số bằng chứng thư số.
                                         </p>
                                     </div>
                                 </div>
@@ -812,8 +779,27 @@ function ContractDetail() {
                                 Xác nhận
                             </button>
                         ) : type === 'sign' ? (
-                            <button className="approve-btn" onClick={handleSignClick}>
-                                Ký hợp đồng
+                            <button className="approve-btn" onClick={() => {
+                                if (!recipientId) {
+                                    showToast('Không tìm thấy thông tin người ký', 'warning');
+                                    return;
+                                }
+                                if (!reviewDecision) {
+                                    showToast('Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận', 'warning');
+                                    return;
+                                }
+                                if (reviewDecision === 'agree') {
+                                    handleSignClick();
+                                } else {
+                                    // Không đồng ý -> mở RejectDialog, dùng cùng luồng với xem xét
+                                    if (!documentMeta) {
+                                        showToast('Không tìm thấy thông tin tài liệu', 'error');
+                                        return;
+                                    }
+                                    setShowRejectDialog(true);
+                                }
+                            }}>
+                                Xác nhận
                             </button>
                         ) : (
                             <button className="finish-btn" onClick={handleCoordinate}>
@@ -913,6 +899,7 @@ function ContractDetail() {
                 onClose={() => setShowSignDialog(false)}
                 contractId={contractId}
                 recipientId={recipientId}
+                recipient={recipient}
                 fields={fields}
                 onSigned={handleSignSuccess}
             />

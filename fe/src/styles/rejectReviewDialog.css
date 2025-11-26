@@ -92,14 +92,41 @@
     overflow: hidden;
 }
 
+/* Override global pdf-viewer-container inside reject dialog để tránh double scroll */
+.reject-dialog-container .pdf-viewer-container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    overflow: hidden;      /* chỉ cho .pdf-viewer-inner scroll */
+    background: transparent;
+    padding: 0;
+}
+
+/* Nền xám phía sau trang PDF trong dialog từ chối */
+.reject-dialog-container .pdf-viewer-inner {
+    background: #525659; /* xám đậm giống viewer chính */
+}
+
+/* Hàng chứa toolbar + điều khiển trang */
+.annotation-toolbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
 
 .pdf-viewer-inner {
     flex: 1;
-    overflow: auto;
+    overflow: auto; /* chỉ một scroll duy nhất cho toàn bộ các trang */
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 20px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px 20px 40px;
     position: relative;
 }
 
@@ -110,14 +137,19 @@
 .pdf-viewer-inner .react-pdf__Page {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     background: white;
-    margin: 0 auto;
+    margin: 0 auto 20px;
+}
+
+/* Wrapper cho từng trang trong dialog từ chối */
+.reject-pdf-page-wrapper {
+    position: relative;
+    margin-bottom: 20px;
 }
 
 .annotation-canvas {
     position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0;
+    left: 0;
     pointer-events: auto;
     z-index: 10;
 }
@@ -136,21 +168,17 @@
 
 .pdf-page-controls {
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 16px;
-    padding: 12px 16px;
-    background: white;
-    border-top: 1px solid #dee2e6;
+    gap: 8px;
 }
 
 .pdf-page-controls button {
-    padding: 8px 16px;
+    padding: 4px 10px;
     background: white;
     border: 1px solid #ced4da;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     color: #495057;
     transition: all 0.2s ease;
 }
@@ -167,7 +195,7 @@
 }
 
 .pdf-page-controls span {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: #333;
 }

@@ -8,27 +8,47 @@ function SignDialog({
     contractId, 
     recipientId,
     fields = [],
+    recipient,
     onSigned 
 }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    
-    // State cho form
+
+    // Bước hiện tại: 1 = Đóng dấu tài liệu, 2 = Chọn chứng thư số
+    const [step, setStep] = useState(1);
+
+    // State cho lựa chọn ảnh đóng dấu
+    const [stampOption, setStampOption] = useState('account'); // 'none' | 'upload' | 'account'
+    const [imageBase64, setImageBase64] = useState(null);
+    const [acceptTerms, setAcceptTerms] = useState(false);
+
+    // State cho chứng thư số (luôn đảm bảo là mảng)
     const [certificates, setCertificates] = useState([]);
     const [selectedCertId, setSelectedCertId] = useState('');
-    const [selectedFieldId, setSelectedFieldId] = useState('');
-    const [isTimestamp, setIsTimestamp] = useState(false);
-    const [imageBase64, setImageBase64] = useState(null);
-    
+
     // State cho validation
     const [errors, setErrors] = useState({});
 
-    // Load certificates khi dialog mở
+    // Reset state khi mở / đóng dialog
     useEffect(() => {
-        if (open && recipientId) {
-            loadCertificates();
+        if (open) {
+            setStep(1);
+            setStampOption('account');
+            setImageBase64(null);
+            setAcceptTerms(false);
+            setCertificates([]);
+            setSelectedCertId('');
+            setError(null);
+            setErrors({});
         }
-    }, [open, recipientId]);
+    }, [open]);
+
+    // Filter fields: chỉ lấy field type = 3 (DIGITAL_SIGN) và status = 0 (chưa ký) và thuộc về recipient này
+    const availableFields = fields.filter(field => 
+        field.type === 3 && 
+        field.status === 0 && 
+        field.recipientId === recipientId
+    );
 
     const loadCertificates = async () => {
         try {
@@ -37,22 +57,14 @@ function SignDialog({
             const response = await contractService.getCertByUser();
             
             if (response?.code === 'SUCCESS') {
-                const certs = response.data || [];
+                const raw = response.data;
+                const list = raw?.certificates;
+                const certs = Array.isArray(list) ? list : (list ? [list] : []);
                 setCertificates(certs);
                 
-                // Auto select first valid certificate
+                // Auto select first certificate nếu có
                 if (certs.length > 0) {
-                    const validCert = certs.find(cert => {
-                        if (cert.validTo) {
-                            return new Date(cert.validTo) > new Date();
-                        }
-                        return cert.status === 1;
-                    });
-                    if (validCert) {
-                        setSelectedCertId(validCert.id.toString());
-                    } else if (certs.length > 0) {
-                        setSelectedCertId(certs[0].id.toString());
-                    }
+                    setSelectedCertId(certs[0].id?.toString());
                 }
             } else {
                 throw new Error(response?.message || 'Không thể tải danh sách chứng thư số');
@@ -65,73 +77,121 @@ function SignDialog({
         }
     };
 
-    // Filter fields: chỉ lấy field type = 3 (DIGITAL_SIGN) và status = 0 (chưa ký) và thuộc về recipient này
-    const availableFields = fields.filter(field => 
-        field.type === 3 && 
-        field.status === 0 && 
-        field.recipientId === recipientId
-    );
+    // Helper: tách MST từ chuỗi certInformation (UID=MST:xxxx)
+    function extractTaxCode(certInformation) {
+        if (!certInformation) return '';
+        const match = certInformation.match(/UID=MST:([^,]+)/);
+        return match ? match[1].trim() : '';
+    }
 
-    const validateForm = () => {
+    // Helper: tách tên chủ thể từ certInformation (CN=TEN, ...)
+    function extractSubjectName(certInformation) {
+        if (!certInformation) return '';
+        const match = certInformation.match(/CN=([^,]+)/);
+        return match ? match[1].trim() : certInformation;
+    }
+
+    // Helper: tách MST và CCCD từ certInformation
+    function extractIdsFromCert(certInformation) {
+        if (!certInformation) return { taxCode: '', cccd: '' };
+        const mstMatch = certInformation.match(/UID=MST:([^,]+)/);
+        const cccdMatch = certInformation.match(/UID=CCCD:([^,]+)/);
+        return {
+            taxCode: mstMatch ? mstMatch[1].trim() : '',
+            cccd: cccdMatch ? cccdMatch[1].trim() : ''
+        };
+    }
+
+    const handleClose = () => {
+        if (!loading) {
+            setError(null);
+            setErrors({});
+            onClose();
+        }
+    };
+
+    const handleConfirmStamp = async () => {
         const newErrors = {};
-        
-        if (!selectedCertId) {
-            newErrors.certId = 'Vui lòng chọn chứng thư số';
+
+        if (!acceptTerms) {
+            newErrors.acceptTerms = 'Vui lòng xác nhận đồng ý với nội dung và điều khoản của tài liệu.';
         }
-        
-        if (!selectedFieldId) {
-            newErrors.fieldId = 'Vui lòng chọn field cần ký';
-        }
-        
+
         setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        if (Object.keys(newErrors).length > 0) return;
+
+        // Sau khi xác nhận đóng dấu -> load danh sách chứng thư và chuyển sang bước 2
+        await loadCertificates();
+        setStep(2);
     };
 
     const handleSign = async () => {
-        if (!validateForm()) {
-            return;
+        const newErrors = {};
+
+        if (!selectedCertId) {
+            newErrors.certId = 'Vui lòng chọn chứng thư số';
+        }
+
+        // Kiểm tra có field để ký không
+        if (!availableFields.length) {
+            newErrors.field = 'Không có field nào để ký. Vui lòng kiểm tra lại.';
+        }
+
+        setErrors(newErrors);
+        if (Object.keys(newErrors).length > 0) return;
+
+        // Kiểm tra khớp MST/CCCD giữa chứng thư và người ký
+        const selectedCert = certificates.find(c => c.id?.toString() === selectedCertId);
+        const signerCardId = (recipient?.cardId || '').trim();
+        const { taxCode, cccd } = extractIdsFromCert(selectedCert?.certInformation);
+
+        if (selectedCert && signerCardId) {
+            const matched = (taxCode && signerCardId === taxCode) || (cccd && signerCardId === cccd);
+            if (!matched) {
+                window.alert('MST/CMT/CCCD của Chứng thư số không trùng khớp với thông tin MST/CMT/CCCD người tạo đã khai báo.');
+                return;
+            }
         }
 
         try {
             setLoading(true);
             setError(null);
-            
-            // Tìm field được chọn
-            const selectedField = availableFields.find(f => f.id.toString() === selectedFieldId);
-            if (!selectedField) {
-                throw new Error('Field không hợp lệ');
-            }
 
-            // Chuẩn bị request body
-            const certData = {
-                certId: parseInt(selectedCertId),
-                isTimestamp: isTimestamp ? "true" : "false",
-                imageBase64: imageBase64 || null,
-                field: {
-                    id: selectedField.id,
-                    page: selectedField.page || 1,
-                    boxX: selectedField.boxX || 0,
-                    boxY: selectedField.boxY || 0,
-                    boxW: selectedField.boxW || 100,
-                    boxH: selectedField.boxH || 30
-                },
-                width: null,
-                height: null,
-                type: 3
-            };
+            // Ký tất cả các field hợp lệ cho người ký hiện tại
+            for (const field of availableFields) {
+                const certData = {
+                    certId: parseInt(selectedCertId, 10),
+                    imageBase64: imageBase64 || null,
+                    field: {
+                        id: field.id,
+                        page: field.page || 1,
+                        boxX: field.boxX || 0,
+                        boxY: field.boxY || 0,
+                        boxW: field.boxW || 100,
+                        boxH: field.boxH || 30
+                    },
+                    width: null,
+                    height: null,
+                    isTimestamp: "false",
+                    type: 3
+                };
 
-            // Gọi API ký
-            const response = await contractService.certificate(recipientId, certData);
-            
-            if (response?.code === 'SUCCESS') {
-                // Success
-                if (onSigned) {
-                    onSigned(response.data);
+                const response = await contractService.certificate(recipientId, certData);
+                if (response?.code !== 'SUCCESS') {
+                    throw new Error(response?.message || 'Ký hợp đồng thất bại');
                 }
-                handleClose();
-            } else {
-                throw new Error(response?.message || 'Ký hợp đồng thất bại');
             }
+
+            // Sau khi ký hết các field, gọi API phê duyệt luồng cho recipient hiện tại
+            const approvalRes = await contractService.approvalProcess(recipientId);
+            if (approvalRes?.code !== 'SUCCESS') {
+                throw new Error(approvalRes?.message || 'Phê duyệt hợp đồng thất bại');
+            }
+
+            if (onSigned) {
+                onSigned({ success: true });
+            }
+            handleClose();
         } catch (err) {
             console.error('Error signing contract:', err);
             const errorMessage = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi ký hợp đồng';
@@ -141,32 +201,9 @@ function SignDialog({
         }
     };
 
-    const handleClose = () => {
-        if (!loading) {
-            setError(null);
-            setErrors({});
-            setSelectedCertId('');
-            setSelectedFieldId('');
-            setIsTimestamp(false);
-            setImageBase64(null);
-            onClose();
-        }
-    };
-
-    const formatCertDisplay = (cert) => {
-        const subject = cert.subject || 'Chưa có tên';
-        const validFrom = cert.validFrom ? new Date(cert.validFrom).toLocaleDateString('vi-VN') : '';
-        const validTo = cert.validTo ? new Date(cert.validTo).toLocaleDateString('vi-VN') : '';
-        const isValid = cert.validTo ? new Date(cert.validTo) > new Date() : cert.status === 1;
-        
-        return `${subject} - Valid: ${validFrom} to ${validTo}${!isValid ? ' (Hết hạn)' : ''}`;
-    };
-
-    const isCertValid = (cert) => {
-        if (cert.validTo) {
-            return new Date(cert.validTo) > new Date();
-        }
-        return cert.status === 1;
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        return new Date(dateString).toLocaleDateString('vi-VN');
     };
 
     if (!open) return null;
@@ -175,7 +212,7 @@ function SignDialog({
         <div className="sign-dialog-overlay" onClick={handleClose}>
             <div className="sign-dialog" onClick={(e) => e.stopPropagation()}>
                 <div className="sign-dialog-header">
-                    <h3>Ký hợp đồng bằng chứng thư số</h3>
+                    <h3>{step === 1 ? 'Đóng Dấu Tài Liệu' : 'Ký Chứng Thư Số'}</h3>
                     <button 
                         className="sign-dialog-close" 
                         onClick={handleClose}
@@ -192,103 +229,154 @@ function SignDialog({
                         </div>
                     )}
 
-                    {/* Chọn chứng thư số */}
-                    <div className="sign-dialog-field">
-                        <label className="sign-dialog-label">
-                            Chứng thư số <span className="required">*</span>
-                        </label>
-                        <select
-                            className={`sign-dialog-select ${errors.certId ? 'error' : ''}`}
-                            value={selectedCertId}
-                            onChange={(e) => {
-                                setSelectedCertId(e.target.value);
-                                setErrors({ ...errors, certId: '' });
-                            }}
-                            disabled={loading || certificates.length === 0}
-                        >
-                            <option value="">-- Chọn chứng thư số --</option>
-                            {certificates.map(cert => (
-                                <option 
-                                    key={cert.id} 
-                                    value={cert.id}
-                                    disabled={!isCertValid(cert)}
-                                >
-                                    {formatCertDisplay(cert)}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.certId && (
-                            <span className="sign-dialog-error-text">{errors.certId}</span>
-                        )}
-                        {certificates.length === 0 && !loading && (
-                            <div className="sign-dialog-warning">
-                                Bạn chưa có chứng thư số. Vui lòng import chứng thư số trước.
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Chọn field ký */}
-                    <div className="sign-dialog-field">
-                        <label className="sign-dialog-label">
-                            Field cần ký <span className="required">*</span>
-                        </label>
-                        <select
-                            className={`sign-dialog-select ${errors.fieldId ? 'error' : ''}`}
-                            value={selectedFieldId}
-                            onChange={(e) => {
-                                setSelectedFieldId(e.target.value);
-                                setErrors({ ...errors, fieldId: '' });
-                            }}
-                            disabled={loading || availableFields.length === 0}
-                        >
-                            <option value="">-- Chọn field cần ký --</option>
-                            {availableFields.map(field => (
-                                <option key={field.id} value={field.id}>
-                                    {field.name || `Field ${field.id}`} - Trang {field.page || 1}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.fieldId && (
-                            <span className="sign-dialog-error-text">{errors.fieldId}</span>
-                        )}
-                        {availableFields.length === 0 && (
-                            <div className="sign-dialog-warning">
-                                Không có field nào để ký. Vui lòng kiểm tra lại.
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Đóng dấu thời gian */}
-                    <div className="sign-dialog-field">
-                        <label className="sign-dialog-checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={isTimestamp}
-                                onChange={(e) => setIsTimestamp(e.target.checked)}
-                                disabled={loading}
-                            />
-                            <span>Đóng dấu thời gian</span>
-                        </label>
-                    </div>
-
-                    {/* Hiển thị thông tin field được chọn */}
-                    {selectedFieldId && (() => {
-                        const selectedField = availableFields.find(f => f.id.toString() === selectedFieldId);
-                        if (selectedField) {
-                            return (
-                                <div className="sign-dialog-field-info">
-                                    <h4>Thông tin field:</h4>
-                                    <ul>
-                                        <li>Tên: {selectedField.name || 'N/A'}</li>
-                                        <li>Trang: {selectedField.page || 1}</li>
-                                        <li>Vị trí: X={selectedField.boxX}, Y={selectedField.boxY}</li>
-                                        <li>Kích thước: W={selectedField.boxW}, H={selectedField.boxH}</li>
-                                    </ul>
+                    {step === 1 && (
+                        <>
+                            <div className="sign-dialog-field">
+                                <label className="sign-dialog-label">Nguồn ảnh đóng dấu</label>
+                                <div className="sign-dialog-stamp-options">
+                                    <label className="sign-dialog-radio-option">
+                                        <input
+                                            type="radio"
+                                            name="stampOption"
+                                            value="none"
+                                            checked={stampOption === 'none'}
+                                            onChange={() => setStampOption('none')}
+                                            disabled={loading}
+                                        />
+                                        <span>Không chọn ảnh</span>
+                                    </label>
+                                    <label className="sign-dialog-radio-option">
+                                        <input
+                                            type="radio"
+                                            name="stampOption"
+                                            value="upload"
+                                            checked={stampOption === 'upload'}
+                                            onChange={() => setStampOption('upload')}
+                                            disabled={loading}
+                                        />
+                                        <span>Tải ảnh lên</span>
+                                    </label>
+                                    <label className="sign-dialog-radio-option">
+                                        <input
+                                            type="radio"
+                                            name="stampOption"
+                                            value="account"
+                                            checked={stampOption === 'account'}
+                                            onChange={() => setStampOption('account')}
+                                            disabled={loading}
+                                        />
+                                        <span>Ảnh từ tài khoản</span>
+                                    </label>
                                 </div>
-                            );
-                        }
-                        return null;
-                    })()}
+                            </div>
+
+                            {stampOption === 'upload' && (
+                                <div className="sign-dialog-field">
+                                    <label className="sign-dialog-label">Tải ảnh chữ ký / con dấu</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        disabled={loading}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const reader = new FileReader();
+                                            reader.onload = () => {
+                                                setImageBase64(reader.result);
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="sign-dialog-field">
+                                <label className="sign-dialog-label">Preview</label>
+                                <div className="sign-dialog-preview-box">
+                                    {imageBase64 ? (
+                                        <img src={imageBase64} alt="Preview chữ ký" />
+                                    ) : (
+                                        <div className="sign-dialog-preview-placeholder">
+                                            Hình ảnh chữ ký / con dấu sẽ hiển thị tại đây
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="sign-dialog-field">
+                                <label className="sign-dialog-checkbox-label">
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptTerms}
+                                        onChange={(e) => setAcceptTerms(e.target.checked)}
+                                        disabled={loading}
+                                    />
+                                    <span>
+                                        Tôi đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch.
+                                    </span>
+                                </label>
+                                {errors.acceptTerms && (
+                                    <span className="sign-dialog-error-text">{errors.acceptTerms}</span>
+                                )}
+                            </div>
+                        </>
+                    )}
+
+                    {step === 2 && (
+                        <>
+                            <div className="sign-dialog-field">
+                                <label className="sign-dialog-label">Danh sách chứng thư số</label>
+                                <div className="sign-dialog-cert-table-wrapper">
+                                    <table className="sign-dialog-cert-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Lựa chọn</th>
+                                                <th>Ký hiệu</th>
+                                                <th>Chủ thể</th>
+                                                <th>MST/CCCD</th>
+                                                <th>Ngày hết hạn</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {certificates.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={5} style={{ textAlign: 'center', padding: '12px' }}>
+                                                        Không có chứng thư số nào. Vui lòng import chứng thư số trước.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {certificates.map(cert => (
+                                                <tr key={cert.id}>
+                                                    <td>
+                                                        <input
+                                                            type="radio"
+                                                            name="selectedCert"
+                                                            value={cert.id}
+                                                            checked={selectedCertId === cert.id?.toString()}
+                                                            onChange={() => {
+                                                                setSelectedCertId(cert.id?.toString());
+                                                                setErrors(prev => ({ ...prev, certId: '' }));
+                                                            }}
+                                                        />
+                                                    </td>
+                                                    <td>{cert.keystoreSerialNumber || '-'}</td>
+                                                    <td>{extractSubjectName(cert.certInformation) || '-'}</td>
+                                                    <td>{extractTaxCode(cert.certInformation) || '-'}</td>
+                                                    <td>{formatDate(cert.keystoreDateEnd) || '-'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {errors.certId && (
+                                    <span className="sign-dialog-error-text">{errors.certId}</span>
+                                )}
+                                {errors.field && (
+                                    <span className="sign-dialog-error-text">{errors.field}</span>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <div className="sign-dialog-footer">
@@ -297,15 +385,25 @@ function SignDialog({
                         onClick={handleClose}
                         disabled={loading}
                     >
-                        Hủy
+                        {step === 1 ? 'Đóng' : 'Hủy bỏ'}
                     </button>
-                    <button
-                        className="sign-dialog-btn sign-dialog-btn-primary"
-                        onClick={handleSign}
-                        disabled={loading || certificates.length === 0 || availableFields.length === 0}
-                    >
-                        {loading ? 'Đang ký...' : 'Ký hợp đồng'}
-                    </button>
+                    {step === 1 ? (
+                        <button
+                            className="sign-dialog-btn sign-dialog-btn-primary"
+                            onClick={handleConfirmStamp}
+                            disabled={loading}
+                        >
+                            Xác nhận
+                        </button>
+                    ) : (
+                        <button
+                            className="sign-dialog-btn sign-dialog-btn-primary"
+                            onClick={handleSign}
+                            disabled={loading || certificates.length === 0}
+                        >
+                            {loading ? 'Đang ký...' : 'Ký'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
