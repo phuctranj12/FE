@@ -442,10 +442,10 @@ const contractService = {
     },
 
 
-    // 7.10.5. Phê duyệt hợp đồng (process approval)
-    approvalProcess: async (contractId) => {
+    // 7.10.5. Phê duyệt hợp đồng (process approval) theo recipientId
+    approvalProcess: async (recipientId) => {
         try {
-            const response = await apiClient.put(`/contracts/processes/approval/${contractId}`);
+            const response = await apiClient.put(`/contracts/processes/approval/${recipientId}`);
             return response;
         } catch (error) {
             throw error;
