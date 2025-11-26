@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import dashboardService from '../../api/dashboardService';
 import '../../styles/receivedDocumentsStats.css';
 
 const StatCard = ({ value, label, dotColor = '#1A73E8' }) => {
@@ -13,26 +14,76 @@ const StatCard = ({ value, label, dotColor = '#1A73E8' }) => {
     );
 };
 
-const ReceivedDocumentsStats = ({
-    title = 'Tài liệu đã nhận',
-    waiting = 112,
-    waitingReply = 9,
-    expiring = 0,
-    completed = 979,
-}) => {
+const ReceivedDocumentsStats = ({ title = 'Tài liệu đã nhận' }) => {
+    const [stats, setStats] = useState({
+        waiting: 0,
+        waitingReply: 0,
+        expiring: 0,
+        completed: 0,
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchReceivedDocuments();
+    }, []);
+
+    const fetchReceivedDocuments = async () => {
+        try {
+            setLoading(true);
+            const result = await dashboardService.getReceivedDocuments();
+
+            if (result.code === 'SUCCESS' && result.data) {
+                setStats({
+                    waiting: result.data.totalProcessing || 0,
+                    waitingReply: result.data.totalWaiting || 0,
+                    expiring: result.data.totalAboutExpire || 0,
+                    completed: result.data.totalSigned || 0,
+                });
+            }
+        } catch (err) {
+            console.error('Error fetching received documents:', err);
+            setError(err.message || 'Không thể tải dữ liệu');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="received-stats-container">
+                <div className="received-stats-header">{title}</div>
+                <div className="received-stats-grid">
+                    <div style={{ textAlign: 'center', padding: '20px' }}>Đang tải...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="received-stats-container">
+                <div className="received-stats-header">{title}</div>
+                <div className="received-stats-grid">
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
+                        Lỗi: {error}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="received-stats-container">
             <div className="received-stats-header">{title}</div>
             <div className="received-stats-grid">
-                <StatCard value={waiting} label="Chờ xử lý" dotColor="#1A73E8" />
-                <StatCard value={waitingReply} label="Chờ phản hồi" dotColor="#F4B400" />
-                <StatCard value={expiring} label="Sắp hết hạn" dotColor="#FB8C00" />
-                <StatCard value={completed} label="Hoàn thành" dotColor="#34A853" />
+                <StatCard value={stats.waiting} label="Chờ xử lý" dotColor="#1A73E8" />
+                <StatCard value={stats.waitingReply} label="Chờ phản hồi" dotColor="#F4B400" />
+                <StatCard value={stats.expiring} label="Sắp hết hạn" dotColor="#FB8C00" />
+                <StatCard value={stats.completed} label="Hoàn thành" dotColor="#34A853" />
             </div>
         </div>
     );
 };
 
 export default ReceivedDocumentsStats;
-
-
