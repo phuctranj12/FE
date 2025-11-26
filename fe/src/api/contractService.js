@@ -25,6 +25,102 @@ const contractService = {
         }
     },
 
+    // 7.1.2.1. Tạo hợp đồng mẫu
+    createTemplateContract: async (templateData) => {
+        try {
+            const response = await apiClient.post('/contracts/template-contracts/create-contract', templateData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.2. Thay đổi trạng thái hợp đồng mẫu
+    changeTemplateContractStatus: async (contractId, status, reason = '') => {
+        try {
+            const response = await apiClient.put(`/contracts/template-contracts/${contractId}/change-status/${status}`, {
+                reason: reason
+            });
+            return response;
+        } catch (error) {
+            console.error('[contractService] Error changing template contract status:', error);
+            throw error;
+        }
+    },
+
+    // 7.1.2.3. Tạo tài liệu mẫu
+    createTemplateDocument: async (documentData) => {
+        try {
+            const response = await apiClient.post('/contracts/template-documents/create-document', documentData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.4. Tạo người tham gia mẫu
+    createTemplateParticipant: async (contractId, participantData) => {
+        try {
+            const response = await apiClient.post(`/contracts/template-participants/create-participant/${contractId}`, participantData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.5. Tạo fields cho mẫu
+    createTemplateField: async (fieldData) => {
+        try {
+            const response = await apiClient.post('/contracts/template-fields/create', fieldData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.6. Cập nhật field mẫu
+    updateTemplateField: async (fieldId, fieldData) => {
+        try {
+            const response = await apiClient.put(`/contracts/template-fields/update/${fieldId}`, fieldData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.7. Lấy danh sách template được chia sẻ
+    getSharedTemplates: async (params = {}) => {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params.textSearch) queryParams.append('textSearch', params.textSearch);
+            if (params.fromDate) queryParams.append('fromDate', params.fromDate);
+            if (params.toDate) queryParams.append('toDate', params.toDate);
+            queryParams.append('page', params.page || 0);
+            queryParams.append('size', params.size || 10);
+
+            const response = await apiClient.get(`/contracts/template-share?${queryParams.toString()}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.8. Lấy danh sách template của tôi
+    getMyTemplateContracts: async (params = {}) => {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params.type) queryParams.append('type', params.type);
+            if (params.name) queryParams.append('name', params.name);
+            queryParams.append('page', params.page || 0);
+            queryParams.append('size', params.size || 10);
+
+            const response = await apiClient.get(`/contracts/template-contracts/my-contracts?${queryParams.toString()}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 7.1.3. Lấy thông tin hợp đồng theo ID
     getContractById: async (contractId) => {
         try {

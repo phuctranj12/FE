@@ -11,6 +11,11 @@ const DocumentTemplatesService = {
         });
     },
 
+    // Lấy danh sách hợp đồng mẫu
+    getMyTemplates({ type = "", name = "", page = 0, size = 10 } = {}) {
+        return apiClient.get('/contracts/template-contracts/my-contracts')
+    },
+
     // Lấy template theo ID
     getTemplateById(templateId) {
         const token = localStorage.getItem("jwt");

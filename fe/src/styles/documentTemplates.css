@@ -247,6 +247,40 @@
     .header-code,
     .header-date {
         min-width: 100px;
+
+.date-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.date-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 2px;
+}
+
+.date-input {
+    padding: 8px 12px;
+    height: 42px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.date-input:hover {
+    border-color: #007bff;
+}
     }
 
     .full-pagination-container {

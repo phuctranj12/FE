@@ -1,7 +1,13 @@
 import React from 'react';
 import '../../styles/documentForm.css';
 
-function TemplateInfoStep({ formData, handleInputChange, handleFileUpload }) {
+function TemplateInfoStep({
+    formData,
+    handleInputChange,
+    handleFileUpload,
+    handleAttachedFilesUpload,
+    removeAttachedFile
+}) {
     const documentTypes = [
         { value: "", label: "Chọn loại tài liệu" },
         { value: "1", label: "Tài liệu gốc" },
@@ -26,14 +32,16 @@ function TemplateInfoStep({ formData, handleInputChange, handleFileUpload }) {
                     id="file-upload-template"
                 />
                 <label htmlFor="file-upload-template" className="file-upload-label">
-                    {formData.attachedFile || 'Chọn file'}
+                    {formData.pdfFileName || 'Chọn file'}
                 </label>
             </div>
 
             <div className="form-content">
                 <div className="left-column">
                     <div className="form-group">
-                        <label>Tên mẫu tài liệu *</label>
+                        <label>
+                            Tên mẫu tài liệu <span className="required">*</span>
+                        </label>
                         <input
                             type="text"
                             name="templateName"
@@ -60,7 +68,9 @@ function TemplateInfoStep({ formData, handleInputChange, handleFileUpload }) {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label>Ngày bắt đầu hiệu lực *</label>
+                        <label>
+                            Ngày bắt đầu hiệu lực <span className="required">*</span>
+                        </label>
                         <div className="date-input-container">
                             <input
                                 type="date"
@@ -75,7 +85,9 @@ function TemplateInfoStep({ formData, handleInputChange, handleFileUpload }) {
 
                 <div className="right-column">
                     <div className="form-group">
-                        <label>Mã mẫu tài liệu *</label>
+                        <label>
+                            Mã mẫu tài liệu <span className="required">*</span>
+                        </label>
                         <input
                             type="text"
                             name="templateCode"
@@ -97,9 +109,38 @@ function TemplateInfoStep({ formData, handleInputChange, handleFileUpload }) {
                             />
                             <span className="attachment-icon">📎</span>
                         </div>
+                        <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar,.txt,.xls,.xlsx"
+                            multiple
+                            onChange={handleAttachedFilesUpload}
+                            style={{ display: 'none' }}
+                            id="attached-files-upload"
+                        />
+                        <label htmlFor="attached-files-upload" className="file-upload-btn">
+                            Chọn files đính kèm
+                        </label>
+                        {formData.attachedFiles && formData.attachedFiles.length > 0 && (
+                            <div className="attached-files-list">
+                                {formData.attachedFiles.map((file, index) => (
+                                    <div key={index} className="attached-file-item">
+                                        <span className="file-name">{file.name}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeAttachedFile(index)}
+                                            className="remove-file-btn"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="form-group">
-                        <label>Ngày kết thúc hiệu lực *</label>
+                        <label>
+                            Ngày kết thúc hiệu lực <span className="required">*</span>
+                        </label>
                         <div className="date-input-container">
                             <input
                                 type="date"
