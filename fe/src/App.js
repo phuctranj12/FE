@@ -20,6 +20,7 @@ import DocumentForm from './components/createContract/DocumentForm';
 import ServerCertificateList from './components/certificate/ServerCertificateList';
 import ContractDetail from './components/contract_coordinate/ContractDetail';
 import EditDocumentForm from './components/document/EditDocumentForm';
+import CheckSignDigital from './components/checkSignDigital/CheckSignDigital';
 function App() {
   return (
     <Routes>
@@ -46,9 +47,7 @@ function App() {
         <Route path="server-certificate" element={<ServerCertificateList />} />
         <Route path="c/:type/:contractId" element={<ContractDetail />} />
         <Route path="contract/create/:status/:id" element={<EditDocumentForm />} />
-
-
-
+        <Route path="check-sign-digital" element={<CheckSignDigital />} />
       </Route>
     </Routes>
   );

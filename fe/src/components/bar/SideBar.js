@@ -197,11 +197,14 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 )}
 
                 {/* Kiểm tra chữ ký số */}
-                <div className="menu-item" onClick={() => {
-                    handleSelectMenu("kiem-tra-chu-ky-so");
-                    toggleMenu(null);
-                }
-                }>
+                <div
+                    className={`menu-item${(menuStatus === "kiem-tra-chu-ky-so") ? " active-menu" : ""}`}
+                    onClick={() => {
+                        handleSelectMenu("kiem-tra-chu-ky-so");
+                        toggleMenu(null);
+                        handleNavigation('/main/check-sign-digital');
+                    }}
+                >
                     Kiểm tra chữ ký số
                 </div>
             </div>
