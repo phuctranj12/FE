@@ -211,7 +211,7 @@ function ServerCertificateList() {
                                         >
                                             <td className="document-title-cell">{c.keystoreSerialNumber}</td>
                                             <td>{subject}</td>
-                                            <td>{cccd || mst}</td>
+                                            <td>{mst}</td>
                                             <td>{formatDate(c.keystoreDateStart)}</td>
                                             <td>{formatDate(c.keystoreDateEnd)}</td>
                                             <td>{statusText}</td>
