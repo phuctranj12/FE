@@ -248,7 +248,7 @@ function DocumentTemplates() {
 
                     {activeTab === "shared" && (
                         <>
-                            <div className="date-input-wrapper">
+                            <div className="date-input-wrapper-template">
                                 <label className="date-label">Từ ngày</label>
                                 <input
                                     type="date"
@@ -261,7 +261,7 @@ function DocumentTemplates() {
                                     }}
                                 />
                             </div>
-                            <div className="date-input-wrapper">
+                            <div className="date-input-wrapper-template">
                                 <label className="date-label">Đến ngày</label>
                                 <input
                                     type="date"

@@ -45,7 +45,7 @@
 .search-filter-section {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
     gap: 16px;
     margin-bottom: 24px;
     flex-wrap: wrap;
@@ -248,10 +248,10 @@
     .header-date {
         min-width: 100px;
 
-.date-input-wrapper {
+.date-input-wrapper-template {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: baseline;
+    gap: 12px;
 }
 
 .date-label {
