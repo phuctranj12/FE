@@ -1,59 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/documentForm.css';
 import TemplateInfoStep from './TemplateInfoStep';
 import DocumentSigners from '../createContract/DocumentSigners';
 import DocumentEditor from '../createContract/DocumentEditor';
 import TemplateConfirmation from './TemplateConfirmation';
-
-// Helper function để convert date format từ DD/MM/YYYY sang YYYY-MM-DD
-const convertDateFormat = (dateStr) => {
-    if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-    return dateStr;
-};
+import customerService from '../../api/customerService';
+import contractService from '../../api/contractService';
 
 const TemplateForm = ({ onBack, editTemplate = null }) => {
     const [currentStep, setCurrentStep] = useState(1);
-    
-    // Tạo mock API data để fill form khi edit
-    const mockTemplateData = editTemplate ? {
-        templateName: editTemplate.name || editTemplate.templateId || '',
-        templateCode: editTemplate.contractCode || editTemplate.id || '',
-        documentType: editTemplate.type_id || '',
-        startDate: editTemplate.start_time ? editTemplate.start_time.split('T')[0] : '',
-        endDate: editTemplate.end_time ? editTemplate.end_time.split('T')[0] : (editTemplate.date ? convertDateFormat(editTemplate.date) : ''),
-        attachedFile: editTemplate.attachedFile || '',
-        organization: editTemplate.organization_name || editTemplate.partyA || 'Trung tâm công nghệ thông tin MobiFone',
-        printWorkflow: editTemplate.printWorkflow || false,
-        loginByPhone: editTemplate.loginByPhone || false
-    } : {
-        templateName: '',
-        templateCode: '',
-        documentType: '',
-        startDate: '',
-        endDate: '',
-        attachedFile: '',
-        organization: 'Trung tâm công nghệ thông tin MobiFone',
-        printWorkflow: false,
-        loginByPhone: false
+
+    // Flow cố định: tài liệu đơn lẻ không theo mẫu (cho hợp đồng mẫu)
+    const documentTypeMode = 'single-no-template';
+
+    // User, tổ chức, loại tài liệu
+    const [currentUser, setCurrentUser] = useState(null);
+    const [organizationId, setOrganizationId] = useState(null);
+    const [documentTypes, setDocumentTypes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Toast
+    const [toasts, setToasts] = useState([]);
+    const showToast = (message, variant = 'error', durationMs = 4000) => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, durationMs);
+    };
+    const removeToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
     };
 
-    const [formData, setFormData] = useState(mockTemplateData);
+    // Id hợp đồng mẫu + tài liệu PDF
+    const [contractId, setContractId] = useState(null);
+    const [documentId, setDocumentId] = useState(null);
 
+    // Participants & Fields
+    const [participantsData, setParticipantsData] = useState([]);
+    const [fieldsData, setFieldsData] = useState([]);
+    const [unassignedComponentCount, setUnassignedComponentCount] = useState(0);
+
+    // Check mã mẫu (contract_no)
+    const [isTemplateCodeValid, setIsTemplateCodeValid] = useState(true);
+    const [isCheckingTemplateCode, setIsCheckingTemplateCode] = useState(false);
+
+    // Form data cho template
+    const [formData, setFormData] = useState(() => ({
+        templateName: editTemplate?.name || editTemplate?.templateId || '',
+        templateCode: editTemplate?.contractCode || editTemplate?.id || '',
+        documentType: editTemplate?.type_id || '',
+        startDate: editTemplate?.start_time
+            ? editTemplate.start_time.split('T')[0]
+            : '',
+        endDate: editTemplate?.end_time
+            ? editTemplate.end_time.split('T')[0]
+            : '',
+        attachedFile: '',
+        organization:
+            editTemplate?.organization_name ||
+            editTemplate?.partyA ||
+            'Trung tâm công nghệ thông tin MobiFone',
+        organizationOrdering: 1,
+        message: '',
+        // File PDF chính
+        pdfFile: null,
+        pdfFileName: '',
+        pdfPageCount: 0,
+        hasSignature: false,
+        // File đính kèm khác (nếu cần mở rộng sau)
+        attachedFiles: []
+    }));
+
+    // Người xử lý
     const [reviewers, setReviewers] = useState([]);
     const [signers, setSigners] = useState([
         {
             id: 1,
             fullName: '',
             email: '',
-            signType: '',
-            loginByPhone: false
+            loginByPhone: false,
+            phone: '',
+            card_id: '',
+            ordering: 1
         }
     ]);
     const [documentClerks, setDocumentClerks] = useState([]);
+
+    // Đối tác
+    const [partners, setPartners] = useState([]);
 
     const steps = [
         { id: 1, title: 'THÔNG TIN MẪU TÀI LIỆU', active: currentStep === 1 },
@@ -61,6 +97,158 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
         { id: 3, title: 'THIẾT KẾ MẪU TÀI LIỆU', active: currentStep === 3 },
         { id: 4, title: 'XÁC NHẬN VÀ HOÀN TẤT', active: currentStep === 4 }
     ];
+
+    // Load user + loại tài liệu
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const userResponse = await customerService.getCustomerByToken();
+                if (userResponse.code === 'SUCCESS' && userResponse.data) {
+                    setCurrentUser(userResponse.data);
+                    const orgId = userResponse.data.organizationId;
+                    setOrganizationId(orgId);
+
+                    setFormData(prev => ({
+                        ...prev,
+                        organization:
+                            prev.organization ||
+                            userResponse.data.organizationName ||
+                            'Trung tâm công nghệ thông tin MobiFone'
+                    }));
+
+                    const typesResponse = await contractService.getAllTypes({
+                        page: 0,
+                        size: 100,
+                        organizationId: orgId
+                    });
+                    if (typesResponse.code === 'SUCCESS' && typesResponse.data) {
+                        setDocumentTypes(typesResponse.data.content || []);
+                    }
+                } else {
+                    throw new Error(
+                        userResponse.message ||
+                            'Không thể lấy thông tin người dùng'
+                    );
+                }
+            } catch (err) {
+                console.error('Error fetching initial data (template):', err);
+                const errorMsg =
+                    err.message ||
+                    'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.';
+                setError(errorMsg);
+                showToast(errorMsg, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInitialData();
+    }, []);
+
+    // Khi vào step 2, nếu chưa có tên tổ chức thì gọi chi tiết + load lại participants nếu có
+    useEffect(() => {
+        const loadStep2Data = async () => {
+            if (currentStep === 2) {
+                if (organizationId && !formData.organization) {
+                    try {
+                        const orgResponse =
+                            await customerService.getOrganizationById(
+                                organizationId
+                            );
+                        if (orgResponse.code === 'SUCCESS' && orgResponse.data) {
+                            setFormData(prev => ({
+                                ...prev,
+                                organization:
+                                    orgResponse.data.name ||
+                                    currentUser?.organizationName ||
+                                    ''
+                            }));
+                        }
+                    } catch (err) {
+                        console.error(
+                            'Error loading organization details (template):',
+                            err
+                        );
+                        if (currentUser?.organizationName) {
+                            setFormData(prev => ({
+                                ...prev,
+                                organization: currentUser.organizationName
+                            }));
+                        }
+                    }
+                }
+
+                if (participantsData && participantsData.length > 0 && contractId) {
+                    try {
+                        const participant = participantsData[0];
+                        if (participant && participant.recipients) {
+                            const newReviewers = [];
+                            const newSigners = [];
+                            const newClerks = [];
+
+                            participant.recipients.forEach((recipient, index) => {
+                                const recipientData = {
+                                    id: Date.now() + index,
+                                    recipientId: recipient.id,
+                                    fullName: recipient.name || '',
+                                    email: recipient.email || '',
+                                    phone: recipient.phone || '',
+                                    card_id:
+                                        recipient.card_id || recipient.cardId || '',
+                                    ordering: recipient.ordering || index + 1,
+                                    loginByPhone: recipient.loginByPhone || false
+                                };
+
+                                if (recipient.role === 2) newReviewers.push(recipientData);
+                                else if (recipient.role === 3)
+                                    newSigners.push(recipientData);
+                                else if (recipient.role === 4)
+                                    newClerks.push(recipientData);
+                            });
+
+                            const hasOnlyEmptySigner =
+                                signers.length === 1 &&
+                                !signers[0].fullName &&
+                                !signers[0].email;
+
+                            const shouldLoad =
+                                (newReviewers.length > 0 ||
+                                    newSigners.length > 0 ||
+                                    newClerks.length > 0) &&
+                                reviewers.length === 0 &&
+                                hasOnlyEmptySigner &&
+                                documentClerks.length === 0;
+
+                            if (shouldLoad) {
+                                setReviewers(newReviewers);
+                                if (newSigners.length > 0) {
+                                    setSigners(newSigners);
+                                }
+                                setDocumentClerks(newClerks);
+                            }
+
+                            if (participant.ordering) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    organizationOrdering: participant.ordering
+                                }));
+                            }
+                        }
+                    } catch (err) {
+                        console.error(
+                            'Error loading participants data (template):',
+                            err
+                        );
+                    }
+                }
+            }
+        };
+
+        loadStep2Data();
+    }, [currentStep, organizationId, formData.organization, participantsData, contractId, reviewers.length, signers, documentClerks.length, currentUser]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -70,14 +258,142 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
         }));
     };
 
-    const handleFileUpload = (e) => {
+    // Kiểm tra mã mẫu tài liệu unique (dùng lại API check-code-unique)
+    const handleTemplateCodeBlur = async () => {
+        const code = formData.templateCode?.trim();
+
+        if (!code) {
+            setIsTemplateCodeValid(false);
+            return;
+        }
+
+        try {
+            setIsCheckingTemplateCode(true);
+            const response = await contractService.checkCodeUnique(code);
+
+            if (response.code === 'SUCCESS') {
+                let isUnique = false;
+
+                if (typeof response.data === 'boolean') {
+                    isUnique = response.data === true;
+                } else if (response.data && typeof response.data === 'object') {
+                    const isExist = response.data.isExist;
+                    if (typeof isExist === 'string') {
+                        isUnique = isExist.toLowerCase() === 'false';
+                    } else {
+                        isUnique = !isExist;
+                    }
+                }
+
+                setIsTemplateCodeValid(isUnique);
+                if (!isUnique) {
+                    showToast(
+                        'Mã mẫu tài liệu đã tồn tại. Vui lòng nhập mã khác.',
+                        'error'
+                    );
+                }
+            } else {
+                showToast(
+                    response.message || 'Không thể kiểm tra mã mẫu tài liệu',
+                    'error'
+                );
+                setIsTemplateCodeValid(false);
+            }
+        } catch (err) {
+            console.error('Error checking template code:', err);
+            const errorMsg =
+                err.response?.data?.message ||
+                err.message ||
+                'Đã xảy ra lỗi khi kiểm tra mã mẫu tài liệu';
+            showToast(errorMsg, 'error');
+            setIsTemplateCodeValid(false);
+        } finally {
+            setIsCheckingTemplateCode(false);
+        }
+    };
+
+    // Upload file PDF, gọi getPageSize + checkSignature
+    const handleFileUpload = async (e) => {
         const file = e.target.files[0];
-        if (file) {
+        if (!file) return;
+
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            showToast('Chỉ hỗ trợ file PDF', 'error');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const pageSizeResponse = await contractService.getPageSize(file);
+            if (pageSizeResponse.code !== 'SUCCESS') {
+                throw new Error(
+                    pageSizeResponse.message ||
+                        'Không thể kiểm tra số trang của file'
+                );
+            }
+
+            const pageCount = pageSizeResponse.data?.numberOfPages || 0;
+
+            const signatureResponse = await contractService.checkSignature(file);
+            if (signatureResponse.code !== 'SUCCESS') {
+                throw new Error(
+                    signatureResponse.message ||
+                        'Không thể kiểm tra chữ ký số'
+                );
+            }
+
+            const hasSignature = signatureResponse.data?.hasSignature || false;
+            if (hasSignature) {
+                showToast(
+                    'Tài liệu đã có chữ ký số, vui lòng chọn file khác',
+                    'error'
+                );
+                e.target.value = '';
+                return;
+            }
+
             setFormData(prev => ({
                 ...prev,
-                attachedFile: file.name
+                pdfFile: file,
+                pdfFileName: file.name,
+                pdfPageCount: parseInt(pageCount, 10),
+                hasSignature
+            }));
+        } catch (err) {
+            console.error('Error uploading template file:', err);
+            showToast(
+                err.message || 'Đã xảy ra lỗi khi tải file. Vui lòng thử lại.',
+                'error'
+            );
+            e.target.value = '';
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle attached files upload (type = 3)
+    const handleAttachedFilesUpload = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            setFormData(prev => ({
+                ...prev,
+                attachedFiles: [...prev.attachedFiles, ...files],
+                attachedFile: files.map(f => f.name).join(', ')
             }));
         }
+    };
+
+    // Remove attached file
+    const removeAttachedFile = (index) => {
+        setFormData(prev => {
+            const newFiles = prev.attachedFiles.filter((_, i) => i !== index);
+            return {
+                ...prev,
+                attachedFiles: newFiles,
+                attachedFile: newFiles.map(f => f.name).join(', ')
+            };
+        });
     };
 
     const addReviewer = () => {
@@ -87,7 +403,7 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
             email: '',
             phone: ''
         };
-        setReviewers([...reviewers, newReviewer]);
+        setReviewers(prev => [...prev, newReviewer]);
     };
 
     const addSigner = () => {
@@ -95,10 +411,12 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
             id: Date.now(),
             fullName: '',
             email: '',
-            signType: '',
-            loginByPhone: false
+            phone: '',
+            loginByPhone: false,
+            card_id: '',
+            ordering: signers.length + 1
         };
-        setSigners([...signers, newSigner]);
+        setSigners(prev => [...prev, newSigner]);
     };
 
     const addDocumentClerk = () => {
@@ -106,26 +424,633 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
             id: Date.now(),
             fullName: '',
             email: '',
-            phone: ''
+            phone: '',
+            card_id: '',
+            ordering: documentClerks.length + 1
         };
-        setDocumentClerks([...documentClerks, newClerk]);
+        setDocumentClerks(prev => [...prev, newClerk]);
     };
 
     const updateSigner = (id, field, value) => {
-        setSigners(signers.map(signer => 
-            signer.id === id ? { ...signer, [field]: value } : signer
-        ));
+        setSigners(prev =>
+            prev.map(signer =>
+                signer.id === id ? { ...signer, [field]: value } : signer
+            )
+        );
     };
 
     const removeSigner = (id) => {
         if (signers.length > 1) {
-            setSigners(signers.filter(signer => signer.id !== id));
+            setSigners(prev => prev.filter(signer => signer.id !== id));
         }
     };
 
+    const updateReviewer = (id, field, value) => {
+        setReviewers(prev =>
+            prev.map(reviewer =>
+                reviewer.id === id ? { ...reviewer, [field]: value } : reviewer
+            )
+        );
+    };
+
+    const removeReviewer = (id) => {
+        setReviewers(prev => prev.filter(reviewer => reviewer.id !== id));
+    };
+
+    const updateDocumentClerk = (id, field, value) => {
+        setDocumentClerks(prev =>
+            prev.map(clerk =>
+                clerk.id === id ? { ...clerk, [field]: value } : clerk
+            )
+        );
+    };
+
+    const removeDocumentClerk = (id) => {
+        setDocumentClerks(prev => prev.filter(clerk => clerk.id !== id));
+    };
+
+    // Đối tác (rút gọn từ DocumentForm)
+    const addPartner = () => {
+        const newPartner = {
+            id: Date.now(),
+            type: 2,
+            name: '',
+            ordering: partners.length + 2,
+            coordinators: [],
+            reviewers: [],
+            signers: [],
+            clerks: []
+        };
+        setPartners(prev => [...prev, newPartner]);
+    };
+
+    const removePartner = (id) => {
+        setPartners(prev => prev.filter(partner => partner.id !== id));
+    };
+
+    const updatePartner = (id, field, value) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === id) {
+                    if (field === 'type' && value === 3) {
+                        return {
+                            ...partner,
+                            type: 3,
+                            coordinators: [],
+                            reviewers: [],
+                            clerks: []
+                        };
+                    }
+                    return { ...partner, [field]: value };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const addPartnerSigner = (partnerId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    const newSigner = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        loginByPhone: false,
+                        card_id: '',
+                        ordering: partner.signers.length + 1
+                    };
+                    return {
+                        ...partner,
+                        signers: [...partner.signers, newSigner]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerSigner = (partnerId, signerId, field, value) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        signers: partner.signers.map(signer =>
+                            signer.id === signerId
+                                ? { ...signer, [field]: value }
+                                : signer
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerSigner = (partnerId, signerId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        signers: partner.signers.filter(
+                            s => s.id !== signerId
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const handleOrganizationOrderingChange = (value) => {
+        const parsed = parseInt(value, 10);
+        setFormData(prev => ({
+            ...prev,
+            organizationOrdering: Number.isNaN(parsed)
+                ? ''
+                : Math.max(1, parsed)
+        }));
+    };
+
+    const validateEmail = (email) => {
+        if (!email) return false;
+        const emailRegex = /^\S+@\S+\.\S+$/;
+        return emailRegex.test(email.trim());
+    };
+
+    const validatePhone = (phone) => {
+        if (!phone) return false;
+        const phoneRegex = /^(\+84|0)[1-9][0-9]{8,9}$/;
+        return phoneRegex.test(phone.trim().replace(/\s/g, ''));
+    };
+
+    const validateStep2 = () => {
+        const errors = [];
+
+        if (!contractId) {
+            errors.push(
+                'Không tìm thấy thông tin hợp đồng mẫu. Vui lòng hoàn thành bước 1 trước.'
+            );
+        }
+
+        const validSigners = signers.filter((signer) => {
+            const hasName = signer.fullName?.trim();
+            if (!hasName) return false;
+
+            if (signer.loginByPhone) {
+                return validatePhone(signer.phone);
+            }
+            return validateEmail(signer.email);
+        });
+
+        if (validSigners.length === 0) {
+            errors.push(
+                'Vui lòng thêm ít nhất một người ký với tên và email/số điện thoại hợp lệ.'
+            );
+        }
+
+        const invalidSigners = signers.filter((signer) => {
+            if (!signer.fullName?.trim()) return false;
+            if (signer.loginByPhone) {
+                return !validatePhone(signer.phone);
+            }
+            return !validateEmail(signer.email);
+        });
+        if (invalidSigners.length > 0) {
+            errors.push('Email hoặc số điện thoại của người ký không hợp lệ.');
+        }
+
+        const signersWithoutCardId = signers.filter((signer) => {
+            const hasName = signer.fullName?.trim();
+            if (!hasName) return false;
+            const cardId = signer.cardId || signer.card_id || '';
+            return !cardId.trim();
+        });
+        if (signersWithoutCardId.length > 0) {
+            errors.push(
+                'Vui lòng nhập Mã số thuế/CMT/CCCD cho tất cả người ký.'
+            );
+        }
+
+        const incompleteReviewers = reviewers.filter((reviewer) =>
+            reviewer.fullName !== undefined &&
+            reviewer.email !== undefined &&
+            (!reviewer.fullName?.trim() || !reviewer.email?.trim())
+        );
+        if (incompleteReviewers.length > 0) {
+            errors.push(
+                'Vui lòng nhập đầy đủ Họ tên và Email cho tất cả người xem xét.'
+            );
+        }
+
+        const invalidReviewers = reviewers.filter(
+            (reviewer) => reviewer.email && !validateEmail(reviewer.email)
+        );
+        if (invalidReviewers.length > 0) {
+            errors.push('Email của người xem xét không hợp lệ.');
+        }
+
+        const incompleteClerks = documentClerks.filter((clerk) =>
+            clerk.fullName !== undefined &&
+            clerk.email !== undefined &&
+            (!clerk.fullName?.trim() || !clerk.email?.trim())
+        );
+        if (incompleteClerks.length > 0) {
+            errors.push(
+                'Vui lòng nhập đầy đủ Họ tên và Email cho tất cả văn thư.'
+            );
+        }
+
+        const invalidClerks = documentClerks.filter(
+            (clerk) => clerk.email && !validateEmail(clerk.email)
+        );
+        if (invalidClerks.length > 0) {
+            errors.push('Email của văn thư không hợp lệ.');
+        }
+
+        partners.forEach((partner, index) => {
+            if (!partner.name?.trim()) {
+                errors.push(`Vui lòng nhập tên cho đối tác ${index + 1}.`);
+                return;
+            }
+
+            const validatePartnerSigners = (signersList) => {
+                const invalid = signersList.filter((signer) => {
+                    if (!signer.fullName?.trim()) return false;
+                    if (signer.loginByPhone) {
+                        return !validatePhone(signer.phone);
+                    }
+                    return !validateEmail(signer.email);
+                });
+                if (invalid.length > 0) {
+                    errors.push(
+                        `Email hoặc số điện thoại của người ký trong đối tác "${partner.name}" không hợp lệ.`
+                    );
+                }
+
+                const withoutCardId = signersList.filter((signer) => {
+                    const hasName = signer.fullName?.trim();
+                    if (!hasName) return false;
+                    const cardId = signer.cardId || signer.card_id || '';
+                    return !cardId.trim();
+                });
+                if (withoutCardId.length > 0) {
+                    errors.push(
+                        `Vui lòng nhập Mã số thuế/CMT/CCCD cho tất cả người ký trong đối tác "${partner.name}".`
+                    );
+                }
+            };
+
+            if (partner.type === 2 || partner.type === 3) {
+                validatePartnerSigners(partner.signers);
+            }
+        });
+
+        if (errors.length > 0) {
+            showToast(errors[0], 'error');
+            return false;
+        }
+
+        return true;
+    };
+
+    const buildParticipantsPayload = () => {
+        const participants = [];
+
+        const addRecipients = (items, role, recipientsArray) => {
+            const validItems = items.filter(item => {
+                const fullName = item.fullName?.trim();
+                if (!fullName) return false;
+
+                if (role === 3 && item.loginByPhone) {
+                    const phone = item.phone?.trim();
+                    return phone && validatePhone(phone);
+                }
+                const email = item.email?.trim();
+                return email && validateEmail(email);
+            });
+
+            validItems.forEach((item, index) => {
+                const customOrdering = parseInt(item.ordering, 10);
+                const ordering =
+                    Number.isNaN(customOrdering) || customOrdering <= 0
+                        ? index + 1
+                        : customOrdering;
+
+                const email =
+                    role === 3 && item.loginByPhone
+                        ? ''
+                        : item.email?.trim() || '';
+                const phone =
+                    role === 3 && item.loginByPhone
+                        ? item.phone?.trim() || ''
+                        : item.phone || '';
+
+                const cardId =
+                    role === 3 ? item.cardId || item.card_id || '' : '';
+
+                recipientsArray.push({
+                    ...(item.recipientId && { id: item.recipientId }),
+                    name: item.fullName.trim(),
+                    email,
+                    phone,
+                    cardId,
+                    role,
+                    ordering,
+                    status: 0,
+                    signType: 6
+                });
+            });
+        };
+
+        const myOrgRecipients = [];
+        addRecipients(reviewers, 2, myOrgRecipients);
+        addRecipients(signers, 3, myOrgRecipients);
+        addRecipients(documentClerks, 4, myOrgRecipients);
+
+        if (myOrgRecipients.length > 0) {
+            const participantName =
+                formData.organization?.trim() || 'Tổ chức của tôi';
+            const participantOrdering = parseInt(
+                formData.organizationOrdering,
+                10
+            );
+            const orderingValue =
+                Number.isNaN(participantOrdering) || participantOrdering <= 0
+                    ? 1
+                    : participantOrdering;
+
+            const participantPayload = {
+                ...(participantsData?.[0]?.id && {
+                    id: participantsData[0].id
+                }),
+                name: participantName,
+                type: 1,
+                ordering: orderingValue,
+                status: 1,
+                contractId,
+                recipients: myOrgRecipients
+            };
+            participants.push(participantPayload);
+        }
+
+        partners.forEach((partner) => {
+            if (!partner.name?.trim()) return;
+
+            const partnerRecipients = [];
+            addRecipients(partner.signers, 3, partnerRecipients);
+
+            if (partnerRecipients.length > 0) {
+                const partnerOrdering = parseInt(partner.ordering, 10);
+                const orderingValue =
+                    Number.isNaN(partnerOrdering) || partnerOrdering <= 0
+                        ? participants.length + 1
+                        : partnerOrdering;
+
+                const partnerPayload = {
+                    ...(partner.participantId && { id: partner.participantId }),
+                    name: partner.name.trim(),
+                    type: partner.type,
+                    ordering: orderingValue,
+                    status: 1,
+                    contractId,
+                    recipients: partnerRecipients
+                };
+                participants.push(partnerPayload);
+            }
+        });
+
+        return participants;
+    };
+
+    const validateStep1 = () => {
+        const errors = [];
+
+        if (!formData.templateName?.trim()) {
+            errors.push('Tên mẫu tài liệu là bắt buộc');
+        }
+
+        if (!formData.templateCode?.trim()) {
+            errors.push('Mã mẫu tài liệu là bắt buộc');
+        }
+
+        if (
+            formData.templateCode &&
+            formData.templateCode.trim() &&
+            !isTemplateCodeValid
+        ) {
+            errors.push(
+                'Mã mẫu tài liệu đã tồn tại. Vui lòng nhập mã khác.'
+            );
+        }
+
+        if (!formData.startDate) {
+            errors.push('Ngày bắt đầu hiệu lực là bắt buộc');
+        }
+
+        if (!formData.endDate) {
+            errors.push('Ngày kết thúc hiệu lực là bắt buộc');
+        }
+
+        if (!formData.pdfFile) {
+            errors.push('Vui lòng tải lên file PDF mẫu tài liệu');
+        }
+
+        if (errors.length > 0) {
+            showToast(errors[0], 'error');
+            return false;
+        }
+
+        return true;
+    };
+
+    const convertToISODateFromDateInput = (dateStr) => {
+        if (!dateStr) return null;
+        return `${dateStr}T00:00:00.000Z`;
+    };
+
     const handleNext = () => {
-        if (currentStep < 4) {
-            setCurrentStep(currentStep + 1);
+        handleNextAsync();
+    };
+
+    const handleNextAsync = async () => {
+        if (currentStep === 1) {
+            if (!validateStep1()) return;
+
+            try {
+                setLoading(true);
+
+                const contractData = {
+                    name: formData.templateName.trim(),
+                    contractNo: formData.templateCode?.trim() || '',
+                    signTime: convertToISODateFromDateInput(formData.startDate),
+                    note: formData.message?.trim() || '',
+                    typeId: formData.documentType
+                        ? parseInt(formData.documentType, 10)
+                        : 0,
+                    isTemplate: true,
+                    contractExpireTime:
+                        convertToISODateFromDateInput(formData.endDate)
+                };
+
+                const contractResponse =
+                    await contractService.createTemplateContract(contractData);
+
+                if (
+                    contractResponse.code !== 'SUCCESS' ||
+                    !contractResponse.data?.id
+                ) {
+                    throw new Error(
+                        contractResponse.message ||
+                            'Không thể tạo hợp đồng mẫu'
+                    );
+                }
+
+                const newContractId = contractResponse.data.id;
+                setContractId(newContractId);
+
+                const uploadResponse = await contractService.uploadDocument(
+                    formData.pdfFile
+                );
+
+                if (uploadResponse.code !== 'SUCCESS' || !uploadResponse.data) {
+                    throw new Error(
+                        uploadResponse.message || 'Không thể upload file PDF'
+                    );
+                }
+
+                const { path: uploadedPath, fileName: uploadedFileName } =
+                    uploadResponse.data;
+
+                const documentData = {
+                    name: formData.templateName.trim(),
+                    type: 1,
+                    contractId: newContractId,
+                    fileName: uploadedFileName,
+                    path: uploadedPath,
+                    status: 1
+                };
+
+                const documentResponse =
+                    await contractService.createTemplateDocument(documentData);
+
+                if (
+                    documentResponse.code !== 'SUCCESS' ||
+                    !documentResponse.data?.id
+                ) {
+                    throw new Error(
+                        documentResponse.message ||
+                            'Không thể lưu thông tin tài liệu'
+                    );
+                }
+
+                const newDocumentId = documentResponse.data.id;
+                setDocumentId(newDocumentId);
+
+                // Upload file đính kèm nếu có (type = 3)
+                if (formData.attachedFiles && formData.attachedFiles.length > 0) {
+                    console.log('Uploading attached files for template...');
+
+                    for (const file of formData.attachedFiles) {
+                        try {
+                            // Upload file to MinIO
+                            const attachUploadResponse = await contractService.uploadDocument(file);
+
+                            if (attachUploadResponse.code === 'SUCCESS' && attachUploadResponse.data) {
+                                // Save document record (type = 3: file đính kèm)
+                                const attachDocData = {
+                                    name: file.name,
+                                    type: 3, // File đính kèm
+                                    contractId: newContractId,
+                                    fileName: attachUploadResponse.data.fileName,
+                                    path: attachUploadResponse.data.path,
+                                    status: 1
+                                };
+
+                                await contractService.createTemplateDocument(attachDocData);
+                                console.log('Attached file uploaded for template:', file.name);
+                            }
+                        } catch (err) {
+                            console.error('Error uploading attached file for template:', file.name, err);
+                            // Continue với các file khác nếu 1 file lỗi
+                        }
+                    }
+                }
+
+                showToast(
+                    'Tạo hợp đồng mẫu thành công! ID: ' + newContractId,
+                    'success',
+                    3000
+                );
+
+                setCurrentStep(2);
+            } catch (err) {
+                console.error('Error in template step 1:', err);
+                showToast(
+                    err.message ||
+                        'Không thể tạo hợp đồng mẫu. Vui lòng thử lại.',
+                    'error'
+                );
+            } finally {
+                setLoading(false);
+            }
+        } else if (currentStep === 2) {
+            if (!validateStep2()) return;
+
+            const participantsPayload = buildParticipantsPayload();
+            if (!participantsPayload || participantsPayload.length === 0) {
+                showToast(
+                    'Vui lòng nhập thông tin người xử lý trước khi tiếp tục.',
+                    'error'
+                );
+                return;
+            }
+
+            try {
+                setLoading(true);
+                const participantResponse =
+                    await contractService.createTemplateParticipant(
+                        contractId,
+                        participantsPayload
+                    );
+
+                if (participantResponse.code !== 'SUCCESS') {
+                    throw new Error(
+                        participantResponse.message ||
+                            'Không thể lưu người xử lý'
+                    );
+                }
+
+                setParticipantsData(participantResponse.data || []);
+                showToast(
+                    'Lưu thông tin người xử lý thành công.',
+                    'success',
+                    3000
+                );
+                setCurrentStep(3);
+            } catch (err) {
+                console.error('Error saving participants (template):', err);
+                const errorMessage =
+                    err.response?.data?.message ||
+                    err.response?.data?.error ||
+                    err.message ||
+                    'Không thể lưu người xử lý. Vui lòng thử lại.';
+                showToast(errorMessage, 'error');
+            } finally {
+                setLoading(false);
+            }
+        } else if (currentStep === 3) {
+            if (unassignedComponentCount > 0) {
+                showToast(
+                    `Vui lòng gán người xử lý cho ${unassignedComponentCount} thành phần trước khi tiếp tục.`,
+                    'error'
+                );
+                return;
+            }
+            setCurrentStep(4);
         }
     };
 
@@ -139,13 +1064,65 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
 
     const handleSaveDraft = () => {
         console.log('Saving template draft:', formData);
-        // Implement save draft functionality
     };
 
-    const handleComplete = () => {
-        console.log('Completing template:', formData);
-        // Implement complete functionality
-        onBack && onBack();
+    const handleComplete = async () => {
+        if (!contractId || !documentId) {
+            showToast(
+                'Không tìm thấy thông tin hợp đồng mẫu. Vui lòng quay lại bước 1.',
+                'error'
+            );
+            return;
+        }
+
+        if (!fieldsData || fieldsData.length === 0) {
+            showToast(
+                'Vui lòng thiết kế ít nhất một field trên tài liệu ở bước 3.',
+                'error'
+            );
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const fieldsResponse = await contractService.createTemplateField(fieldsData);
+            if (fieldsResponse.code !== 'SUCCESS') {
+                throw new Error(
+                    fieldsResponse.message || 'Không thể tạo fields cho mẫu'
+                );
+            }
+
+            const statusResponse = await contractService.changeTemplateContractStatus(
+                contractId,
+                10
+            );
+            if (statusResponse.code !== 'SUCCESS') {
+                throw new Error(
+                    statusResponse.message ||
+                        'Không thể cập nhật trạng thái hợp đồng mẫu'
+                );
+            }
+
+            showToast(
+                'Tạo hợp đồng mẫu thành công với trạng thái "Đã tạo".',
+                'success',
+                5000
+            );
+
+            setTimeout(() => {
+                onBack && onBack();
+            }, 1500);
+        } catch (err) {
+            console.error('Error completing template:', err);
+            showToast(
+                err.message ||
+                    'Không thể hoàn tất hợp đồng mẫu. Vui lòng thử lại.',
+                'error'
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderStepContent = () => {
@@ -167,26 +1144,69 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
         return (
             <TemplateInfoStep
                 formData={formData}
+                documentTypes={documentTypes}
+                loading={loading}
                 handleInputChange={handleInputChange}
                 handleFileUpload={handleFileUpload}
+                handleAttachedFilesUpload={handleAttachedFilesUpload}
+                removeAttachedFile={removeAttachedFile}
+                onTemplateCodeBlur={handleTemplateCodeBlur}
+                isCheckingTemplateCode={isCheckingTemplateCode}
+                isTemplateCodeValid={isTemplateCodeValid}
             />
         );
+    };
+
+    // Gợi ý tên cho step 2 (giống DocumentForm)
+    const suggestName = async (textSearch) => {
+        try {
+            const searchText = textSearch?.trim() || '';
+            const response = await customerService.suggestListCustomer(
+                searchText
+            );
+            if (response.code === 'SUCCESS' && response.data) {
+                return response.data
+                    .map(item => ({
+                        name: item.name || '',
+                        email: item.email || '',
+                        phone: item.phone || ''
+                    }))
+                    .filter(item => item.name);
+            }
+            return [];
+        } catch (err) {
+            console.error('Error fetching name suggestions (template):', err);
+            return [];
+        }
     };
 
     const renderStep2 = () => {
         return (
             <DocumentSigners
-                documentType="single-no-template"
+                documentType={documentTypeMode}
                 formData={formData}
                 setFormData={setFormData}
                 reviewers={reviewers}
                 addReviewer={addReviewer}
+                updateReviewer={updateReviewer}
+                removeReviewer={removeReviewer}
                 signers={signers}
                 addSigner={addSigner}
                 removeSigner={removeSigner}
                 updateSigner={updateSigner}
                 documentClerks={documentClerks}
                 addDocumentClerk={addDocumentClerk}
+                updateDocumentClerk={updateDocumentClerk}
+                removeDocumentClerk={removeDocumentClerk}
+                handleOrganizationOrderingChange={handleOrganizationOrderingChange}
+                suggestName={suggestName}
+                partners={partners}
+                addPartner={addPartner}
+                removePartner={removePartner}
+                updatePartner={updatePartner}
+                addPartnerSigner={addPartnerSigner}
+                updatePartnerSigner={updatePartnerSigner}
+                removePartnerSigner={removePartnerSigner}
             />
         );
     };
@@ -194,14 +1214,20 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
     const renderStep3 = () => {
         return (
             <DocumentEditor
-                documentType="single-no-template"
+                documentType={documentTypeMode}
+                contractId={contractId}
+                documentId={documentId}
+                participantsData={participantsData}
+                fieldsData={fieldsData}
+                onFieldsChange={setFieldsData}
+                totalPages={formData.pdfPageCount || 1}
                 onBack={() => setCurrentStep(2)}
                 onNext={() => setCurrentStep(4)}
                 onSaveDraft={() => {
                     console.log('Lưu nháp từ TemplateForm');
-                    // Logic lưu nháp
                 }}
                 hideFooter={true}
+                onAssignmentStateChange={setUnassignedComponentCount}
             />
         );
     };
@@ -214,6 +1240,10 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                 reviewers={reviewers}
                 signers={signers}
                 documentClerks={documentClerks}
+                contractId={contractId}
+                documentId={documentId}
+                fieldsData={fieldsData}
+                loading={loading}
                 onBack={() => setCurrentStep(3)}
                 onComplete={handleComplete}
                 onSaveDraft={handleSaveDraft}
@@ -221,52 +1251,174 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
         );
     };
 
-    return (
-        <div className="document-form-container">
-            <div className="document-form-wrapper">
-                <div className="form-header">
-                    <div className="step-indicator">
-                        {steps.map((step) => (
-                            <div key={step.id} className={`step ${step.active ? 'active' : ''}`}>
-                                <div className={`step-circle ${step.active ? 'active' : ''}`}>
-                                    {step.id}
-                                </div>
-                                <div className="step-title">{step.title}</div>
-                            </div>
-                        ))}
+    if (loading && !currentUser) {
+        return (
+            <div className="document-form-container">
+                <div className="document-form-wrapper">
+                    <div className="loading-message">
+                        <p>Đang tải dữ liệu...</p>
                     </div>
                 </div>
+            </div>
+        );
+    }
 
-                <div className="form-body">
-                    {renderStepContent()}
-                </div>
-
-                <div className="form-footer">
-                    {currentStep > 1 && currentStep < 4 && (
-                        <button className="back-btn" onClick={handleBack}>
-                            Quay lại
+    if (error && !currentUser) {
+        return (
+            <div className="document-form-container">
+                <div className="document-form-wrapper">
+                    <div className="error-message">
+                        <p>❌ {error}</p>
+                        <button onClick={() => window.location.reload()}>
+                            Thử lại
                         </button>
-                    )}
-                    {currentStep === 1 && (
-                        <button className="back-btn" onClick={handleBack}>
-                            Quay lại
-                        </button>
-                    )}
-                    {currentStep < 4 && (
-                        <div className="footer-right">
-                            <button className="save-draft-btn" onClick={handleSaveDraft}>
-                                Lưu nháp
-                            </button>
-                            <button className="next-btn" onClick={handleNext}>
-                                Tiếp theo
-                            </button>
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
-        </div>
+        );
+    }
+
+    return (
+        <>
+            {!!toasts.length && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 16,
+                        right: 16,
+                        zIndex: 10000,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8
+                    }}
+                >
+                    {toasts.map((t) => (
+                        <div
+                            key={t.id}
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color:
+                                    t.variant === 'success'
+                                        ? '#0a3622'
+                                        : '#842029',
+                                background:
+                                    t.variant === 'success'
+                                        ? '#d1e7dd'
+                                        : '#f8d7da',
+                                border: `1px solid ${
+                                    t.variant === 'success'
+                                        ? '#a3cfbb'
+                                        : '#f5c2c7'
+                                }`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow:
+                                    '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    marginLeft: 12,
+                                    padding: 0,
+                                    color: 'inherit',
+                                    opacity: 0.7,
+                                    lineHeight: 1
+                                }}
+                                aria-label="Close toast"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+            <div className="document-form-container">
+                <div className="document-form-wrapper">
+                    <div className="form-header">
+                        <div className="step-indicator">
+                            {steps.map((step) => (
+                                <div
+                                    key={step.id}
+                                    className={`step ${
+                                        step.active ? 'active' : ''
+                                    }`}
+                                >
+                                    <div
+                                        className={`step-circle ${
+                                            step.active ? 'active' : ''
+                                        }`}
+                                    >
+                                        {step.id}
+                                    </div>
+                                    <div className="step-title">
+                                        {step.title}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="form-body">
+                        {loading && currentUser && (
+                            <div className="loading-overlay">
+                                Đang xử lý...
+                            </div>
+                        )}
+                        {renderStepContent()}
+                    </div>
+
+                    <div className="form-footer">
+                        {currentStep > 1 && currentStep < 4 && (
+                            <button
+                                className="back-btn"
+                                onClick={handleBack}
+                                disabled={loading}
+                            >
+                                Quay lại
+                            </button>
+                        )}
+                        {currentStep === 1 && (
+                            <button
+                                className="back-btn"
+                                onClick={handleBack}
+                                disabled={loading}
+                            >
+                                Quay lại
+                            </button>
+                        )}
+                        {currentStep < 4 && (
+                            <div className="footer-right">
+                                <button
+                                    className="save-draft-btn"
+                                    onClick={handleSaveDraft}
+                                    disabled={loading}
+                                >
+                                    Lưu nháp
+                                </button>
+                                <button
+                                    className="next-btn"
+                                    onClick={handleNext}
+                                    disabled={loading}
+                                >
+                                    Tiếp theo
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </>
     );
 };
 
 export default TemplateForm;
-
