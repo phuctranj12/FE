@@ -155,7 +155,8 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
             return;
         }
         // Mặc định mở trang chi tiết hợp đồng, ContractDetail sẽ load PDF từ URL
-        navigate(`/main/c/detail/${doc.id}`);
+        // Thêm showAllFields=1 để hiển thị luôn tất cả component ký/text trên PDF
+        navigate(`/main/c/detail/${doc.id}?showAllFields=1`);
     };
 
     const handleViewFlow = (doc) => {

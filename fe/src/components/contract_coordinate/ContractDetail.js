@@ -5,6 +5,7 @@ import PDFViewer from '../document/PDFViewer';
 import CoordinateAssigners from './CoordinateAssigners';
 import RejectReviewDialog from './RejectReviewDialog';
 import SignDialog from './SignDialog';
+import ViewFlowModal from '../document/ViewFlowModal';
 import contractService from '../../api/contractService';
 
 function ContractDetail() {
@@ -16,7 +17,7 @@ function ContractDetail() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [zoom, setZoom] = useState(100);
-    const [showSigningInfo, setShowSigningInfo] = useState(false);
+    const [showSigningInfo, setShowSigningInfo] = useState(false); // dùng như state bật/tắt dialog luồng ký
     
     // State cho contract data
     const [contract, setContract] = useState(null);
@@ -39,7 +40,7 @@ function ContractDetail() {
     // State cho fields và highlight
     const [fields, setFields] = useState([]);
     const [highlightedFields, setHighlightedFields] = useState([]);
-    const [highlightType, setHighlightType] = useState(null); // 'sign' | 'info' | null
+    const [highlightType, setHighlightType] = useState(null); // 'sign' | 'info' | null | 'auto'
     const [reviewDecision, setReviewDecision] = useState(''); // 'agree' | 'disagree' | ''
     const [showReviewDialog, setShowReviewDialog] = useState(false);
     const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -173,7 +174,15 @@ function ContractDetail() {
                     // Lấy thông tin fields của hợp đồng
                     const fieldsResponse = await contractService.getFieldsByContract(contractId);
                     if (fieldsResponse?.code === 'SUCCESS') {
-                        setFields(fieldsResponse.data || []);
+                        const fieldsData = fieldsResponse.data || [];
+                        setFields(fieldsData);
+
+                        // Nếu từ danh sách "Tài liệu đã tạo" (showAllFields=1) thì tự hiển thị tất cả field lên PDF
+                        const showAllFields = searchParams.get('showAllFields');
+                        if (showAllFields === '1' || showAllFields === 'true') {
+                            setHighlightedFields(fieldsData);
+                            setHighlightType('auto');
+                        }
                     }
 
                     // Lấy thông tin recipient nếu có recipientId
@@ -287,7 +296,16 @@ function ContractDetail() {
 
         return highlightedFields.map(field => ({
             id: `highlight-${field.id}`,
-            type: highlightType === 'sign' ? 'signature' : 'text',
+            // Nếu đang ở chế độ tìm ô ký / ô thông tin thì ưu tiên theo highlightType
+            // Còn nếu là 'auto' (mở từ danh sách tài liệu) thì phân loại theo type của field
+            type:
+                highlightType === 'sign'
+                    ? 'signature'
+                    : highlightType === 'info'
+                        ? 'text'
+                        : (field.type === 2 || field.type === 3) // 2,3: ô ký; còn lại là text/info
+                            ? 'signature'
+                            : 'text',
             page: field.page || 1,
             properties: {
                 x: field.boxX || 0,
@@ -627,17 +645,11 @@ function ContractDetail() {
                             
                             <button 
                                 className="signing-info-btn" 
-                                onClick={() => setShowSigningInfo(!showSigningInfo)}
+                                onClick={() => setShowSigningInfo(true)}
                             >
                                 Thông tin ký
-                                <span className="arrow-icon">{showSigningInfo ? '▼' : '›'}</span>
+                                <span className="arrow-icon">›</span>
                             </button>
-
-                            {showSigningInfo && (
-                                <div className="signing-info-panel">
-                                    <p>Thông tin ký sẽ được hiển thị ở đây</p>
-                                </div>
-                            )}
 
                             {(type === 'review' || type === 'sign') && (
                                 <div className="sign-confirmation-section">
@@ -902,6 +914,13 @@ function ContractDetail() {
                 recipient={recipient}
                 fields={fields}
                 onSigned={handleSignSuccess}
+            />
+
+            {/* Signing Flow Dialog (Luồng ký) */}
+            <ViewFlowModal
+                show={showSigningInfo}
+                onClose={() => setShowSigningInfo(false)}
+                contractId={contractId}
             />
         </>
     );
