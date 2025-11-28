@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../styles/documentTemplates.css";
 import SearchBar from "../common/SearchBar";
 import Button from "../common/Button";
 import Pagination from "../common/Pagination";
 import TemplateContractItem from "./TemplateContractItem";
 import TemplateForm from "./TemplateForm";
-import TemplateDetail from "./TemplateDetail";
 import contractService from "../../api/contractService";
 
 // Simple debounce utility
@@ -21,6 +21,7 @@ function debounce(func, wait) {
     };
 }
 function DocumentTemplates() {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("created"); // "created" or "shared"
     const [searchName, setSearchName] = useState("");
     const [searchType, setSearchType] = useState("");
@@ -32,7 +33,6 @@ function DocumentTemplates() {
     const [totalItems, setTotalItems] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [documentTypesList, setDocumentTypesList] = useState([]);
@@ -142,11 +142,10 @@ function DocumentTemplates() {
     };
 
     const handleTemplateClick = (template) => {
-        setSelectedTemplate(template);
-    };
-
-    const handleBackFromDetail = () => {
-        setSelectedTemplate(null);
+        const templateId = template.id || template.contractId;
+        if (templateId) {
+            navigate(`/main/contract-template/detail/${templateId}`);
+        }
     };
 
     const handleEdit = (template) => {
@@ -188,10 +187,6 @@ function DocumentTemplates() {
 
     if (showAddForm) {
         return <TemplateForm onBack={handleBackToList} editTemplate={editingTemplate} />;
-    }
-
-    if (selectedTemplate) {
-        return <TemplateDetail template={selectedTemplate} onBack={handleBackFromDetail} />;
     }
 
     return (
