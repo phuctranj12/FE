@@ -171,9 +171,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                 {activeMenu === "baocao" && (
                     <div className="submenu">
                         <div className="subitem" onClick={() => handleSelect("chi-tiet")}>Chi tiết</div>
-                        <div className="subitem" onClick={() => handleSelect("sap-het-hieu-luc")}>
-                            Sắp hết hiệu lực
-                        </div>
+
                         <div className="subitem" onClick={() => handleSelect("trang-thai-xu-ly")}>
                             Trạng thái xử lý
                         </div>
@@ -186,13 +184,7 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus,
                         <div className="subitem" onClick={() => handleSelect("tai-lieu-nhan")}>
                             Tài liệu đã nhận
                         </div>
-                        <div className="subitem" onClick={() => handleSelect("lich-su-sms")}>Lịch sử gửi SMS</div>
-                        <div className="subitem" onClick={() => handleSelect("lich-su-email")}>
-                            Lịch sử gửi Email
-                        </div>
-                        <div className="subitem" onClick={() => handleSelect("xac-thuc-ekyc")}>
-                            Báo cáo xác thực eKYC
-                        </div>
+
                     </div>
                 )}
 
