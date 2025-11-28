@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import serverCertificateService from "../../api/serverCertificateService";
 import "../../styles/certificateDetailsModal.css";
+
 function CertificateDetailsModal({ open, certificateId, onClose }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -34,40 +35,55 @@ function CertificateDetailsModal({ open, certificateId, onClose }) {
         date ? new Date(date).toLocaleString("vi-VN") : "";
 
     return (
-        <div className="modal-backdrop"
-            onClick={onClose} >
-            <div className="modal wide"
-                onClick={(e) => e.stopPropagation()}>
-                <h3>Chi tiết chứng thư</h3>
+        <div className="certDetails-backdrop" onClick={onClose}>
+            <div className="certDetails-modal" onClick={(e) => e.stopPropagation()}>
+                <h3 className="certDetails-title">Chi tiết chứng thư</h3>
+
                 {loading ? (
-                    <p>Đang tải...</p>
+                    <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                        Đang tải...
+                    </p>
                 ) : (
-                    <div>
-                        <p>
-                            <strong>Ký hiệu:</strong> {data?.keystoreSerialNumber}
-                        </p>
-                        <p>
-                            <strong>Chủ thể:</strong> {subject}
-                        </p>
-                        <p>
-                            <strong>MST/CCCD:</strong> {cccd || mst}
-                        </p>
-                        <p>
-                            <strong>Ngày bắt đầu:</strong> {formatDate(data?.keystoreDateStart)}
-                        </p>
-                        <p>
-                            <strong>Ngày hết hạn:</strong> {formatDate(data?.keystoreDateEnd)}
-                        </p>
-                        {/* <p>
-                            <strong>Issuer:</strong> {data?.issuer}
-                        </p>
-                        <pre style={{ whiteSpace: "pre-wrap" }}>
-                            {JSON.stringify(data, null, 2)}
-                        </pre> */}
-                    </div>
+                    <>
+                        <div className="certDetails-section">
+                            <h4 className="certDetails-subtitle">Thông tin chung</h4>
+
+                            <div className="certDetails-row">
+                                <div className="certDetails-label">Ký hiệu:</div>
+                                <div className="certDetails-value">{data?.keystoreSerialNumber || "-"}</div>
+                            </div>
+
+                            <div className="certDetails-row">
+                                <div className="certDetails-label">Chủ thể:</div>
+                                <div className="certDetails-value">{subject || "-"}</div>
+                            </div>
+
+                            <div className="certDetails-row">
+                                <div className="certDetails-label">MST/CCCD:</div>
+                                <div className="certDetails-value">{cccd || mst || "-"}</div>
+                            </div>
+                        </div>
+
+                        <div className="certDetails-section">
+                            <h4 className="certDetails-subtitle">Thời hạn</h4>
+
+                            <div className="certDetails-row">
+                                <div className="certDetails-label">Ngày bắt đầu:</div>
+                                <div className="certDetails-value">{formatDate(data?.keystoreDateStart) || "-"}</div>
+                            </div>
+
+                            <div className="certDetails-row">
+                                <div className="certDetails-label">Ngày hết hạn:</div>
+                                <div className="certDetails-value">{formatDate(data?.keystoreDateEnd) || "-"}</div>
+                            </div>
+                        </div>
+                    </>
                 )}
-                <div>
-                    <button onClick={onClose}>Đóng</button>
+
+                <div className="certDetails-footer">
+                    <button className="certDetails-closeBtn" onClick={onClose}>
+                        Đóng
+                    </button>
                 </div>
             </div>
         </div>
