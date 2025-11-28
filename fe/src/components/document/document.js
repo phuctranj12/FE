@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/document.css";
-// import "../../styles/table.css";
 import Button from "../common/Button";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
@@ -10,21 +9,10 @@ import ShareContractModal from "./ShareContractModal";
 import ExtendContractModal from "./ExtendContractModal";
 import UploadAttachmentModal from "./UploadAttachmentModal";
 import RelatedContractsModal from "./RelatedContractsModal";
+import DocumentDetail from "./DocumentDetail";
 import documentService from "../../api/documentService";
 import { useNavigate } from "react-router-dom";
 import ContractFilterHeader from "./ContractFilterHeader";
-console.log({
-    AdvancedSearchModal,
-    ActionMenu,
-    ViewFlowModal,
-    ShareContractModal,
-    ExtendContractModal,
-    UploadAttachmentModal,
-    RelatedContractsModal,
-    Button,
-    SearchBar
-});
-
 
 function Document({ selectedStatus = "all", onDocumentClick }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -42,7 +30,10 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
     const [totalDocs, setTotalDocs] = useState(0);
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const [scope, setScope] = useState("my"); // "my" = tài liệu của tôi, "org" = tài liệu tổ chức
+    const [scope, setScope] = useState("my");
+    const [showDocumentDetail, setShowDocumentDetail] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState(null);
+
     const totalPages = Math.ceil(totalDocs / itemsPerPage);
     const navigate = useNavigate();
 
@@ -71,7 +62,9 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                             list.length;
         return { list, total };
     };
-    const [organizationId] = useState(1); // ID mặc định tổ chức
+
+    const [organizationId] = useState(1);
+
     const fetchDocuments = async () => {
         setErrorMessage("");
         setSuccessMessage("");
@@ -89,10 +82,8 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
             let data;
 
             if (scope === "my") {
-                // Tài liệu của tôi
                 data = await documentService.getMyContracts(filter);
             } else if (scope === "org") {
-                // Tài liệu của tổ chức
                 data = await documentService.getOrganizationContracts({ ...filter, organizationId });
             }
 
@@ -116,7 +107,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
             setTotalDocs(0);
         }
     };
-
 
     useEffect(() => {
         fetchDocuments();
@@ -146,17 +136,32 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         navigate(`/main/contract/create/${statusSlug}/${doc.id}`);
     };
 
-    // Mở trang chi tiết tài liệu (giống TemplateDetail nhưng cho hợp đồng)
-    const handleRowClick = (doc) => {
+    const handleRowClick = async (doc) => {
         if (!doc?.id) return;
+
         // Nếu parent truyền onDocumentClick thì ưu tiên dùng
         if (onDocumentClick) {
             onDocumentClick(doc);
             return;
         }
-        // Mặc định mở trang chi tiết hợp đồng, ContractDetail sẽ load PDF từ URL
-        // Thêm showAllFields=1 để hiển thị luôn tất cả component ký/text trên PDF
-        navigate(`/main/c/detail/${doc.id}?showAllFields=1`);
+
+        try {
+            // Lấy chi tiết tài liệu từ API
+            const response = await documentService.getContractById(doc.id);
+            const documentDetail = response?.data || response;
+
+            // Hiển thị DocumentDetail
+            setSelectedDocument(documentDetail);
+            setShowDocumentDetail(true);
+        } catch (error) {
+            setErrorMessage("Không thể tải chi tiết tài liệu. Vui lòng thử lại.");
+            console.error(error);
+        }
+    };
+
+    const handleBackFromDetail = () => {
+        setShowDocumentDetail(false);
+        setSelectedDocument(null);
     };
 
     const handleViewFlow = (doc) => {
@@ -167,7 +172,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
 
     const handleShare = (doc) => {
         if (!doc?.id) return;
-        // Chỉ cho phép chia sẻ hợp đồng hoàn thành (status = 30)
         if (doc.status !== 30) {
             setErrorMessage("Chỉ có thể chia sẻ hợp đồng đã hoàn thành!");
             return;
@@ -251,11 +255,18 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         setAdvancedFilters(filters);
     };
 
-
+    // Nếu đang hiển thị DocumentDetail, render nó thay vì danh sách
+    if (showDocumentDetail && selectedDocument) {
+        return (
+            <DocumentDetail
+                document={selectedDocument}
+                onBack={handleBackFromDetail}
+            />
+        );
+    }
 
     return (
         <div className="document-wrapper">
-
             <div className="table-container">
                 <div>
                     <h2>
@@ -268,8 +279,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                 <div className="ContractFilterHeader">
                     <ContractFilterHeader scope={scope} setScope={setScope} />
                 </div>
-
-
 
                 <div className="documnent-head">
                     <SearchBar
@@ -316,7 +325,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                         className="tr-row"
                                         onClick={() => handleRowClick(doc)}
                                     >
-
                                         <td className="document-title-cell">
                                             <div className="svg-container">
                                                 <div className="svg-bg">
@@ -375,10 +383,8 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                                         </defs>
                                                     </svg>
                                                 </div>
-                                                <div className="doc-name">    {doc.name}</div>
-
+                                                <div className="doc-name">{doc.name}</div>
                                             </div>
-
                                         </td>
                                         <td>{doc.id}</td>
                                         <td>{doc.contractNo || "-"}</td>
@@ -429,15 +435,13 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                         )}
                     </>
                 )}
+
                 <AdvancedSearchModal
                     className="advanced-modal"
                     show={showAdvanced}
                     onClose={() => setShowAdvanced(false)}
                     onSearch={handleAdvancedSearch}
                 />
-
-
-
 
                 <ViewFlowModal
                     show={showViewFlow}
@@ -472,7 +476,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                     contractId={selectedContract?.id}
                 />
             </div>
-        </div >
+        </div>
     );
 }
 

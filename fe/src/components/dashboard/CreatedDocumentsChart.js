@@ -4,38 +4,17 @@ import '../../styles/createdDocumentsChart.css';
 
 const CreatedDocumentsChart = () => {
     const [activeTab, setActiveTab] = useState('mine');
-    const [startDate, setStartDate] = useState('2025-10-04');
-    const [endDate, setEndDate] = useState('2025-11-03');
-    const [organizationId, setOrganizationId] = useState(null);
-    const [data, setData] = useState({
-        mine: [],
-        org: []
-    });
+    const [startDate, setStartDate] = useState('2025-01-01');
+    const [endDate, setEndDate] = useState('2025-12-31');
+    const [data, setData] = useState({ mine: [], org: [] });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // gọi API khi activeTab hoặc ngày thay đổi
     useEffect(() => {
-        // Lấy organizationId từ localStorage nếu có
-        const user = localStorage.getItem('user');
-        if (user) {
-            try {
-                const userData = JSON.parse(user);
-                if (userData.organizationId) {
-                    setOrganizationId(userData.organizationId);
-                }
-            } catch (err) {
-                console.error('Error parsing user data:', err);
-            }
-        }
-    }, []);
-
-    useEffect(() => {
-        if (activeTab === 'mine') {
-            fetchMyDocuments();
-        } else if (activeTab === 'org' && organizationId) {
-            fetchOrgDocuments();
-        }
-    }, [activeTab, startDate, endDate, organizationId]);
+        if (activeTab === 'mine') fetchMyDocuments();
+        else if (activeTab === 'org') fetchOrgDocuments(1); // orgId = 1
+    }, [activeTab, startDate, endDate]);
 
     const fetchMyDocuments = async () => {
         try {
@@ -43,8 +22,8 @@ const CreatedDocumentsChart = () => {
             setError(null);
 
             const result = await dashboardService.getMyContracts({
-                fromDate: startDate || null,
-                toDate: endDate || null,
+                fromDate: startDate,
+                toDate: endDate,
             });
 
             if (result.code === 'SUCCESS' && result.data) {
@@ -65,15 +44,15 @@ const CreatedDocumentsChart = () => {
         }
     };
 
-    const fetchOrgDocuments = async () => {
+    const fetchOrgDocuments = async (organizationId) => {
         try {
             setLoading(true);
             setError(null);
 
             const result = await dashboardService.getContractsByOrganization({
-                fromDate: startDate || null,
-                toDate: endDate || null,
-                organizationId: organizationId || null,
+                fromDate: startDate,
+                toDate: endDate,
+                organizationId,
             });
 
             if (result.code === 'SUCCESS' && result.data) {
@@ -96,6 +75,7 @@ const CreatedDocumentsChart = () => {
 
     const current = data[activeTab];
     const maxVal = current.length > 0 ? Math.max(...current.map(d => d.value), 1) : 1;
+    const isEmpty = current.every(d => d.value === 0);
 
     return (
         <div className="created-chart-container">
@@ -109,47 +89,63 @@ const CreatedDocumentsChart = () => {
                     <button
                         className={`tab ${activeTab === 'org' ? 'active' : ''}`}
                         onClick={() => setActiveTab('org')}
-                        disabled={!organizationId}
                     >Tài liệu của tổ chức</button>
                 </div>
                 <div className="date-range">
                     <input
                         type="date"
                         value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        onChange={(e) => {
+                            const newStart = e.target.value;
+                            if (newStart > endDate) {
+                                alert('Ngày bắt đầu không được lớn hơn ngày kết thúc!');
+                                return;
+                            }
+                            setStartDate(newStart);
+                        }}
                     />
                     <span className="date-sep">-</span>
                     <input
                         type="date"
                         value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                        onChange={(e) => {
+                            const newEnd = e.target.value;
+                            if (newEnd < startDate) {
+                                alert('Ngày kết thúc không được nhỏ hơn ngày bắt đầu!');
+                                return;
+                            }
+                            setEndDate(newEnd);
+                        }}
                     />
                 </div>
             </div>
 
             {loading && (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                    Đang tải...
-                </div>
+                <div style={{ textAlign: 'center', padding: '40px' }}>Đang tải...</div>
             )}
 
             {error && (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'red' }}>
-                    Lỗi: {error}
-                </div>
+                <div style={{ textAlign: 'center', padding: '40px', color: 'red' }}>Lỗi: {error}</div>
             )}
 
             {!loading && !error && (
-                <div className="bar-chart">
-                    {current.map((d, idx) => (
-                        <div key={idx} className="bar-column">
-                            <div className="bar" style={{ height: `${(d.value / maxVal) * 160}px`, background: d.color }}>
-                                <span className="bar-value">{d.value}</span>
+                isEmpty ? (
+                    <div style={{ textAlign: 'center', padding: '40px' }}>Không có dữ liệu</div>
+                ) : (
+                    <div className="bar-chart">
+                        {current.map((d, idx) => (
+                            <div key={idx} className="bar-column">
+                                <div
+                                    className="bar"
+                                    style={{ height: `${(d.value / maxVal) * 160}px`, background: d.color }}
+                                >
+                                    <span className="bar-value">{d.value}</span>
+                                </div>
+                                <div className="bar-label">{d.label}</div>
                             </div>
-                            <div className="bar-label">{d.label}</div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )
             )}
         </div>
     );

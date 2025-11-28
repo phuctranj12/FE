@@ -13,8 +13,8 @@ const dashboardService = {
                     Accept: 'application/json',
                 },
             });
-            console.log('🚀 Dữ liệu tài liệu nhận:', response.data);
-            return response.data;
+            console.log('🚀 Dữ liệu tài liệu nhận:', response);
+            return response;
         } catch (error) {
             console.error('❌ Lỗi khi lấy dashboard tài liệu nhận:', error);
             throw error.response?.data || error;
@@ -64,7 +64,7 @@ const dashboardService = {
                 },
                 params,
             });
-            console.log('🚀 Dữ liệu hợp đồng theo tổ chức:', response.data);
+            console.log('Dữ liệu hợp đồng theo tổ chức:', response.data);
             return response.data;
         } catch (error) {
             console.error('❌ Lỗi khi lấy dashboard hợp đồng theo tổ chức:', error);

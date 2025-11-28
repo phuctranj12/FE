@@ -119,7 +119,7 @@ function DocumentDetail({ document, onBack }) {
                                     </div>
                                 ))}
                             </div>
-                            
+
                             {/* Nút luồng xử lý tài liệu */}
                             <button className="process-flow-btn" onClick={() => setShowProcessingFlow(true)}>
                                 Luồng xử lý tài liệu
@@ -136,40 +136,40 @@ function DocumentDetail({ document, onBack }) {
                     {/* Thanh điều khiển PDF */}
                     <div className="pdf-controls">
                         <div className="pagination-controls">
-                            <button 
-                                className="page-btn" 
+                            <button
+                                className="page-btn"
                                 onClick={() => handlePageChange(1)}
                                 disabled={currentPage === 1}
                             >
                                 ««
                             </button>
-                            <button 
-                                className="page-btn" 
+                            <button
+                                className="page-btn"
                                 onClick={() => handlePageChange(currentPage - 1)}
                                 disabled={currentPage === 1}
                             >
                                 «
                             </button>
                             <span className="page-info">{currentPage} / {totalPages}</span>
-                            <button 
-                                className="page-btn" 
+                            <button
+                                className="page-btn"
                                 onClick={() => handlePageChange(currentPage + 1)}
                                 disabled={currentPage === totalPages}
                             >
                                 »
                             </button>
-                            <button 
-                                className="page-btn" 
+                            <button
+                                className="page-btn"
                                 onClick={() => handlePageChange(totalPages)}
                                 disabled={currentPage === totalPages}
                             >
                                 »»
                             </button>
                         </div>
-                        
+
                         <div className="zoom-controls">
-                            <select 
-                                value={zoom} 
+                            <select
+                                value={zoom}
                                 onChange={(e) => handleZoomChange(Number(e.target.value))}
                                 className="zoom-select"
                             >
@@ -185,7 +185,7 @@ function DocumentDetail({ document, onBack }) {
 
                     {/* PDF Viewer */}
                     <div className="pdf-viewer">
-                        <PDFViewer 
+                        <PDFViewer
                             document={document}
                             currentPage={currentPage}
                             totalPages={totalPages}

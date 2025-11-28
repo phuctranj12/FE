@@ -27,20 +27,35 @@ const ReceivedDocumentsStats = ({ title = 'Tài liệu đã nhận' }) => {
     useEffect(() => {
         fetchReceivedDocuments();
     }, []);
+    useEffect(() => {
+        // console.log("STATS UPDATED:", stats);
+    }, [stats]);
+
 
     const fetchReceivedDocuments = async () => {
         try {
             setLoading(true);
             const result = await dashboardService.getReceivedDocuments();
 
-            if (result.code === 'SUCCESS' && result.data) {
-                setStats({
-                    waiting: result.data.totalProcessing || 0,
-                    waitingReply: result.data.totalWaiting || 0,
-                    expiring: result.data.totalAboutExpire || 0,
-                    completed: result.data.totalSigned || 0,
-                });
+            if (!result || !result.data) {
+                throw new Error('API trả về dữ liệu trống');
             }
+
+            const d = result.data;
+
+            // console.log('Mapped stats:', {
+            //     waiting: d.totalProcessing ?? 0,
+            //     waitingReply: d.totalWaiting ?? 0,
+            //     expiring: d.totalAboutExpire ?? 0,
+            //     completed: d.totalSigned ?? 0,
+            // });
+
+            setStats({
+                waiting: d.totalProcessing ?? 0,
+                waitingReply: d.totalWaiting ?? 0,
+                expiring: d.totalAboutExpire ?? 0,
+                completed: d.totalSigned ?? 0,
+            });
         } catch (err) {
             console.error('Error fetching received documents:', err);
             setError(err.message || 'Không thể tải dữ liệu');
@@ -48,6 +63,8 @@ const ReceivedDocumentsStats = ({ title = 'Tài liệu đã nhận' }) => {
             setLoading(false);
         }
     };
+
+
 
     if (loading) {
         return (
@@ -83,6 +100,7 @@ const ReceivedDocumentsStats = ({ title = 'Tài liệu đã nhận' }) => {
                 <StatCard value={stats.completed} label="Hoàn thành" dotColor="#34A853" />
             </div>
         </div>
+
     );
 };
 
