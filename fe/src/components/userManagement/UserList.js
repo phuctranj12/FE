@@ -219,7 +219,6 @@ const UserList = ({ onAddNew, onEdit }) => {
                     'Tên tổ chức',
                     'Trạng thái',
                     'Vai trò',
-                    'Hình thức đăng nhập',
                     'Quản lý'
                 ]}
                 data={getPaginatedData().map(user => ([
@@ -235,7 +234,6 @@ const UserList = ({ onAddNew, onEdit }) => {
                     getOrganizationName(user.organizationId),
                     formatStatus(user.status),
                     formatRoles(user.roles),
-                    user.loginMethod || 'N/A',
                     (<button 
                         key={`edit-${user.id}`} 
                         className="edit-btn" 

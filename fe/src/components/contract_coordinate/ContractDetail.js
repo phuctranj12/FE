@@ -409,11 +409,12 @@ function ContractDetail() {
         setCoordinateStep(1);
     };
 
-    // Label trạng thái hiển thị trên nút ở chế độ xem chi tiết (type = 'detail')
-    const getStatusButtonLabel = () => {
-        const status = contract?.status;
+    // Hàm format trạng thái thành text
+    const getStatusLabel = (status) => {
+        if (!status && status !== 0) return 'Chưa xác định';
+        
         const statusMap = {
-            0: 'Bản nháp',
+            0: 'Nháp',
             10: 'Đã tạo',
             20: 'Đang xử lý',
             30: 'Hoàn thành',
@@ -424,11 +425,18 @@ function ContractDetail() {
             2: 'Hết hạn',
             35: 'Scan',
         };
+        
         // Nếu backend trả sẵn text thì dùng luôn
         if (typeof status === 'string' && isNaN(Number(status))) {
             return status;
         }
-        return statusMap[Number(status)] || 'Đang ký';
+        
+        return statusMap[Number(status)] || 'Chưa xác định';
+    };
+
+    // Label trạng thái hiển thị trên nút ở chế độ xem chi tiết (type = 'detail')
+    const getStatusButtonLabel = () => {
+        return getStatusLabel(contract?.status);
     };
 
     const handleBackFromCoordinate = () => {
@@ -636,7 +644,7 @@ function ContractDetail() {
                             </div>
                             <div className="info-item">
                                 <label>Trạng thái:</label>
-                                <span>{contract?.status || 'Chưa xác định'}</span>
+                                <span>{getStatusLabel(contract?.status)}</span>
                             </div>
                             <div className="info-item">
                                 <label>Thời gian tạo:</label>
