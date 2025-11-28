@@ -136,27 +136,14 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         navigate(`/main/contract/create/${statusSlug}/${doc.id}`);
     };
 
-    const handleRowClick = async (doc) => {
+    const handleRowClick = (doc) => {
         if (!doc?.id) return;
-
         // Nếu parent truyền onDocumentClick thì ưu tiên dùng
         if (onDocumentClick) {
             onDocumentClick(doc);
             return;
         }
-
-        try {
-            // Lấy chi tiết tài liệu từ API
-            const response = await documentService.getContractById(doc.id);
-            const documentDetail = response?.data || response;
-
-            // Hiển thị DocumentDetail
-            setSelectedDocument(documentDetail);
-            setShowDocumentDetail(true);
-        } catch (error) {
-            setErrorMessage("Không thể tải chi tiết tài liệu. Vui lòng thử lại.");
-            console.error(error);
-        }
+        navigate(`/main/c/detail/${doc.id}`);
     };
 
     const handleBackFromDetail = () => {

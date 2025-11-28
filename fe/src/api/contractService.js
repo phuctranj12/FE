@@ -58,10 +58,40 @@ const contractService = {
         }
     },
 
+    // 7.11.2. Lấy presigned URL của tài liệu mẫu
+    getTemplateDocumentPresignedUrl: async (docId) => {
+        try {
+            const response = await apiClient.get(`/contracts/template-documents/get-presigned-url/${docId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.11.3. Lấy tài liệu mẫu theo hợp đồng
+    getTemplateDocumentsByContract: async (contractId) => {
+        try {
+            const response = await apiClient.get(`/contracts/template-documents/get-template-document-by-contract/${contractId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 7.1.2.4. Tạo người tham gia mẫu
     createTemplateParticipant: async (contractId, participantData) => {
         try {
             const response = await apiClient.post(`/contracts/template-participants/create-participant/${contractId}`, participantData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.4.1. Lấy danh sách template participants theo contractId
+    getTemplateParticipantsByContract: async (contractId) => {
+        try {
+            const response = await apiClient.get(`/contracts/template-participants/by-contract/${contractId}`);
             return response;
         } catch (error) {
             throw error;
@@ -82,6 +112,16 @@ const contractService = {
     updateTemplateField: async (fieldId, fieldData) => {
         try {
             const response = await apiClient.put(`/contracts/template-fields/update/${fieldId}`, fieldData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.6.1. Lấy danh sách fields của template theo contractId
+    getTemplateFieldsByContract: async (contractId) => {
+        try {
+            const response = await apiClient.get(`/contracts/template-fields/by-contract/${contractId}`);
             return response;
         } catch (error) {
             throw error;
@@ -115,6 +155,48 @@ const contractService = {
             queryParams.append('size', params.size || 10);
 
             const response = await apiClient.get(`/contracts/template-contracts/my-contracts?${queryParams.toString()}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.9. Lấy thông tin hợp đồng mẫu theo ID
+    getTemplateContractById: async (contractId) => {
+        try {
+            const response = await apiClient.get(`/contracts/template-contracts/${contractId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.10. Cập nhật hợp đồng mẫu
+    updateTemplateContract: async (contractId, templateData) => {
+        try {
+            const response = await apiClient.put(`/contracts/template-contracts/${contractId}`, templateData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.11. Xóa hợp đồng mẫu
+    deleteTemplateContract: async (contractId) => {
+        try {
+            const response = await apiClient.delete(`/contracts/template-contracts/${contractId}`);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.1.2.12. Kiểm tra mã hợp đồng mẫu có duy nhất hay không
+    checkTemplateCodeUnique: async (code) => {
+        try {
+            const response = await apiClient.get('/contracts/template-contracts/check-code-unique', {
+                params: { code }
+            });
             return response;
         } catch (error) {
             throw error;
