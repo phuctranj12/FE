@@ -332,7 +332,16 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                             onClick={() => {
                                                 // Chỉ trigger onDocumentClick nếu không phải "cho-xu-ly" hoặc không có role button
                                                 if (!isWaitProcessing || !roleInfo) {
-                                                    onDocumentClick && onDocumentClick(doc);
+                                                    // Nếu parent truyền onDocumentClick thì ưu tiên dùng
+                                                    if (onDocumentClick) {
+                                                        onDocumentClick(doc);
+                                                        return;
+                                                    }
+                                                    // Nếu là tài liệu đã xử lý (da-xu-ly) thì không hiển thị components
+                                                    const isProcessed = selectedStatus === "da-xu-ly" || doc.status === 2;
+                                                    // Chỉ truyền showAllFields=1 nếu không phải tài liệu đã xử lý
+                                                    const queryParam = isProcessed ? '' : '?showAllFields=1';
+                                                    navigate(`/main/c/detail/${doc.id}${queryParam}`);
                                                 }
                                             }}
                                         >

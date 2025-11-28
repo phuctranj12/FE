@@ -143,7 +143,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
             onDocumentClick(doc);
             return;
         }
-        navigate(`/main/c/detail/${doc.id}`);
+        navigate(`/main/c/detail/${doc.id}?showAllFields=1`);
     };
 
     const handleBackFromDetail = () => {
