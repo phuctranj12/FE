@@ -259,7 +259,7 @@
     margin-bottom: 20px;
 }
 
-.bar-chart {
+.bar-chart-report {
     display: flex;
     flex-direction: column;
     gap: 15px;

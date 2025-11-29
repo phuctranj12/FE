@@ -144,7 +144,7 @@ function ReportNumberByStatus() {
                                 {/* Biểu đồ đơn giản bằng CSS */}
                                 <div className="chart-section">
                                     <h3>Biểu đồ trực quan</h3>
-                                    <div className="bar-chart">
+                                    <div className="bar-chart-report">
                                         {data.map((item, index) => (
                                             <div key={index} className="bar-item">
                                                 <div className="bar-label">
