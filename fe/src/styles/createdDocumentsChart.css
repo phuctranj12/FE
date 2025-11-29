@@ -149,3 +149,40 @@
 @media (max-width: 768px) {
     .viChartCreated-container { width: 100%; max-width: none; }
 }
+.viChartCreated-date-range{
+    margin-left: 5px;
+    display: flex!important;
+    align-items: center;
+    gap: 8px;
+}
+/* Input kiểu date đẹp */
+.viChartCreated-date-range input {
+    border: 1px solid #0B57D0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: #1F3B7A;
+    background-color: #F7FAFF;
+    outline: none;
+    transition: all 0.2s ease;
+    width: 130px;
+}
+
+/* Hover và focus */
+.viChartCreated-date-range input:hover {
+    border-color: #0848A3;
+    background-color: #EFF4FF;
+}
+
+.viChartCreated-date-range input:focus {
+    border-color: #0B57D0;
+    box-shadow: 0 0 4px rgba(11, 87, 208, 0.4);
+    background-color: #FFFFFF;
+}
+
+/* Dấu - giữa 2 input */
+.viChartCreated-date-range .date-sep {
+    font-weight: 600;
+    color: #1F3B7A;
+    margin: 0 4px;
+}
