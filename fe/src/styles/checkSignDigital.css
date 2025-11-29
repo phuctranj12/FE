@@ -24,4 +24,93 @@
     cursor: not-allowed;
 }
 
+.check-sign-digital-content {
+    margin-top: 24px;
+}
+
+.file-upload-section {
+    margin-bottom: 24px;
+}
+
+.error-text {
+    color: #dc3545;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+.result-section {
+    margin-top: 24px;
+}
+
+.result-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 12px;
+    font-size: 16px;
+}
+
+.result-box {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 100px;
+}
+
+.signature-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.signature-table thead {
+    background-color: #0b57d0;
+    color: #ffffff;
+}
+
+.signature-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 2px solid #0a4bb8;
+}
+
+.signature-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 14px;
+}
+
+.signature-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.signature-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.valid-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: #d1e7dd;
+    color: #0a3622;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.invalid-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: #f8d7da;
+    color: #842029;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
 

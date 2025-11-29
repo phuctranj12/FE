@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import contractService from '../../api/contractService';
+import documentService from '../../api/documentService';
 import '../../styles/checkSignDigital.css';
 
 function CheckSignDigital() {
@@ -24,7 +24,7 @@ function CheckSignDigital() {
 
         try {
             setChecking(true);
-            const response = await contractService.checkSignature(file);
+            const response = await documentService.verifySignature(file);
 
             if (response?.code === 'SUCCESS') {
                 setResult(response.data || {});
@@ -43,22 +43,110 @@ function CheckSignDigital() {
         }
     };
 
+    // Hàm parse thông tin từ signer/issuer string
+    const parseCertificateInfo = (certString) => {
+        if (!certString) return { name: '', organization: '' };
+        
+        // Parse từ format: "C=VN,ST=Ha Noi,L=Quan Cau Giay,O=MobiFone IT,UID=MST:0100686209-199,UID=CCCD:025199009534,CN=NGUYEN HONG NHUNG"
+        const parts = certString.split(',');
+        let name = '';
+        let organization = '';
+        
+        parts.forEach(part => {
+            const [key, ...valueParts] = part.split('=');
+            const value = valueParts.join('=');
+            
+            if (key === 'CN') {
+                name = value;
+            } else if (key === 'O') {
+                organization = value;
+            }
+        });
+        
+        return { name, organization };
+    };
+
+    // Format date
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
     const renderResult = () => {
         if (!result) {
             return <p>Chưa có kết quả kiểm tra.</p>;
         }
 
-        // Tùy vào cấu trúc data backend trả về, bạn có thể hiển thị chi tiết hơn
-        const hasSignature = result.hasSignature ?? result.valid ?? false;
+        // Trường hợp không có chữ ký số
+        if (result.status === false || !result.signatures || result.signatures.length === 0) {
+            return (
+                <div>
+                    <p>
+                        <strong>{result.message || 'PDF không có chữ ký số'}</strong>
+                    </p>
+                </div>
+            );
+        }
 
-        return (
-            <div>
-                <p>
-                    Kết quả: <strong>{hasSignature ? 'File có chữ ký số hợp lệ' : 'File không có chữ ký số hoặc không hợp lệ'}</strong>
-                </p>
-                {result.message && <p>Chi tiết: {result.message}</p>}
-            </div>
-        );
+        // Trường hợp có chữ ký số
+        if (result.signatures && result.signatures.length > 0) {
+            return (
+                <div>
+                    <p style={{ marginBottom: '16px', fontWeight: '500' }}>
+                        <strong>File có {result.signatures.length} chữ ký số</strong>
+                    </p>
+                    <table className="signature-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Tên người ký</th>
+                                <th>Thời gian ký</th>
+                                <th>Thời gian hiệu lực của chứng thư số</th>
+                                <th>Đơn vị cấp chứng thư số</th>
+                                <th>Ký trong thời gian hợp lệ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {result.signatures.map((signature, index) => {
+                                const signerInfo = parseCertificateInfo(signature.signer);
+                                const issuerInfo = parseCertificateInfo(signature.issuer);
+                                
+                                return (
+                                    <tr key={index}>
+                                        <td>{index + 1}</td>
+                                        <td>{signerInfo.name || '-'}</td>
+                                        <td>{formatDate(signature.signDate)}</td>
+                                        <td>
+                                            {formatDate(signature.notBefore)} - {formatDate(signature.notAfter)}
+                                        </td>
+                                        <td>{issuerInfo.organization || '-'}</td>
+                                        <td>
+                                            <span className={signature.certificateValid ? 'valid-badge' : 'invalid-badge'}>
+                                                {signature.certificateValid ? 'Có' : 'Không'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        }
+
+        return <p>Không có thông tin chữ ký số.</p>;
     };
 
     return (
