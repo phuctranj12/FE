@@ -265,6 +265,12 @@
   height: 36px;
   border-radius: 50%;
   background: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: #333;
 }
 
 .user-text {

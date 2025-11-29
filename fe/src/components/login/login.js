@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/login.css';
 import authService from '../../api/authService';
+import customerService from '../../api/customerService';
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -25,6 +26,22 @@ function Login() {
 
             console.log('Đăng nhập thành công', response);
 
+            // Sau khi login thành công, lấy thông tin user theo email và lưu vào localStorage
+            try {
+                const userRes = await customerService.getCustomerByEmailInternal(email);
+                const userData = userRes?.data?.data || userRes?.data;
+                if (userData) {
+                    const userPayload = {
+                        name: userData.name || email,
+                        email: userData.email || email,
+                        phone: userData.phone || ''
+                    };
+                    localStorage.setItem('user', JSON.stringify(userPayload));
+                }
+            } catch (userErr) {
+                console.error('Không lấy được thông tin user theo email:', userErr);
+                // Không chặn login nếu call này lỗi
+            }
 
             navigate('/main/dashboard');
         } catch (err) {
