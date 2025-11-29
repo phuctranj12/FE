@@ -60,7 +60,12 @@
 }
 .menu-item.active-menu {
 
-  background-color: #f0eeee;
+  color: #0B57D0;
+    font-weight: 600;
+}
+.subitem.active-sub {
+    color: #0B57D0;
+    font-weight: 600;
 }
 
 .submenu {
