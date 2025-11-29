@@ -41,10 +41,16 @@ function Header({ breadcrumb }) {
     ]);
 
     // Load user từ localStorage
-    // useEffect(() => {
-    //     const storedUser = localStorage.getItem("user");
-    //     if (storedUser) setUser(JSON.parse(storedUser));
-    // }, []);
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (e) {
+                console.error("Không parse được user từ localStorage", e);
+            }
+        }
+    }, []);
 
     // Click ra ngoài đóng dropdown
     useEffect(() => {
@@ -77,6 +83,13 @@ function Header({ breadcrumb }) {
             localStorage.removeItem("user");
             navigate("/login");
         }
+    };
+
+    const getUserInitial = () => {
+        const source = (user && (user.name || user.email)) || "";
+        const trimmed = source.trim();
+        if (!trimmed) return "";
+        return trimmed.charAt(0).toUpperCase();
     };
 
     return (
@@ -151,10 +164,12 @@ function Header({ breadcrumb }) {
                             setShowNoti(false);
                         }}
                     >
-                        <div className="avatar"></div>
+                        <div className="avatar">
+                            {getUserInitial()}
+                        </div>
                         <div className="user-text">
-                            {/* <span className="name">{user.name || "Tên người dùng"}</span>
-                            <span className="phone">{user.phone || ""}</span> */}
+                            <span className="name">{user.name || "Tên người dùng"}</span>
+                            {user.phone && <span className="phone">{user.phone}</span>}
                         </div>
                     </div>
 
