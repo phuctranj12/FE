@@ -15,6 +15,17 @@ const contractService = {
         }
     },
 
+    checkTemplateCodeUnique: async (code) => {
+        try {
+            const response = await apiClient.get('/contracts/template-contracts/check-code-unique', {
+                params: { code }
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 7.1.2. Tạo hợp đồng mới
     createContract: async (contractData) => {
         try {
@@ -388,6 +399,21 @@ const contractService = {
             const formData = new FormData();
             formData.append('file', file);
             const response = await apiClient.post('/contracts/documents/upload-document', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    uploadTemplateDocument: async (file) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await apiClient.post('/contracts/template-documents/upload-document', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
