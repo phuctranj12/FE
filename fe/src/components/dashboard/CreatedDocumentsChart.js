@@ -25,19 +25,15 @@ const CreatedDocumentsChart = () => {
                 fromDate: startDate,
                 toDate: endDate,
             });
-            if (!result || !result.data) {
-                throw new Error('API trả về dữ liệu trống');
-            }
-            if (result.code === 'SUCCESS' && result.data) {
-                const chartData = [
-                    { label: 'Đang xử lý', value: result.data.totalProcessing || 0, color: '#6DA9FF' },
-                    { label: 'Hoàn thành', value: result.data.totalSigned || 0, color: '#FFC980' },
-                    { label: 'Từ chối', value: result.data.totalReject || 1, color: '#9AA4B2' },
-                    { label: 'Hủy bỏ', value: result.data.totalCancel || 0, color: '#78E3C0' },
-                    { label: 'Quá hạn', value: result.data.totalExpires || 0, color: '#FF6B6B' },
-                ];
-                setData(prev => ({ ...prev, mine: chartData }));
-            }
+            console.log('API RETURN:', result);
+            const chartData = [
+                { label: 'Đang xử lý', value: result.totalProcessing || 0, color: '#6DA9FF' },
+                { label: 'Hoàn thành', value: result.totalSigned || 0, color: '#FFC980' },
+                { label: 'Từ chối', value: result.totalReject || 0, color: '#9AA4B2' },
+                { label: 'Hủy bỏ', value: result.totalCancel || 0, color: '#78E3C0' },
+                { label: 'Quá hạn', value: result.totalExpires || 0, color: '#FF6B6B' },
+            ];
+            setData(prev => ({ ...prev, mine: chartData }));
         } catch (err) {
             console.error('Error fetching my documents:', err);
             setError(err.message || 'Không thể tải dữ liệu tài liệu của tôi');
