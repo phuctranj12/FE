@@ -62,14 +62,15 @@ const documentService = {
     // Danh sách hợp đồng chia sẻ
     getSharedContracts: async (params = {}) => {
         try {
-            const queryParams = {
-                textSearch: params.textSearch || "",
-                fromDate: params.fromDate || null,
-                toDate: params.toDate || null,
-                page: params.page ?? 0,
-                size: params.size ?? 10
-            };
-            const response = await apiClient.get('/contracts/shared', { params: queryParams });
+            // const queryParams = {
+            //     textSearch: params.textSearch || "",
+            //     fromDate: params.fromDate || null,
+            //     toDate: params.toDate || null,
+            //     page: params.page ?? 0,
+            //     size: params.size ?? 10
+            // };
+            // const response = await apiClient.get('/contracts/shared', { params: queryParams });
+            const response = await apiClient.get('/contracts/shared');
             return response;
         } catch (error) {
             throw error;
@@ -175,7 +176,7 @@ const documentService = {
                 email: emails,
                 contractId: contractId
             };
-            const response = await apiClient.post('/contracts/share', body);
+            const response = await apiClient.post('/contracts/shares', body);
             return response;
         } catch (error) {
             throw error;
