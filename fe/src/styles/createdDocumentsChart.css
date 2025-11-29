@@ -1,4 +1,4 @@
-.created-chart-container {
+/* .created-chart-container {
     margin-top: 12px;
     background: #FFFFFF;
     border: 1px solid #E3ECFF;
@@ -72,7 +72,80 @@
 
 @media (max-width: 768px) {
     .created-chart-container { width: 100%; max-width: none; }
+} */
+
+.viChartCreated-container {
+    margin-top: 12px;
+    background: #FFFFFF;
+    border: 1px solid #E3ECFF;
+    border-radius: 12px;
+    padding: 16px;
+    /* width: 50%; */
+    max-width: 600px;
 }
 
+.viChartCreated-header {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1F3B7A;
+    margin-bottom: 12px;
+}
 
+.viChartCreated-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
 
+.viChartCreated-tabs { display: inline-flex; gap: 8px; }
+.viChartCreated-tab {
+    border: 1px solid #0B57D0;
+    color: #0B57D0;
+    background: transparent;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.viChartCreated-tab.active {
+    background: #0B57D0;
+    color: #FFFFFF;
+}
+
+.viChartCreated-date-picker-mock {
+    width: 220px;
+    height: 32px;
+    border-radius: 6px;
+    background: #0B57D0;
+}
+
+.viChartCreated-bar-chart {
+    height: 220px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: end;
+    gap: 24px;
+    padding: 8px 4px 0 4px;
+    border-top: 1px solid #EEF3FF;
+}
+
+.viChartCreated-bar-column { text-align: center; }
+.viChartCreated-bar { 
+    position: relative; 
+    border-radius: 6px 6px 0 0; 
+}
+.viChartCreated-bar-value { 
+    position: absolute; 
+    top: -18px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    font-weight: 700; 
+    color: #0B3D91; 
+    font-size: 12px;
+}
+.viChartCreated-bar-label { margin-top: 8px; font-size: 12px; color: #5f6b82; }
+
+@media (max-width: 768px) {
+    .viChartCreated-container { width: 100%; max-width: none; }
+}

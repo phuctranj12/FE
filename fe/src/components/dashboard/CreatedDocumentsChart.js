@@ -10,32 +10,25 @@ const CreatedDocumentsChart = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // gọi API khi activeTab hoặc ngày thay đổi
     useEffect(() => {
         if (activeTab === 'mine') fetchMyDocuments();
-        else if (activeTab === 'org') fetchOrgDocuments(); // orgId = 1
+        else fetchOrgDocuments();
     }, [activeTab, startDate, endDate]);
 
     const fetchMyDocuments = async () => {
         try {
             setLoading(true);
             setError(null);
-
-            const result = await dashboardService.getMyContracts({
-                fromDate: startDate,
-                toDate: endDate,
-            });
-            console.log('API RETURN:', result);
+            const result = await dashboardService.getMyContracts({ fromDate: startDate, toDate: endDate });
             const chartData = [
                 { label: 'Đang xử lý', value: result.totalProcessing || 0, color: '#6DA9FF' },
-                { label: 'Hoàn thành', value: result.totalSigned || 0, color: '#FFC980' },
+                { label: 'Hoàn thành', value: result.totalSigned || 10, color: '#FFC980' },
                 { label: 'Từ chối', value: result.totalReject || 0, color: '#9AA4B2' },
                 { label: 'Hủy bỏ', value: result.totalCancel || 0, color: '#78E3C0' },
                 { label: 'Quá hạn', value: result.totalExpires || 0, color: '#FF6B6B' },
             ];
             setData(prev => ({ ...prev, mine: chartData }));
         } catch (err) {
-            console.error('Error fetching my documents:', err);
             setError(err.message || 'Không thể tải dữ liệu tài liệu của tôi');
         } finally {
             setLoading(false);
@@ -46,14 +39,11 @@ const CreatedDocumentsChart = () => {
         try {
             setLoading(true);
             setError(null);
-
             const result = await dashboardService.getMyContracts({
                 fromDate: startDate,
                 toDate: endDate,
                 rganizationId: 1,
             });
-
-
             const chartData = [
                 { label: 'Đang xử lý', value: result.totalProcessing || 0, color: '#6DA9FF' },
                 { label: 'Hoàn thành', value: result.totalSigned || 0, color: '#FFC980' },
@@ -62,9 +52,7 @@ const CreatedDocumentsChart = () => {
                 { label: 'Quá hạn', value: result.totalExpires || 0, color: '#FF6B6B' },
             ];
             setData(prev => ({ ...prev, org: chartData }));
-
         } catch (err) {
-            console.error('Error fetching org documents:', err);
             setError(err.message || 'Không thể tải dữ liệu tài liệu tổ chức');
         } finally {
             setLoading(false);
@@ -76,74 +64,35 @@ const CreatedDocumentsChart = () => {
     const isEmpty = current.every(d => d.value === 0);
 
     return (
-        <div className="created-chart-container">
-            <div className="created-chart-header">Tài liệu đã tạo</div>
-            <div className="created-chart-toolbar">
-                <div className="tabs">
-                    <button
-                        className={`tab ${activeTab === 'mine' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('mine')}
-                    >Tài liệu của tôi</button>
-                    <button
-                        className={`tab ${activeTab === 'org' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('org')}
-                    >Tài liệu của tổ chức</button>
+        <div className="viChartCreated-container">
+            <div className="viChartCreated-header">Tài liệu đã tạo</div>
+            <div className="viChartCreated-toolbar">
+                <div className="viChartCreated-tabs">
+                    <button className={`viChartCreated-tab ${activeTab === 'mine' ? 'active' : ''}`} onClick={() => setActiveTab('mine')}>Tài liệu của tôi</button>
+                    <button className={`viChartCreated-tab ${activeTab === 'org' ? 'active' : ''}`} onClick={() => setActiveTab('org')}>Tài liệu của tổ chức</button>
                 </div>
-                <div className="date-range">
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => {
-                            const newStart = e.target.value;
-                            if (newStart > endDate) {
-                                alert('Ngày bắt đầu không được lớn hơn ngày kết thúc!');
-                                return;
-                            }
-                            setStartDate(newStart);
-                        }}
-                    />
+                <div className="viChartCreated-date-range">
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                     <span className="date-sep">-</span>
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => {
-                            const newEnd = e.target.value;
-                            if (newEnd < startDate) {
-                                alert('Ngày kết thúc không được nhỏ hơn ngày bắt đầu!');
-                                return;
-                            }
-                            setEndDate(newEnd);
-                        }}
-                    />
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
                 </div>
             </div>
 
-            {loading && (
-                <div style={{ textAlign: 'center', padding: '40px' }}>Đang tải...</div>
-            )}
-
-            {error && (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'red' }}>Lỗi: {error}</div>
-            )}
+            {loading && <div style={{ textAlign: 'center', padding: '40px' }}>Đang tải...</div>}
+            {error && <div style={{ textAlign: 'center', padding: '40px', color: 'red' }}>Lỗi: {error}</div>}
 
             {!loading && !error && (
-                isEmpty ? (
-                    <div style={{ textAlign: 'center', padding: '40px' }}>Không có dữ liệu</div>
-                ) : (
-                    <div className="bar-chart">
+                isEmpty ? <div style={{ textAlign: 'center', padding: '40px' }}>Không có dữ liệu</div> :
+                    <div className="viChartCreated-bar-chart">
                         {current.map((d, idx) => (
-                            <div key={idx} className="bar-column">
-                                <div
-                                    className="bar"
-                                    style={{ height: `${(d.value / maxVal) * 160}px`, background: d.color }}
-                                >
-                                    <span className="bar-value">{d.value}</span>
+                            <div key={idx} className="viChartCreated-bar-column">
+                                <div className="viChartCreated-bar" style={{ height: `${(d.value / maxVal) * 160}px`, background: d.color }}>
+                                    <span className="viChartCreated-bar-value">{d.value}</span>
                                 </div>
-                                <div className="bar-label">{d.label}</div>
+                                <div className="viChartCreated-bar-label">{d.label}</div>
                             </div>
                         ))}
                     </div>
-                )
             )}
         </div>
     );
