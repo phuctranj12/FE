@@ -22,7 +22,7 @@ const CreatedDocumentsChart = () => {
             const result = await dashboardService.getMyContracts({ fromDate: startDate, toDate: endDate });
             const chartData = [
                 { label: 'Đang xử lý', value: result.totalProcessing || 0, color: '#6DA9FF' },
-                { label: 'Hoàn thành', value: result.totalSigned || 10, color: '#FFC980' },
+                { label: 'Hoàn thành', value: result.totalSigned || 0, color: '#FFC980' },
                 { label: 'Từ chối', value: result.totalReject || 0, color: '#9AA4B2' },
                 { label: 'Hủy bỏ', value: result.totalCancel || 0, color: '#78E3C0' },
                 { label: 'Quá hạn', value: result.totalExpires || 0, color: '#FF6B6B' },
