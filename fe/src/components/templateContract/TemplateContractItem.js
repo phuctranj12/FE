@@ -32,7 +32,7 @@ function TemplateContractItem({
     const displayName = templateId || name || `MẪU${id}`;
     const displayPartyA = organization_name || partyA;
     const displayPartyB = customer_name || partyB;
-    const displayCode = contractCode || `CT${id}`;
+    const displayCode = contractCode || `Contract No. ${id}`;
     const displayDate = date || (end_time ? new Date(end_time).toLocaleDateString('vi-VN') : '');
 
     return (

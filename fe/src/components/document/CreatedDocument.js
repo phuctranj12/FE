@@ -8,7 +8,6 @@ import ActionMenu from "./ActionMenu";
 import SearchBar from "../common/SearchBar";
 import createdDocumentService from "../../api/createdDocumentService";
 import customerService from "../../api/customerService";
-import contractService from "../../api/contractService";
 
 function CreatedDocument({ selectedStatus, onDocumentClick }) {
     const navigate = useNavigate();
@@ -75,40 +74,35 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
         return { list, total };
     };
 
-    // Hàm lấy role và recipientId cho một contract
-    const fetchContractRole = async (contractId) => {
-        if (!currentUserEmail) return null;
+    // Xây map role/recipientId cho mỗi contract trực tiếp từ response my-process
+    const buildContractRolesFromList = (list, email) => {
+        if (!email) return {};
+        const rolesMap = {};
 
-        try {
-            const contractResponse = await contractService.getContractById(contractId);
-            if (contractResponse?.code === 'SUCCESS' && contractResponse.data) {
-                const contract = contractResponse.data;
+        list.forEach(contract => {
+            if (!contract?.participants) return;
 
-                // Tìm recipient của user hiện tại trong contract
-                let userRecipient = null;
-                let userRole = null;
+            let found = null;
 
-                contract.participants?.forEach(participant => {
-                    participant.recipients?.forEach(recipient => {
-                        // So sánh email để tìm user hiện tại
-                        if (recipient.email === currentUserEmail) {
-                            userRecipient = recipient;
-                            userRole = recipient.role;
-                        }
-                    });
+            contract.participants.forEach(participant => {
+                if (found || !participant?.recipients) return;
+                participant.recipients.forEach(recipient => {
+                    if (found) return;
+                    if (recipient?.email === email && recipient?.role && recipient?.id) {
+                        found = {
+                            role: recipient.role,
+                            recipientId: recipient.id
+                        };
+                    }
                 });
+            });
 
-                if (userRecipient && userRole) {
-                    return {
-                        role: userRole,
-                        recipientId: userRecipient.id
-                    };
-                }
+            if (found) {
+                rolesMap[contract.id] = found;
             }
-        } catch (error) {
-            console.error(`Error fetching role for contract ${contractId}:`, error);
-        }
-        return null;
+        });
+
+        return rolesMap;
     };
 
     const fetchDocuments = async () => {
@@ -141,29 +135,12 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
             setDocs(list);
             setTotalDocs(total);
 
-            // Nếu là "cho-xu-ly" và có user email, fetch role cho mỗi contract
+            // Nếu là "cho-xu-ly" và có user email, derive role trực tiếp từ list (không call thêm API)
             if (selectedStatus === "cho-xu-ly" && currentUserEmail && list.length > 0) {
                 setLoadingRoles(true);
-                try {
-                    const rolePromises = list.map(doc =>
-                        fetchContractRole(doc.id).then(roleInfo => ({
-                            contractId: doc.id,
-                            roleInfo
-                        }))
-                    );
-                    const roleResults = await Promise.all(rolePromises);
-                    const rolesMap = {};
-                    roleResults.forEach(({ contractId, roleInfo }) => {
-                        if (roleInfo) {
-                            rolesMap[contractId] = roleInfo;
-                        }
-                    });
-                    setContractRoles(rolesMap);
-                } catch (error) {
-                    console.error("Error fetching contract roles:", error);
-                } finally {
-                    setLoadingRoles(false);
-                }
+                const rolesMap = buildContractRolesFromList(list, currentUserEmail);
+                setContractRoles(rolesMap);
+                setLoadingRoles(false);
             } else {
                 // Reset roles khi không phải "cho-xu-ly"
                 setContractRoles({});
