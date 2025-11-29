@@ -68,26 +68,26 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                     : [];
         const total =
             typeof payload.total === "number" ? payload.total :
-            typeof payload.totalElements === "number" ? payload.totalElements :
-            typeof nested.total === "number" ? nested.total :
-            typeof nested.totalElements === "number" ? nested.totalElements :
-            list.length;
+                typeof payload.totalElements === "number" ? payload.totalElements :
+                    typeof nested.total === "number" ? nested.total :
+                        typeof nested.totalElements === "number" ? nested.totalElements :
+                            list.length;
         return { list, total };
     };
 
     // Hàm lấy role và recipientId cho một contract
     const fetchContractRole = async (contractId) => {
         if (!currentUserEmail) return null;
-        
+
         try {
             const contractResponse = await contractService.getContractById(contractId);
             if (contractResponse?.code === 'SUCCESS' && contractResponse.data) {
                 const contract = contractResponse.data;
-                
+
                 // Tìm recipient của user hiện tại trong contract
                 let userRecipient = null;
                 let userRole = null;
-                
+
                 contract.participants?.forEach(participant => {
                     participant.recipients?.forEach(recipient => {
                         // So sánh email để tìm user hiện tại
@@ -97,7 +97,7 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                         }
                     });
                 });
-                
+
                 if (userRecipient && userRole) {
                     return {
                         role: userRole,
@@ -140,12 +140,12 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
             const { list, total } = extractListAndTotal(response);
             setDocs(list);
             setTotalDocs(total);
-            
+
             // Nếu là "cho-xu-ly" và có user email, fetch role cho mỗi contract
             if (selectedStatus === "cho-xu-ly" && currentUserEmail && list.length > 0) {
                 setLoadingRoles(true);
                 try {
-                    const rolePromises = list.map(doc => 
+                    const rolePromises = list.map(doc =>
                         fetchContractRole(doc.id).then(roleInfo => ({
                             contractId: doc.id,
                             roleInfo
@@ -324,7 +324,7 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                 {docs.map(doc => {
                                     const roleInfo = contractRoles[doc.id];
                                     const isWaitProcessing = selectedStatus === "cho-xu-ly";
-                                    
+
                                     return (
                                         <tr
                                             key={doc.id}

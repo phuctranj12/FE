@@ -82,7 +82,7 @@ const createdDocumentService = {
             };
 
             // Gọi API POST /contracts/shares với body
-            const response = await apiClient.post('/contracts/shares', body);
+            const response = await apiClient.get('/contracts/shares', body);
             return response; // apiClient trả về data
         } catch (error) {
             throw error;
