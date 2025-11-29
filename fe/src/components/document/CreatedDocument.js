@@ -226,6 +226,22 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
         };
         return typeMap[Number(type)] || "Không xác định";
     };
+    const getContractStatusLabel = (status) => {
+        const map = {
+            0: "Nháp",
+            10: "Đã tạo",
+            20: "Đang xử lý",
+            30: "Hoàn thành",
+            40: "Thanh lý",
+            31: "Từ chối",
+            32: "Huỷ bỏ",
+            1: "Sắp hết hạn",
+            2: "Hết hạn"
+        };
+
+        return map[status] || "Không xác định";
+    };
+
 
     const formatDate = (date) => date ? new Date(date).toLocaleString("vi-VN") : "";
 
@@ -348,9 +364,9 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                             <td className="document-title-cell">{doc.name}</td>
                                             <td>{doc.id}</td>
                                             <td>{getTypeLabel(doc.type)}</td>
-                                            <td>{getStatusLabel(doc.status)}</td>
-                                            <td>{formatDate(doc.created_at)}</td>
-                                            <td>{formatDate(doc.updated_at)}</td>
+                                            <td>{getContractStatusLabel(doc.status)}</td>
+                                            <td>{formatDate(doc.createdAt)}</td>
+                                            <td>{formatDate(doc.updatedAt)}</td>
                                             <td onClick={(e) => e.stopPropagation()}>
                                                 {isWaitProcessing && roleInfo ? (
                                                     <button
