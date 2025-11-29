@@ -269,7 +269,7 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
 
         try {
             setIsCheckingTemplateCode(true);
-            const response = await contractService.checkCodeUnique(code);
+            const response = await contractService.checkTemplateCodeUnique(code);
 
             if (response.code === 'SUCCESS') {
                 let isUnique = false;
@@ -912,7 +912,7 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                 const newContractId = contractResponse.data.id;
                 setContractId(newContractId);
 
-                const uploadResponse = await contractService.uploadDocument(
+                const uploadResponse = await contractService.uploadTemplateDocument(
                     formData.pdfFile
                 );
 
@@ -1228,6 +1228,7 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                 }}
                 hideFooter={true}
                 onAssignmentStateChange={setUnassignedComponentCount}
+                isTemplateDocument={true}
             />
         );
     };

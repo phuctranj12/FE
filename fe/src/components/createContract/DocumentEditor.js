@@ -18,7 +18,9 @@ function DocumentEditor({
     hideFooter = false,
     lockedFieldIds = [],
     onAssignmentStateChange = null,
-    showLockedBadge = true
+    showLockedBadge = true,
+    // Khi true: sử dụng API template-documents để lấy presigned URL
+    isTemplateDocument = false
 }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -411,7 +413,9 @@ function DocumentEditor({
                     try {
                         setPdfLoading(true);
                         setPdfError(null);
-                        const response = await contractService.getPresignedUrl(documentId);
+                        const response = isTemplateDocument
+                            ? await contractService.getTemplateDocumentPresignedUrl(documentId)
+                            : await contractService.getPresignedUrl(documentId);
                         
                         console.log('[DocumentEditor] getPresignedUrl response:', response);
                         
