@@ -142,7 +142,7 @@ const RightSummaryPanel = () => {
                                 key={doc.id || index}
                                 title={doc.name || doc.title || 'Tài liệu không có tên'}
                                 party={doc.partyA || doc.organization || 'Trung tâm công nghệ thông tin eContract'}
-                                tag={getSignTag(doc)}
+                                // tag={getSignTag(doc)}
                                 date={formatDate(doc.createdDate || doc.createDate || doc.date)}
                             />
                         ))}

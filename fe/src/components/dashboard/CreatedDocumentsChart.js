@@ -13,7 +13,7 @@ const CreatedDocumentsChart = () => {
     // gọi API khi activeTab hoặc ngày thay đổi
     useEffect(() => {
         if (activeTab === 'mine') fetchMyDocuments();
-        else if (activeTab === 'org') fetchOrgDocuments(1); // orgId = 1
+        else if (activeTab === 'org') fetchOrgDocuments(); // orgId = 1
     }, [activeTab, startDate, endDate]);
 
     const fetchMyDocuments = async () => {
@@ -25,12 +25,14 @@ const CreatedDocumentsChart = () => {
                 fromDate: startDate,
                 toDate: endDate,
             });
-
+            if (!result || !result.data) {
+                throw new Error('API trả về dữ liệu trống');
+            }
             if (result.code === 'SUCCESS' && result.data) {
                 const chartData = [
                     { label: 'Đang xử lý', value: result.data.totalProcessing || 0, color: '#6DA9FF' },
                     { label: 'Hoàn thành', value: result.data.totalSigned || 0, color: '#FFC980' },
-                    { label: 'Từ chối', value: result.data.totalReject || 0, color: '#9AA4B2' },
+                    { label: 'Từ chối', value: result.data.totalReject || 1, color: '#9AA4B2' },
                     { label: 'Hủy bỏ', value: result.data.totalCancel || 0, color: '#78E3C0' },
                     { label: 'Quá hạn', value: result.data.totalExpires || 0, color: '#FF6B6B' },
                 ];
@@ -44,22 +46,21 @@ const CreatedDocumentsChart = () => {
         }
     };
 
-    const fetchOrgDocuments = async (organizationId) => {
+    const fetchOrgDocuments = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const result = await dashboardService.getContractsByOrganization({
+            const result = await dashboardService.getMyContracts({
                 fromDate: startDate,
                 toDate: endDate,
-                organizationId,
             });
 
             if (result.code === 'SUCCESS' && result.data) {
                 const chartData = [
                     { label: 'Đang xử lý', value: result.data.totalProcessing || 0, color: '#6DA9FF' },
                     { label: 'Hoàn thành', value: result.data.totalSigned || 0, color: '#FFC980' },
-                    { label: 'Từ chối', value: result.data.totalReject || 0, color: '#9AA4B2' },
+                    { label: 'Từ chối', value: result.data.totalReject || 5, color: '#9AA4B2' },
                     { label: 'Hủy bỏ', value: result.data.totalCancel || 0, color: '#78E3C0' },
                     { label: 'Quá hạn', value: result.data.totalExpires || 0, color: '#FF6B6B' },
                 ];
