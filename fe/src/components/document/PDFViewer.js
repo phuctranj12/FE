@@ -257,7 +257,7 @@ function PDFViewer({
                                                 top: `${component.properties?.y || 0}px`,
                                                 width: `${component.properties?.width || 100}px`,
                                                 height: `${component.properties?.height || 30}px`,
-                                                fontSize: `${component.properties?.size || 13}px`,
+                                                fontSize: `${component.properties?.size || 12}px`,
                                                 fontFamily: component.properties?.font || 'Times New Roman',
                                                 cursor: isLocked ? 'not-allowed' : (isDragging ? 'grabbing' : 'grab'),
                                                 zIndex: editingComponentId === component.id ? 100 : 10

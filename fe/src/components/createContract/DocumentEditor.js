@@ -51,8 +51,8 @@ function DocumentEditor({
     // Ref cho PDF viewer container để scroll
     const pdfViewerContainerRef = useRef(null);
 
-    const DEFAULT_COMPONENT_WIDTH = 150;
-    const DEFAULT_COMPONENT_HEIGHT = 60;
+    const DEFAULT_COMPONENT_WIDTH = 200;
+    const DEFAULT_COMPONENT_HEIGHT = 80;
 
     const createCenteredProperties = (overrides = {}) => {
         const minWidth = 50;
@@ -230,7 +230,7 @@ function DocumentEditor({
     const [componentProperties, setComponentProperties] = useState({
         signer: '',
         font: 'Times New Roman',
-        size: 13,
+        size: 11,
         x: 0,
         y: 0,
         width: 0,
@@ -495,7 +495,7 @@ function DocumentEditor({
                         signer: field.recipientId?.toString() || '',
                         recipientId: field.recipientId,
                         font: field.font || 'Times New Roman',
-                        size: field.fontSize || 13,
+                        size: field.fontSize || 11,
                         // Store coordinates at currentScale for editing consistency
                         x: scaledX,
                         y: scaledY,
@@ -550,7 +550,7 @@ function DocumentEditor({
                         ...(component.fieldId && { id: component.fieldId }),
                         name: component.properties.fieldName || component.name,
                         font: component.properties.font || 'Times New Roman',
-                        fontSize: component.properties.size || 13,
+                        fontSize: component.properties.size || 11,
                         // Save normalized coordinates (scale=1.0) to database
                         boxX: normalizedX,
                         boxY: normalizedY,
