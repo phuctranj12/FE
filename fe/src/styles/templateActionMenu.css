@@ -49,12 +49,24 @@
     color: #333;
 }
 
-.action-item:hover {
-    background-color: #f9fafb;
+
+.action-icon-template {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.action-icon {
-    flex-shrink: 0;
+.action-icon-template:hover {
+    background-color: #f0f8ff;
+}
+
+.action-icon-template svg {
+    width: 18px;
+    height: 18px;
 }
 
 .action-item.edit-item:hover,

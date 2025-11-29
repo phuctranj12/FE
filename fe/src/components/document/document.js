@@ -143,7 +143,10 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
             onDocumentClick(doc);
             return;
         }
-        navigate(`/main/c/detail/${doc.id}?showAllFields=1`);
+        const isCompleted = selectedStatus === 30 || doc.status === 30;
+        const queryParam = isCompleted ? '' : '?showAllFields=1';
+
+        navigate(`/main/c/detail/${doc.id}`);
     };
 
     const handleBackFromDetail = () => {
@@ -190,7 +193,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
 
         try {
             const contractData = await documentService.getContractById(doc.id);
-
             navigate('/main/contract/create', {
                 state: {
                     copyFrom: contractData?.data || contractData,
