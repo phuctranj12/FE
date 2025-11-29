@@ -51,8 +51,8 @@ function DocumentEditor({
     // Ref cho PDF viewer container để scroll
     const pdfViewerContainerRef = useRef(null);
 
-    const DEFAULT_COMPONENT_WIDTH = 260;
-    const DEFAULT_COMPONENT_HEIGHT = 70;
+    const DEFAULT_COMPONENT_WIDTH = 150;
+    const DEFAULT_COMPONENT_HEIGHT = 60;
 
     const createCenteredProperties = (overrides = {}) => {
         const minWidth = 50;
@@ -1428,32 +1428,36 @@ function DocumentEditor({
                                             <label>X:</label>
                                             <input 
                                                 type="number"
-                                                value={componentProperties.x}
-                                                onChange={(e) => handlePropertyChange('x', parseInt(e.target.value))}
+                                                step="0.01"
+                                                value={componentProperties.x !== undefined ? parseFloat(componentProperties.x).toFixed(2) : ''}
+                                                onChange={(e) => handlePropertyChange('x', parseFloat(e.target.value).toFixed(2))}
                                             />
                                         </div>
                                         <div className="input-row">
                                             <label>Y:</label>
                                             <input 
                                                 type="number"
-                                                value={componentProperties.y}
-                                                onChange={(e) => handlePropertyChange('y', parseInt(e.target.value))}
+                                                step="0.01"
+                                                value={componentProperties.y !== undefined ? parseFloat(componentProperties.y).toFixed(2) : ''}
+                                                onChange={(e) => handlePropertyChange('y', parseFloat(e.target.value).toFixed(2))}
                                             />
                                         </div>
                                         <div className="input-row">
                                             <label>CHIỀU DÀI:</label>
                                             <input 
                                                 type="number"
-                                                value={componentProperties.height}
-                                                onChange={(e) => handlePropertyChange('height', parseInt(e.target.value))}
+                                                step="0.01"
+                                                value={componentProperties.height ? parseFloat(componentProperties.height).toFixed(2) : ''}
+                                                onChange={(e) => handlePropertyChange('height', parseFloat(e.target.value).toFixed(2))}
                                             />
                                         </div>
                                         <div className="input-row">
                                             <label>CHIỀU RỘNG:</label>
                                             <input 
                                                 type="number"
-                                                value={componentProperties.width}
-                                                onChange={(e) => handlePropertyChange('width', parseInt(e.target.value))}
+                                                step="0.01"
+                                                value={componentProperties.width ? parseFloat(componentProperties.width).toFixed(2) : ''}
+                                                onChange={(e) => handlePropertyChange('width', parseFloat(e.target.value).toFixed(2))}
                                             />
                                         </div>
                                     </div>
