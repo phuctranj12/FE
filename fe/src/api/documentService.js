@@ -353,6 +353,22 @@ const documentService = {
         } catch (error) {
             throw error;
         }
+    },
+
+    // Kiểm tra chữ ký số trong tài liệu (verify signature)
+    verifySignature: async (file) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await apiClient.post('/contracts/documents/verify-signature', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
     }
 };
 
