@@ -22,6 +22,11 @@ import ServerCertificateList from './components/certificate/ServerCertificateLis
 import ContractDetail from './components/contract_coordinate/ContractDetail';
 import EditDocumentForm from './components/document/EditDocumentForm';
 import CheckSignDigital from './components/checkSignDigital/CheckSignDigital';
+import ReportDetail from './components/report/ReportDetail';
+import ReportByStatus from './components/report/ReportByStatus';
+import ReportNumberByStatus from './components/report/ReportNumberByStatus';
+import ReportNumberByType from './components/report/ReportNumberByType';
+import ReportMyProcess from './components/report/ReportMyProcess';
 function App() {
   return (
     <Routes>
@@ -50,6 +55,11 @@ function App() {
         <Route path="c/:type/:contractId" element={<ContractDetail />} />
         <Route path="contract/create/:status/:id" element={<EditDocumentForm />} />
         <Route path="check-sign-digital" element={<CheckSignDigital />} />
+        <Route path="report/detail" element={<ReportDetail />} />
+        <Route path="report/by-status" element={<ReportByStatus />} />
+        <Route path="report/number-by-status" element={<ReportNumberByStatus />} />
+        <Route path="report/number-by-type" element={<ReportNumberByType />} />
+        <Route path="report/my-process" element={<ReportMyProcess />} />
       </Route>
     </Routes>
   );

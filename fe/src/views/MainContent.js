@@ -48,6 +48,13 @@ function MainContent() {
         if (menuStatus === "create-document") {
             return "Tạo tài liệu mới";
         }
+        if (menuStatus === "document") {
+            if (selectedStatus === "da-tao") return "Tài liệu đã tạo";
+            if (selectedStatus === "cho-xu-ly") return "Tài liệu đã nhận > Chờ xử lý";
+            if (selectedStatus === "da-xu-ly") return "Tài liệu đã nhận > Đã xử lý";
+            if (selectedStatus === "duoc-chia-se") return "Tài liệu đã nhận > Được chia sẻ";
+            return "Tài liệu đã tạo ";
+        }
         return "Hệ thống quản lý hợp đồng điện tử";
     };
 

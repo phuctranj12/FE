@@ -329,7 +329,6 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                 <tr>
                                     <th>Tên tài liệu</th>
                                     <th>Mã hợp đồng</th>
-                                    <th>Loại tài liệu</th>
                                     <th>Trạng thái</th>
                                     <th>Thời gian tạo</th>
                                     <th>Thời gian cập nhật</th>
@@ -363,7 +362,6 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                         >
                                             <td className="document-title-cell">{doc.name}</td>
                                             <td>{doc.id}</td>
-                                            <td>{getTypeLabel(doc.type)}</td>
                                             <td>{getContractStatusLabel(doc.status)}</td>
                                             <td>{formatDate(doc.createdAt)}</td>
                                             <td>{formatDate(doc.updatedAt)}</td>

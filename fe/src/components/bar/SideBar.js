@@ -14,9 +14,9 @@ const CREATED_MENU_ITEMS = [
 ];
 
 function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus }) {
-    const [activeMenu, setActiveMenu] = useState(null); // menu đang mở dropdown
-    const [activeParent, setActiveParent] = useState(null); // menu cấp 1 đang active
-    const [activeSub, setActiveSub] = useState(null); // submenu đang active
+    const [activeMenu, setActiveMenu] = useState(null);
+    const [activeParent, setActiveParent] = useState(null);
+    const [activeSub, setActiveSub] = useState(null);
 
     const navigate = useNavigate();
 
@@ -24,12 +24,10 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
         navigate(path);
     };
 
-    /** Khi click menu cấp 1 => chỉ toggle, không active */
     const toggleMenu = (menuName) => {
         setActiveMenu(prev => prev === menuName ? null : menuName);
     };
 
-    /** Click submenu => active parent + active sub */
     const handleActiveSubMenu = (parentKey, subKey) => {
         setActiveParent(parentKey);
         setActiveSub(subKey);
@@ -218,31 +216,46 @@ function Sidebar({ setSelectedStatus, selectedStatus, setMenuStatus, menuStatus 
                     <div className="submenu">
                         <div
                             className={`subitem ${activeSub === "chi-tiet" ? "active-sub" : ""}`}
-                            onClick={() => handleActiveSubMenu("report", "chi-tiet")}>
+                            onClick={() => {
+                                handleActiveSubMenu("report", "chi-tiet");
+                                handleNavigation("/main/report/detail");
+                            }}>
                             Chi tiết
                         </div>
 
                         <div
                             className={`subitem ${activeSub === "trang-thai-xu-ly" ? "active-sub" : ""}`}
-                            onClick={() => handleActiveSubMenu("report", "trang-thai-xu-ly")}>
+                            onClick={() => {
+                                handleActiveSubMenu("report", "trang-thai-xu-ly");
+                                handleNavigation("/main/report/by-status");
+                            }}>
                             Trạng thái xử lý
                         </div>
 
                         <div
                             className={`subitem ${activeSub === "sl-theo-trang-thai" ? "active-sub" : ""}`}
-                            onClick={() => handleActiveSubMenu("report", "sl-theo-trang-thai")}>
+                            onClick={() => {
+                                handleActiveSubMenu("report", "sl-theo-trang-thai");
+                                handleNavigation("/main/report/number-by-status");
+                            }}>
                             SL theo trạng thái
                         </div>
 
                         <div
                             className={`subitem ${activeSub === "sl-theo-loai" ? "active-sub" : ""}`}
-                            onClick={() => handleActiveSubMenu("report", "sl-theo-loai")}>
+                            onClick={() => {
+                                handleActiveSubMenu("report", "sl-theo-loai");
+                                handleNavigation("/main/report/number-by-type");
+                            }}>
                             SL theo loại tài liệu
                         </div>
 
                         <div
                             className={`subitem ${activeSub === "tai-lieu-nhan" ? "active-sub" : ""}`}
-                            onClick={() => handleActiveSubMenu("report", "tai-lieu-nhan")}>
+                            onClick={() => {
+                                handleActiveSubMenu("report", "tai-lieu-nhan");
+                                handleNavigation("/main/report/my-process");
+                            }}>
                             Tài liệu đã nhận
                         </div>
                     </div>
