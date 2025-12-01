@@ -16,6 +16,10 @@ const UserInforDetail = () => {
         email: "",
         phone: "",
         address: "",
+        birthday: "",
+        gender: "",
+        status: null,
+        taxCode: "",
         organizationId: null,
         organizationName: "",
         roleId: null,
@@ -27,11 +31,11 @@ const UserInforDetail = () => {
         email: "",
         phone: "",
         address: "",
-        organizationId: null,
-        roleId: null
+        birthday: "",
+        gender: "",
+        taxCode: "",
     });
 
-    // Lấy thông tin user từ token
     useEffect(() => {
         fetchUserInfo();
     }, []);
@@ -43,36 +47,42 @@ const UserInforDetail = () => {
             const response = await customerService.getCustomerByToken();
 
             if (response && response.data) {
-                const userData = response.data;
+                const u = response.data;
+                const role = u.roles?.[0] || {};
+
                 setUserInfo({
-                    id: userData.id,
-                    name: userData.name || "",
-                    email: userData.email || "",
-                    phone: userData.phone || "",
-                    address: userData.address || "",
-                    organizationId: userData.organizationId,
-                    organizationName: userData.organizationName || "",
-                    roleId: userData.roleId,
-                    roleName: userData.roleName || ""
+                    id: u.id,
+                    name: u.name || "",
+                    email: u.email || "",
+                    phone: u.phone || "",
+                    address: u.address || "",
+                    birthday: u.birthday || "",
+                    gender: u.gender || "",
+                    status: u.status,
+                    taxCode: u.taxCode || "",
+                    organizationId: u.organizationId,
+                    organizationName: u.organizationName || "",
+                    roleId: role.id || null,
+                    roleName: role.name || "",
                 });
 
                 setFormData({
-                    name: userData.name || "",
-                    email: userData.email || "",
-                    phone: userData.phone || "",
-                    address: userData.address || "",
-                    organizationId: userData.organizationId,
-                    roleId: userData.roleId
+                    name: u.name || "",
+                    email: u.email || "",
+                    phone: u.phone || "",
+                    address: u.address || "",
+                    birthday: u.birthday || "",
+                    gender: u.gender || "",
+                    taxCode: u.taxCode || "",
                 });
 
-                // Cập nhật localStorage
                 const storedUser = localStorage.getItem("user");
                 if (storedUser) {
                     const parsedUser = JSON.parse(storedUser);
                     localStorage.setItem("user", JSON.stringify({
                         ...parsedUser,
-                        name: userData.name,
-                        phone: userData.phone
+                        name: u.name,
+                        phone: u.phone
                     }));
                 }
             }
@@ -105,8 +115,9 @@ const UserInforDetail = () => {
             email: userInfo.email,
             phone: userInfo.phone,
             address: userInfo.address,
-            organizationId: userInfo.organizationId,
-            roleId: userInfo.roleId
+            birthday: userInfo.birthday,
+            gender: userInfo.gender,
+            taxCode: userInfo.taxCode
         });
         setError(null);
         setSuccessMessage("");
@@ -115,7 +126,6 @@ const UserInforDetail = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate
         if (!formData.name.trim()) {
             setError("Tên không được để trống");
             return;
@@ -135,8 +145,9 @@ const UserInforDetail = () => {
                 email: formData.email,
                 phone: formData.phone,
                 address: formData.address,
-                organizationId: formData.organizationId,
-                roleId: formData.roleId
+                birthday: formData.birthday,
+                gender: formData.gender,
+                taxCode: formData.taxCode,
             };
 
             const response = await customerService.updateCustomer(userInfo.id, updateData);
@@ -144,14 +155,9 @@ const UserInforDetail = () => {
             if (response) {
                 setSuccessMessage("Cập nhật thông tin thành công!");
                 setIsEditing(false);
-
-                // Refresh thông tin
                 await fetchUserInfo();
 
-                // Tự động ẩn thông báo sau 3 giây
-                setTimeout(() => {
-                    setSuccessMessage("");
-                }, 3000);
+                setTimeout(() => setSuccessMessage(""), 3000);
             }
         } catch (err) {
             console.error("Error updating user info:", err);
@@ -179,32 +185,24 @@ const UserInforDetail = () => {
 
     return (
         <div className="user-infor-detail">
-            <div className="user-infor-header">
-                <h2>Thông tin tài khoản</h2>
-                <button className="btn-back" onClick={() => navigate(-1)}>
-                    ← Quay lại
-                </button>
-            </div>
 
             {error && (
                 <div className="alert alert-error">
-                    <span>⚠️ {error}</span>
+                    <span>{error}</span>
                     <button onClick={() => setError(null)}>×</button>
                 </div>
             )}
 
             {successMessage && (
                 <div className="alert alert-success">
-                    <span>✓ {successMessage}</span>
+                    <span>{successMessage}</span>
                     <button onClick={() => setSuccessMessage("")}>×</button>
                 </div>
             )}
 
             <div className="user-infor-content">
                 <div className="user-avatar-section">
-                    <div className="user-avatar-large">
-                        {getUserInitial()}
-                    </div>
+                    <div className="user-avatar-large">{getUserInitial()}</div>
                     <div className="user-basic-info">
                         <h3>{userInfo.name || "Chưa có tên"}</h3>
                         <p className="user-email">{userInfo.email}</p>
@@ -215,78 +213,86 @@ const UserInforDetail = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="user-info-form">
+
                     <div className="form-section">
-                        <h3>Thông tin cá nhân</h3>
+                        {/* <h3>Thông tin cá nhân</h3> */}
 
                         <div className="form-group">
-                            <label htmlFor="name">
-                                Họ và tên <span className="required">*</span>
-                            </label>
+                            <label>Họ và tên <span className="required">*</span></label>
                             {isEditing ? (
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    placeholder="Nhập họ và tên"
-                                    required
-                                />
+                                <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
                             ) : (
                                 <p className="form-value">{userInfo.name || "Chưa cập nhật"}</p>
                             )}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="email">
-                                Email <span className="required">*</span>
-                            </label>
+                            <label>Email <span className="required">*</span></label>
                             {isEditing ? (
-                                <input
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    placeholder="Nhập email"
-                                    required
-                                />
+                                <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
                             ) : (
                                 <p className="form-value">{userInfo.email || "Chưa cập nhật"}</p>
                             )}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="phone">Số điện thoại</label>
+                            <label>Số điện thoại</label>
                             {isEditing ? (
-                                <input
-                                    type="tel"
-                                    id="phone"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    placeholder="Nhập số điện thoại"
-                                />
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} />
                             ) : (
                                 <p className="form-value">{userInfo.phone || "Chưa cập nhật"}</p>
                             )}
                         </div>
 
+                        {/* ✨ THÊM MỚI: Birthday */}
                         <div className="form-group">
-                            <label htmlFor="address">Địa chỉ</label>
+                            <label>Ngày sinh</label>
                             {isEditing ? (
-                                <textarea
-                                    id="address"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleInputChange}
-                                    placeholder="Nhập địa chỉ"
-                                    rows="3"
-                                />
+                                <input type="date" name="birthday" value={formData.birthday} onChange={handleInputChange} />
                             ) : (
-                                <p className="form-value">{userInfo.address || "Chưa cập nhật"}</p>
+                                <p className="form-value">{userInfo.birthday || "Chưa cập nhật"}</p>
                             )}
                         </div>
+
+                        {/* ✨ THÊM MỚI: Gender */}
+                        <div className="form-group">
+                            <label>Giới tính</label>
+                            {isEditing ? (
+                                <select name="gender" value={formData.gender} onChange={handleInputChange}>
+                                    <option value="">Chọn giới tính</option>
+                                    <option value="male">Nam</option>
+                                    <option value="female">Nữ</option>
+                                    <option value="other">Khác</option>
+                                </select>
+                            ) : (
+                                <p className="form-value">
+                                    {userInfo.gender === "male"
+                                        ? "Nam"
+                                        : userInfo.gender === "female"
+                                            ? "Nữ"
+                                            : "Khác / Chưa cập nhật"}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* ✨ THÊM MỚI: TaxCode */}
+                        <div className="form-group">
+                            <label>Mã số thuế</label>
+                            {isEditing ? (
+                                <input type="text" name="taxCode" value={formData.taxCode} onChange={handleInputChange} />
+                            ) : (
+                                <p className="form-value">{userInfo.taxCode || "Chưa cập nhật"}</p>
+                            )}
+                        </div>
+
+                        {/* ✨ THÊM MỚI: Status */}
+                        <div className="form-group">
+                            <label>Trạng thái</label>
+                            <p className="form-value">
+                                {userInfo.status === 1 ? "Hoạt động" : "Không hoạt động"}
+                            </p>
+                        </div>
+
                     </div>
 
                     <div className="form-section">
@@ -306,28 +312,20 @@ const UserInforDetail = () => {
                     <div className="form-actions">
                         {!isEditing ? (
                             <button type="button" className="btn btn-primary" onClick={handleEdit}>
-                                ✏️ Chỉnh sửa thông tin
+                                Chỉnh sửa thông tin
                             </button>
                         ) : (
                             <>
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={handleCancel}
-                                    disabled={loading}
-                                >
+                                <button type="button" className="btn btn-secondary" onClick={handleCancel}>
                                     Hủy
                                 </button>
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={loading}
-                                >
-                                    {loading ? "Đang lưu..." : "💾 Lưu thay đổi"}
+                                <button type="submit" className="btn btn-primary">
+                                    {loading ? "Đang lưu..." : "Lưu thay đổi"}
                                 </button>
                             </>
                         )}
                     </div>
+
                 </form>
             </div>
         </div>
