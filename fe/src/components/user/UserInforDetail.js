@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import customerService from "../../api/customerService";
 import "../../styles/userInforDetail.css";
-
+import OrganizationService from "../../api/OrganizationService";
 const UserInforDetail = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -46,10 +46,12 @@ const UserInforDetail = () => {
             setError(null);
             const response = await customerService.getCustomerByToken();
 
+
             if (response && response.data) {
                 const u = response.data;
                 const role = u.roles?.[0] || {};
-
+                const responeOrganization = await OrganizationService.getById(u.organizationId);
+                console.log("Organization Response:", responeOrganization);
                 setUserInfo({
                     id: u.id,
                     name: u.name || "",
@@ -61,7 +63,7 @@ const UserInforDetail = () => {
                     status: u.status,
                     taxCode: u.taxCode || "",
                     organizationId: u.organizationId,
-                    organizationName: u.organizationName || "",
+                    organizationName: responeOrganization.data.name || "",
                     roleId: role.id || null,
                     roleName: role.name || "",
                 });
