@@ -27,6 +27,7 @@ import ReportByStatus from './components/report/ReportByStatus';
 import ReportNumberByStatus from './components/report/ReportNumberByStatus';
 import ReportNumberByType from './components/report/ReportNumberByType';
 import ReportMyProcess from './components/report/ReportMyProcess';
+import UserInforDetail from './components/user/UserInforDetail';
 function App() {
   return (
     <Routes>
@@ -60,6 +61,7 @@ function App() {
         <Route path="report/number-by-status" element={<ReportNumberByStatus />} />
         <Route path="report/number-by-type" element={<ReportNumberByType />} />
         <Route path="report/my-process" element={<ReportMyProcess />} />
+        <Route path="user/information" element={<UserInforDetail />} />
       </Route>
     </Routes>
   );

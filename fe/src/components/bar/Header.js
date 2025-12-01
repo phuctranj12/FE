@@ -84,6 +84,9 @@ function Header({ breadcrumb }) {
             navigate("/login");
         }
     };
+    const handleshowUserInfor = () => {
+        navigate("/main/user/information");
+    }
 
     const getUserInitial = () => {
         const source = (user && (user.name || user.email)) || "";
@@ -175,7 +178,7 @@ function Header({ breadcrumb }) {
 
                     {showUserMenu && (
                         <div className="dropdown-box user-menu">
-                            <div className="menu-item">Thông tin tài khoản</div>
+                            <div className="menu-item" onClick={handleshowUserInfor}>Thông tin tài khoản</div>
                             <div className="menu-item">Đổi mật khẩu</div>
                             <div className="menu-item">Plugin ký Token</div>
                             <div className="menu-item logout" onClick={handleLogout}>
