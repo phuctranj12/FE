@@ -219,7 +219,7 @@ const UserInforDetail = () => {
                     <div className="form-section">
                         {/* <h3>Thông tin cá nhân</h3> */}
 
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Họ và tên <span className="required">*</span></label>
                             {isEditing ? (
                                 <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
@@ -228,7 +228,7 @@ const UserInforDetail = () => {
                             )}
                         </div>
 
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Email <span className="required">*</span></label>
                             {isEditing ? (
                                 <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
@@ -237,7 +237,7 @@ const UserInforDetail = () => {
                             )}
                         </div>
 
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Số điện thoại</label>
                             {isEditing ? (
                                 <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} />
@@ -247,7 +247,7 @@ const UserInforDetail = () => {
                         </div>
 
                         {/* ✨ THÊM MỚI: Birthday */}
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Ngày sinh</label>
                             {isEditing ? (
                                 <input type="date" name="birthday" value={formData.birthday} onChange={handleInputChange} />
@@ -257,7 +257,7 @@ const UserInforDetail = () => {
                         </div>
 
                         {/* ✨ THÊM MỚI: Gender */}
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Giới tính</label>
                             {isEditing ? (
                                 <select name="gender" value={formData.gender} onChange={handleInputChange}>
@@ -278,7 +278,7 @@ const UserInforDetail = () => {
                         </div>
 
                         {/* ✨ THÊM MỚI: TaxCode */}
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Mã số thuế</label>
                             {isEditing ? (
                                 <input type="text" name="taxCode" value={formData.taxCode} onChange={handleInputChange} />
@@ -288,7 +288,7 @@ const UserInforDetail = () => {
                         </div>
 
                         {/* ✨ THÊM MỚI: Status */}
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Trạng thái</label>
                             <p className="form-value">
                                 {userInfo.status === 1 ? "Hoạt động" : "Không hoạt động"}
@@ -300,12 +300,12 @@ const UserInforDetail = () => {
                     <div className="form-section">
                         <h3>Thông tin tổ chức</h3>
 
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Tổ chức</label>
                             <p className="form-value">{userInfo.organizationName || "Chưa có tổ chức"}</p>
                         </div>
 
-                        <div className="form-group">
+                        <div className="form-group-user-infor">
                             <label>Vai trò</label>
                             <p className="form-value">{userInfo.roleName || "Chưa có vai trò"}</p>
                         </div>
