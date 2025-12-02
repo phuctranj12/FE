@@ -63,7 +63,7 @@ function ReportNumberByStatus() {
 
     return (
         <div className="report-container">
-            <h2>📊 Báo cáo số lượng theo trạng thái</h2>
+            <h2>Báo cáo số lượng theo trạng thái</h2>
 
             <div className="filter-section">
                 <div className="filter-row">
@@ -85,10 +85,10 @@ function ReportNumberByStatus() {
                     </div>
                     <div className="filter-buttons">
                         <button className="btn-search" onClick={handleSearch}>
-                            🔍 Tìm kiếm
+                            Tìm kiếm
                         </button>
                         <button className="btn-reset" onClick={handleReset}>
-                            🔄 Đặt lại
+                            Đặt lại
                         </button>
                     </div>
                 </div>

@@ -68,8 +68,8 @@ function ReportDetail() {
     };
 
     const handleReset = () => {
-        setFromDate("");
-        setToDate("");
+        setFromDate("2025-01-01");
+        setToDate("2025-12-31");
         setCompletedFromDate("");
         setCompletedToDate("");
         setStatus(null);
@@ -84,7 +84,7 @@ function ReportDetail() {
 
     return (
         <div className="report-container">
-            <h2>📊 Báo cáo chi tiết</h2>
+            <h2>Báo cáo chi tiết</h2>
 
             {/* Bộ lọc */}
             <div className="filter-section">

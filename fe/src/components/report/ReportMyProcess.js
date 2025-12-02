@@ -104,7 +104,7 @@ function ReportMyProcess() {
 
     return (
         <div className="report-container">
-            <h2>📥 Báo cáo tài liệu đã nhận</h2>
+            <h2> Báo cáo tài liệu đã nhận</h2>
 
             <div className="filter-section">
                 <div className="filter-row">
@@ -145,8 +145,8 @@ function ReportMyProcess() {
                         />
                     </div>
                     <div className="filter-buttons">
-                        <button className="btn-search" onClick={handleSearch}>🔍 Tìm kiếm</button>
-                        <button className="btn-reset" onClick={handleReset}>🔄 Đặt lại</button>
+                        <button className="btn-search" onClick={handleSearch}> Tìm kiếm</button>
+                        <button className="btn-reset" onClick={handleReset}> Đặt lại</button>
                     </div>
                 </div>
             </div>

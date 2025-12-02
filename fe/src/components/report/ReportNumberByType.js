@@ -3,7 +3,6 @@ import reportService from "../../api/reportService";
 import { toast } from "react-toastify";
 import "../../styles/report.css";
 
-// Hàm lấy ngày đầu tháng - cuối tháng giống component kia
 const getDefaultDateRange = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -66,7 +65,7 @@ function ReportNumberByType() {
 
     return (
         <div className="report-container">
-            <h2>📋 Báo cáo số lượng theo loại tài liệu</h2>
+            <h2>Báo cáo số lượng theo loại tài liệu</h2>
 
             <div className="filter-section">
                 <div className="filter-row">
@@ -89,10 +88,10 @@ function ReportNumberByType() {
 
                     <div className="filter-buttons">
                         <button className="btn-search" onClick={handleSearch}>
-                            🔍 Tìm kiếm
+                            Tìm kiếm
                         </button>
                         <button className="btn-reset" onClick={handleReset}>
-                            🔄 Đặt lại
+                            Đặt lại
                         </button>
                     </div>
                 </div>
