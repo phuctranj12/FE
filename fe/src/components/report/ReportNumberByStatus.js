@@ -4,18 +4,23 @@ import { toast } from "react-toastify";
 import "../../styles/report.css";
 
 const STATUS_MAP = {
-    0: "Bản nháp",
-    20: "Đang xử lý",
-    30: "Hoàn thành",
-    31: "Từ chối",
-    32: "Hủy bỏ",
+    totalDraff: "Bản nháp",
+    totalCreated: "Đang xử lý",
+    totalProcessing: "Đang xử lý",
+    totalSigned: "Hoàn thành",
+    totalReject: "Từ chối",
+    totalCancel: "Hủy bỏ",
+    totalLiquidation: "Thanh lý",
+    totalExpires: "Hết hạn",
+    totalAboutExpire: "Sắp hết hạn",
+    totalWaiting: "Chờ xử lý"
 };
 
 function ReportNumberByStatus() {
-    const [data, setData] = useState([]);
+    const [data, setData] = useState({});
     const [loading, setLoading] = useState(false);
-    const [fromDate, setFromDate] = useState("");
-    const [toDate, setToDate] = useState("");
+    const [fromDate, setFromDate] = useState("2025-01-01");
+    const [toDate, setToDate] = useState("2025-12-31");
 
     const organizationId = JSON.parse(localStorage.getItem('user'))?.organizationId || 1;
 
@@ -36,7 +41,7 @@ function ReportNumberByStatus() {
                 fromDate,
                 toDate
             );
-            setData(response || []);
+            setData(response || {});
         } catch (error) {
             toast.error("Lỗi khi tải báo cáo số lượng theo trạng thái!");
         } finally {
@@ -49,14 +54,12 @@ function ReportNumberByStatus() {
     };
 
     const handleReset = () => {
-        setFromDate("");
-        setToDate("");
-        setData([]);
+        setFromDate("2025-01-01");
+        setToDate("2025-12-31");
+        setData({});
     };
 
-    const getTotalCount = () => {
-        return data.reduce((sum, item) => sum + (item.count || 0), 0);
-    };
+    const totalCount = Object.values(data).reduce((sum, val) => sum + (val || 0), 0);
 
     return (
         <div className="report-container">
@@ -96,7 +99,7 @@ function ReportNumberByStatus() {
                     <div className="loading">Đang tải dữ liệu...</div>
                 ) : (
                     <>
-                        {data.length > 0 ? (
+                        {totalCount > 0 ? (
                             <>
                                 <table className="report-table">
                                     <thead>
@@ -108,18 +111,18 @@ function ReportNumberByStatus() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {data.map((item, index) => (
+                                        {Object.entries(data).map(([key, value], index) => (
                                             <tr key={index}>
                                                 <td>{index + 1}</td>
                                                 <td>
-                                                    <span className={`status-badge status-${item.status}`}>
-                                                        {STATUS_MAP[item.status] || "N/A"}
+                                                    <span className={`status-badge status-${key}`}>
+                                                        {STATUS_MAP[key] || key}
                                                     </span>
                                                 </td>
-                                                <td className="number-cell">{item.count || 0}</td>
+                                                <td className="number-cell">{value || 0}</td>
                                                 <td className="number-cell">
-                                                    {getTotalCount() > 0
-                                                        ? ((item.count / getTotalCount()) * 100).toFixed(2)
+                                                    {totalCount > 0
+                                                        ? ((value || 0) / totalCount * 100).toFixed(2)
                                                         : 0}
                                                     %
                                                 </td>
@@ -128,39 +131,30 @@ function ReportNumberByStatus() {
                                     </tbody>
                                     <tfoot>
                                         <tr className="total-row">
-                                            <td colSpan="2">
-                                                <strong>Tổng cộng</strong>
-                                            </td>
-                                            <td className="number-cell">
-                                                <strong>{getTotalCount()}</strong>
-                                            </td>
-                                            <td className="number-cell">
-                                                <strong>100%</strong>
-                                            </td>
+                                            <td colSpan="2"><strong>Tổng cộng</strong></td>
+                                            <td className="number-cell"><strong>{totalCount}</strong></td>
+                                            <td className="number-cell"><strong>100%</strong></td>
                                         </tr>
                                     </tfoot>
                                 </table>
 
-                                {/* Biểu đồ đơn giản bằng CSS */}
                                 <div className="chart-section">
                                     <h3>Biểu đồ trực quan</h3>
                                     <div className="bar-chart-report">
-                                        {data.map((item, index) => (
+                                        {Object.entries(data).map(([key, value], index) => (
                                             <div key={index} className="bar-item">
-                                                <div className="bar-label">
-                                                    {STATUS_MAP[item.status] || "N/A"}
-                                                </div>
+                                                <div className="bar-label">{STATUS_MAP[key] || key}</div>
                                                 <div className="bar-wrapper">
                                                     <div
-                                                        className={`bar status-${item.status}`}
+                                                        className={`bar status-${key}`}
+                                                        // style={{ width: `${totalCount > 0 ? (value || 0) / totalCount * 6 : 0}%`, backgroundColor: '#0B57D0' }}
                                                         style={{
-                                                            width: `${getTotalCount() > 0
-                                                                ? (item.count / getTotalCount()) * 100
-                                                                : 0
-                                                                }%`,
+                                                            width: totalCount > 0 ? `${(value / totalCount) * 100}%` : "0%",
                                                         }}
+
+
                                                     >
-                                                        {item.count}
+                                                        {value || 0}
                                                     </div>
                                                 </div>
                                             </div>
@@ -170,7 +164,7 @@ function ReportNumberByStatus() {
                             </>
                         ) : (
                             <div className="no-data">
-                                Vui lòng chọn khoảng thời gian và tìm kiếm
+                                Không có dữ liệu trong khoảng thời gian này
                             </div>
                         )}
                     </>
