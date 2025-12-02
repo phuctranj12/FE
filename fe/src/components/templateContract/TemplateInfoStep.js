@@ -100,35 +100,45 @@ function TemplateInfoStep({
                         <label>File đính kèm</label>
                         <div className="file-input-container">
                             <input
-                                type="text"
-                                name="attachedFile"
-                                value={formData.attachedFile}
-                                onChange={handleInputChange}
-                                placeholder="Chọn file đính kèm (PDF, DOC, DOCX, PNG, JPG, JPEG, ZIP, RAR, TXT, XLS, XLSX)"
-                                readOnly
+                                type="file"
+                                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar,.txt,.xls,.xlsx"
+                                onChange={handleAttachedFilesUpload}
+                                style={{ display: 'none' }}
+                                id="attached-files-upload"
+                                multiple
                             />
-                            <span className="attachment-icon">📎</span>
+                            <label 
+                                htmlFor="attached-files-upload" 
+                                className="attach-file-upload-label"
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    display: 'inline-block', 
+                                    padding: '8px 16px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    background: '#fff'
+                                }}
+                            >
+                                {formData.attachedFiles?.length > 0 
+                                    ? `${formData.attachedFiles.length} file(s) đã chọn` 
+                                    : 'Chọn file đính kèm'}
+                            </label>
                         </div>
-                        <input
-                            type="file"
-                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar,.txt,.xls,.xlsx"
-                            multiple
-                            onChange={handleAttachedFilesUpload}
-                            style={{ display: 'none' }}
-                            id="attached-files-upload"
-                        />
-                        <label htmlFor="attached-files-upload" className="file-upload-btn">
-                            Chọn files đính kèm
-                        </label>
                         {formData.attachedFiles && formData.attachedFiles.length > 0 && (
-                            <div className="attached-files-list">
+                            <div style={{ marginTop: '8px', fontSize: '12px' }}>
                                 {formData.attachedFiles.map((file, index) => (
-                                    <div key={index} className="attached-file-item">
-                                        <span className="file-name">{file.name}</span>
-                                        <button
+                                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <span>📎 {file.name}</span>
+                                        <button 
                                             type="button"
                                             onClick={() => removeAttachedFile(index)}
-                                            className="remove-file-btn"
+                                            style={{ 
+                                                background: 'transparent', 
+                                                border: 'none', 
+                                                color: '#f44336', 
+                                                cursor: 'pointer',
+                                                fontSize: '16px'
+                                            }}
                                         >
                                             ×
                                         </button>

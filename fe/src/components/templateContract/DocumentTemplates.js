@@ -192,7 +192,7 @@ function DocumentTemplates() {
     return (
         <div className="document-templates-wrapper">
             <div className="templates-header">
-                <div className="tabs-container">
+                <div className="filter-scope">
                     <button
                         className={`tab-button ${activeTab === "created" ? "active" : ""}`}
                         onClick={() => {

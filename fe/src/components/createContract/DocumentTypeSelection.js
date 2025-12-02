@@ -448,7 +448,7 @@ function DocumentTypeSelection({
                             />
                             <label 
                                 htmlFor="attached-files-upload" 
-                                className={`file-upload-label ${loading ? 'disabled' : ''}`}
+                                className={`attach-file-upload-label ${loading ? 'disabled' : ''}`}
                                 style={{ 
                                     cursor: 'pointer', 
                                     display: 'inline-block', 

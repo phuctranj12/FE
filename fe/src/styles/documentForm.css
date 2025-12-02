@@ -303,6 +303,17 @@
     background: #0056b3;
 }
 
+.attach-file-upload-label {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
 .file-upload-label {
     display: inline-block;
     margin-top: 10px;
@@ -825,13 +836,13 @@
 }
 
 /* Disabled Label */
-.file-upload-label.disabled {
+.attach-file-upload-label.disabled {
     background: #e0e0e0;
     cursor: not-allowed;
     opacity: 0.6;
 }
 
-.file-upload-label.disabled:hover {
+.attach-file-upload-label.disabled:hover {
     background: #e0e0e0;
 }
 
