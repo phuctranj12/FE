@@ -12,7 +12,6 @@ function TemplateConfirmation({
     onSaveDraft 
 }) {
     const [endDate, setEndDate] = useState(formData.endDate || '2025-11-23');
-    const [ccEmails, setCcEmails] = useState('');
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -27,14 +26,6 @@ function TemplateConfirmation({
         setFormData(prev => ({
             ...prev,
             endDate: e.target.value
-        }));
-    };
-
-    const handleCcEmailsChange = (e) => {
-        setCcEmails(e.target.value);
-        setFormData(prev => ({
-            ...prev,
-            ccEmails: e.target.value
         }));
     };
 
@@ -166,20 +157,6 @@ function TemplateConfirmation({
                         ) : (
                             <div className="empty-state">Chưa có văn thư</div>
                         )}
-                    </div>
-                </div>
-
-                {/* CC Emails */}
-                <div className="summary-section">
-                    <h4 className="section-title">CC Tài liệu tới</h4>
-                    <div className="form-group">
-                        <input
-                            type="text"
-                            value={ccEmails}
-                            onChange={handleCcEmailsChange}
-                            className="form-input"
-                            placeholder="Nhập email, ngăn cách nhau bởi dấu ','"
-                        />
                     </div>
                 </div>
             </div>

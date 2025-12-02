@@ -18,22 +18,21 @@ function TemplateContractItem({
     const {
         id,
         name,
-        end_time,
+        contractExpireTime,
         organization_name,
         customer_name,
         templateId,
         partyA,
         partyB,
-        contractCode,
-        date
+        contractNo
     } = contract;
 
     // Format the data for display
     const displayName = templateId || name || `MẪU${id}`;
     const displayPartyA = organization_name || partyA;
     const displayPartyB = customer_name || partyB;
-    const displayCode = contractCode || `Contract No. ${id}`;
-    const displayDate = date || (end_time ? new Date(end_time).toLocaleDateString('vi-VN') : '');
+    const displayCode = contractNo || `Contract No. ${id}`;
+    const displayDate = (contractExpireTime ? new Date(contractExpireTime).toLocaleDateString('vi-VN') : '');
 
     return (
         <div className="template-contract-item" onClick={onClick}>

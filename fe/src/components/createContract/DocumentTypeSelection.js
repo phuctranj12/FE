@@ -404,7 +404,7 @@ function DocumentTypeSelection({
                                 <option value="">-- Chọn tài liệu liên quan --</option>
                                 {relatedContracts.map((contract) => (
                                     <option key={contract.id} value={contract.id}>
-                                        {contract.name} ({contract.contractNo})
+                                        {contract.name}
                                     </option>
                                 ))}
                             </select>
@@ -419,17 +419,6 @@ function DocumentTypeSelection({
                             onChange={handleInputChange}
                             rows="3"
                         />
-                    </div>
-                    <div className="form-group">
-                        <label>Ngày hết hiệu lực tài liệu <span style={{ color: 'red' }}>*</span></label>
-                        <div className="date-input-container">
-                            <input
-                                type="date"
-                                name="expirationDate"
-                                value={formatDateForInput(formData.expirationDate)}
-                                onChange={handleDateChange}
-                            />
-                        </div>
                     </div>
                 </div>
 
@@ -512,6 +501,17 @@ function DocumentTypeSelection({
                                 type="date"
                                 name="signingExpirationDate"
                                 value={formatDateForInput(formData.signingExpirationDate)}
+                                onChange={handleDateChange}
+                            />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>Ngày hết hiệu lực tài liệu <span style={{ color: 'red' }}>*</span></label>
+                        <div className="date-input-container">
+                            <input
+                                type="date"
+                                name="expirationDate"
+                                value={formatDateForInput(formData.expirationDate)}
                                 onChange={handleDateChange}
                             />
                         </div>
