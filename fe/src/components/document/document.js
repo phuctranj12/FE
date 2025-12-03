@@ -300,7 +300,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                 <tr>
                                     <th>Tên tài liệu</th>
                                     <th>Mã hợp đồng</th>
-                                    <th>Số tài liệu</th>
                                     <th>Trạng thái</th>
                                     <th>Thời gian tạo</th>
                                     <th>Thời gian cập nhật</th>
@@ -375,7 +374,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                                 <div className="doc-name">{doc.name}</div>
                                             </div>
                                         </td>
-                                        <td>{doc.id}</td>
                                         <td>{doc.contractNo || "-"}</td>
                                         <td>
                                             <span className={`status-badge status-${doc.status}`}>
