@@ -34,27 +34,53 @@ function ReportByStatus() {
 
     const fetchReportByStatus = async () => {
         setLoading(true);
+
         try {
-            const params = {
-                fromDate,
-                toDate,
-                completedFromDate,
-                completedToDate,
-                status,
-                textSearch,
-                page,
-                size,
-            };
+            // Chuẩn hóa ngày mặc định
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            const defaultFromDate = "2025-01-01"; // hoặc tùy mày
+            const defaultToDate = today;
+
+            // Chỉ gửi param nếu có giá trị
+            const params = {};
+            if (fromDate) params.fromDate = fromDate;
+            else params.fromDate = defaultFromDate;
+
+            if (toDate) params.toDate = toDate;
+            else params.toDate = defaultToDate;
+
+            if (completedFromDate) params.completed_from_date = completedFromDate;
+            if (completedToDate) params.completed_to_date = completedToDate;
+            if (status !== null) params.status = status;
+            if (textSearch) params.textSearch = textSearch;
+
+            params.page = page;
+            params.size = size;
+
             const response = await reportService.getReportByStatus(organizationId, params);
-            setData(response.content || []);
+
+            // Map data theo chuẩn response
+            const mappedData = (response.content || []).map(item => ({
+                contractId: item.id,
+                contractName: item.name,
+                contractCode: item.contractNo,
+                status: item.status,
+                updatedDate: item.updatedAt?.slice(0, 10) || "N/A",
+                processedBy: item.updatedBy || "N/A",
+                note: item.note || "",
+            }));
+
+            setData(mappedData);
             setTotalPages(response.totalPages || 0);
             setTotalElements(response.totalElements || 0);
+
         } catch (error) {
             toast.error("Lỗi khi tải báo cáo trạng thái xử lý!");
         } finally {
             setLoading(false);
         }
     };
+
 
     const handleSearch = () => {
         setPage(0);

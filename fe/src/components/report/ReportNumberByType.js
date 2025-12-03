@@ -3,24 +3,34 @@ import reportService from "../../api/reportService";
 import { toast } from "react-toastify";
 import "../../styles/report.css";
 
+const getDefaultDateRange = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const format = (d) => d.toISOString().split("T")[0];
+    return {
+        from: format(firstDay),
+        to: format(lastDay)
+    };
+};
+
 function ReportNumberByType() {
+    const defaultRange = getDefaultDateRange();
+
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [fromDate, setFromDate] = useState("");
-    const [toDate, setToDate] = useState("");
+    const [fromDate, setFromDate] = useState(defaultRange.from);
+    const [toDate, setToDate] = useState(defaultRange.to);
 
-    const organizationId = JSON.parse(localStorage.getItem('user'))?.organizationId || 1;
+    const organizationId =
+        JSON.parse(localStorage.getItem("user"))?.organizationId || 1;
 
     useEffect(() => {
         fetchReportNumberByType();
     }, []);
 
     const fetchReportNumberByType = async () => {
-        if (!fromDate || !toDate) {
-            toast.warn("Vui lòng chọn khoảng thời gian!");
-            return;
-        }
-
         setLoading(true);
         try {
             const response = await reportService.getReportNumberByType(
@@ -28,6 +38,7 @@ function ReportNumberByType() {
                 fromDate,
                 toDate
             );
+
             setData(response || []);
         } catch (error) {
             toast.error("Lỗi khi tải báo cáo số lượng theo loại tài liệu!");
@@ -41,18 +52,20 @@ function ReportNumberByType() {
     };
 
     const handleReset = () => {
-        setFromDate("");
-        setToDate("");
-        setData([]);
+        const again = getDefaultDateRange();
+        setFromDate(again.from);
+        setToDate(again.to);
+        fetchReportNumberByType();
     };
 
-    const getTotalCount = () => {
-        return data.reduce((sum, item) => sum + (item.count || 0), 0);
-    };
+    const getTotalCount = () =>
+        data.reduce((sum, item) => sum + (item.count || 0), 0);
+
+    const total = getTotalCount();
 
     return (
         <div className="report-container">
-            <h2>📋 Báo cáo số lượng theo loại tài liệu</h2>
+            <h2>Báo cáo số lượng theo loại tài liệu</h2>
 
             <div className="filter-section">
                 <div className="filter-row">
@@ -72,12 +85,13 @@ function ReportNumberByType() {
                             onChange={(e) => setToDate(e.target.value)}
                         />
                     </div>
+
                     <div className="filter-buttons">
                         <button className="btn-search" onClick={handleSearch}>
-                            🔍 Tìm kiếm
+                            Tìm kiếm
                         </button>
                         <button className="btn-reset" onClick={handleReset}>
-                            🔄 Đặt lại
+                            Đặt lại
                         </button>
                     </div>
                 </div>
@@ -100,6 +114,7 @@ function ReportNumberByType() {
                                             <th>Tỷ lệ (%)</th>
                                         </tr>
                                     </thead>
+
                                     <tbody>
                                         {data.map((item, index) => (
                                             <tr key={index}>
@@ -108,61 +123,69 @@ function ReportNumberByType() {
                                                 <td>{item.typeCode || "N/A"}</td>
                                                 <td className="number-cell">{item.count || 0}</td>
                                                 <td className="number-cell">
-                                                    {getTotalCount() > 0
-                                                        ? ((item.count / getTotalCount()) * 100).toFixed(2)
-                                                        : 0}
+                                                    {total > 0
+                                                        ? ((item.count / total) * 100).toFixed(2)
+                                                        : "0.00"}
                                                     %
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
+
                                     <tfoot>
                                         <tr className="total-row">
                                             <td colSpan="3">
                                                 <strong>Tổng cộng</strong>
                                             </td>
                                             <td className="number-cell">
-                                                <strong>{getTotalCount()}</strong>
+                                                <strong>{total}</strong>
                                             </td>
                                             <td className="number-cell">
-                                                <strong>100%</strong>
+                                                <strong>{total > 0 ? "100%" : "0%"}</strong>
                                             </td>
                                         </tr>
                                     </tfoot>
                                 </table>
 
-                                {/* Biểu đồ đơn giản bằng CSS */}
+                                {/* BIỂU ĐỒ */}
                                 <div className="chart-section">
                                     <h3>Biểu đồ trực quan</h3>
+
                                     <div className="bar-chart-report">
-                                        {data.map((item, index) => (
-                                            <div key={index} className="bar-item">
-                                                <div className="bar-label">
-                                                    {item.typeName || "N/A"}
-                                                </div>
-                                                <div className="bar-wrapper">
-                                                    <div
-                                                        className="bar bar-type"
-                                                        style={{
-                                                            width: `${getTotalCount() > 0
-                                                                ? (item.count / getTotalCount()) * 100
-                                                                : 0
-                                                                }%`,
-                                                            backgroundColor: `hsl(${index * 60}, 70%, 60%)`,
-                                                        }}
-                                                    >
-                                                        {item.count}
+                                        {data.map((item, index) => {
+                                            const percent =
+                                                total > 0
+                                                    ? (item.count / total) * 100
+                                                    : 0;
+
+                                            return (
+                                                <div key={index} className="bar-item">
+                                                    <div className="bar-label">
+                                                        {item.typeName || "N/A"}
+                                                    </div>
+
+                                                    <div className="bar-wrapper">
+                                                        <div
+                                                            className="bar bar-type"
+                                                            style={{
+                                                                width: `${percent}%`,
+                                                                minWidth:
+                                                                    item.count > 0 ? "30px" : "0px",
+                                                                backgroundColor: `hsl(${index * 60
+                                                                    }, 70%, 60%)`,
+                                                            }}
+                                                        >
+                                                            {item.count}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </>
                         ) : (
-                            <div className="no-data">
-                                Vui lòng chọn khoảng thời gian và tìm kiếm
-                            </div>
+                            <div className="no-data">Không có dữ liệu</div>
                         )}
                     </>
                 )}

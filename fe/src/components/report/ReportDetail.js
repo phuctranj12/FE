@@ -19,8 +19,8 @@ function ReportDetail() {
     const [totalElements, setTotalElements] = useState(0);
 
     // Filter states
-    const [fromDate, setFromDate] = useState("");
-    const [toDate, setToDate] = useState("");
+    const [fromDate, setFromDate] = useState("2025-01-01");
+    const [toDate, setToDate] = useState("2025-12-31");
     const [completedFromDate, setCompletedFromDate] = useState("");
     const [completedToDate, setCompletedToDate] = useState("");
     const [status, setStatus] = useState(null);
@@ -47,6 +47,10 @@ function ReportDetail() {
                 page,
                 size,
             };
+            // Loại bỏ các param rỗng để tránh backend lỗi 500
+            Object.keys(params).forEach(key => {
+                if (params[key] === "") params[key] = undefined;
+            });
             const response = await reportService.getReportDetail(organizationId, params);
             setData(response.content || []);
             setTotalPages(response.totalPages || 0);
@@ -64,8 +68,8 @@ function ReportDetail() {
     };
 
     const handleReset = () => {
-        setFromDate("");
-        setToDate("");
+        setFromDate("2025-01-01");
+        setToDate("2025-12-31");
         setCompletedFromDate("");
         setCompletedToDate("");
         setStatus(null);
@@ -80,7 +84,7 @@ function ReportDetail() {
 
     return (
         <div className="report-container">
-            <h2>📊 Báo cáo chi tiết</h2>
+            <h2>Báo cáo chi tiết</h2>
 
             {/* Bộ lọc */}
             <div className="filter-section">
@@ -173,16 +177,16 @@ function ReportDetail() {
                                     data.map((item, index) => (
                                         <tr key={index}>
                                             <td>{page * size + index + 1}</td>
-                                            <td>{item.contractCode || "N/A"}</td>
-                                            <td>{item.contractName || "N/A"}</td>
-                                            <td>{item.createdDate || "N/A"}</td>
-                                            <td>{item.completedDate || "N/A"}</td>
+                                            <td>{item.contractNo || "N/A"}</td>
+                                            <td>{item.name || "N/A"}</td>
+                                            <td>{item.createdAt || "N/A"}</td>
+                                            <td>{item.completeDate || "N/A"}</td>
                                             <td>
                                                 <span className={`status-badge status-${item.status}`}>
                                                     {getStatusLabel(item.status)}
                                                 </span>
                                             </td>
-                                            <td>{item.createdBy || "N/A"}</td>
+                                            <td>{item.customer || "N/A"}</td>
                                         </tr>
                                     ))
                                 ) : (

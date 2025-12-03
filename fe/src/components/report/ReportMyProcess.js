@@ -18,8 +18,10 @@ function ReportMyProcess() {
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
 
-    const [fromDate, setFromDate] = useState("");
-    const [toDate, setToDate] = useState("");
+    // Set mặc định giống component kia
+    const [fromDate, setFromDate] = useState("2025-01-01");
+    const [toDate, setToDate] = useState("2025-12-31");
+
     const [completedFromDate, setCompletedFromDate] = useState("");
     const [completedToDate, setCompletedToDate] = useState("");
     const [status, setStatus] = useState(null);
@@ -27,29 +29,42 @@ function ReportMyProcess() {
     const [page, setPage] = useState(0);
     const [size, setSize] = useState(10);
 
-    const organizationId = JSON.parse(localStorage.getItem('user'))?.organizationId || 1;
+    const user = JSON.parse(localStorage.getItem("user"));
+    const organizationId = user?.organizationId || 1;
 
     useEffect(() => {
         fetchReportMyProcess();
     }, [page, size]);
 
+    // Build params chỉ gửi các field có giá trị
+    const buildParams = () => {
+        const params = {
+            fromDate,
+            toDate,
+            page,
+            size,
+        };
+
+        if (completedFromDate) params.completedFromDate = completedFromDate;
+        if (completedToDate) params.completedToDate = completedToDate;
+        if (status !== null) params.status = status;
+        if (textSearch.trim() !== "") params.textSearch = textSearch;
+
+        return params;
+    };
+
     const fetchReportMyProcess = async () => {
         setLoading(true);
         try {
-            const params = {
-                fromDate,
-                toDate,
-                completedFromDate,
-                completedToDate,
-                status,
-                textSearch,
-                page,
-                size,
-            };
-            const response = await reportService.getReportMyProcess(organizationId, params);
+            const response = await reportService.getReportMyProcess(
+                organizationId,
+                buildParams()
+            );
+
             setData(response.content || []);
             setTotalPages(response.totalPages || 0);
             setTotalElements(response.totalElements || 0);
+
         } catch (error) {
             toast.error("Lỗi khi tải báo cáo tài liệu đã nhận!");
         } finally {
@@ -63,13 +78,14 @@ function ReportMyProcess() {
     };
 
     const handleReset = () => {
-        setFromDate("");
-        setToDate("");
+        setFromDate("2025-01-01");
+        setToDate("2025-12-31");
         setCompletedFromDate("");
         setCompletedToDate("");
         setStatus(null);
         setTextSearch("");
         setPage(0);
+        fetchReportMyProcess();
     };
 
     const getStatusLabel = (statusValue) => {
@@ -77,54 +93,45 @@ function ReportMyProcess() {
         return found ? found.label : "N/A";
     };
 
+    // Lấy người gửi từ participants → recipients
+    const getSender = (item) => {
+        try {
+            return item.participants?.[0]?.recipients?.[0]?.name || "N/A";
+        } catch {
+            return "N/A";
+        }
+    };
+
     return (
         <div className="report-container">
-            <h2>📥 Báo cáo tài liệu đã nhận</h2>
+            <h2> Báo cáo tài liệu đã nhận</h2>
 
             <div className="filter-section">
                 <div className="filter-row">
                     <div className="filter-group">
                         <label>Từ ngày tạo:</label>
-                        <input
-                            type="date"
-                            value={fromDate}
-                            onChange={(e) => setFromDate(e.target.value)}
-                        />
+                        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
                     </div>
                     <div className="filter-group">
                         <label>Đến ngày tạo:</label>
-                        <input
-                            type="date"
-                            value={toDate}
-                            onChange={(e) => setToDate(e.target.value)}
-                        />
+                        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
                     </div>
                     <div className="filter-group">
                         <label>Từ ngày hoàn thành:</label>
-                        <input
-                            type="date"
-                            value={completedFromDate}
-                            onChange={(e) => setCompletedFromDate(e.target.value)}
-                        />
+                        <input type="date" value={completedFromDate} onChange={(e) => setCompletedFromDate(e.target.value)} />
                     </div>
                     <div className="filter-group">
                         <label>Đến ngày hoàn thành:</label>
-                        <input
-                            type="date"
-                            value={completedToDate}
-                            onChange={(e) => setCompletedToDate(e.target.value)}
-                        />
+                        <input type="date" value={completedToDate} onChange={(e) => setCompletedToDate(e.target.value)} />
                     </div>
                 </div>
 
                 <div className="filter-row">
                     <div className="filter-group">
                         <label>Trạng thái:</label>
-                        <select value={status || ""} onChange={(e) => setStatus(e.target.value ? parseInt(e.target.value) : null)}>
+                        <select value={status ?? ""} onChange={(e) => setStatus(e.target.value ? parseInt(e.target.value) : null)}>
                             {STATUS_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value || ""}>
-                                    {opt.label}
-                                </option>
+                                <option key={opt.value} value={opt.value ?? ""}>{opt.label}</option>
                             ))}
                         </select>
                     </div>
@@ -138,12 +145,8 @@ function ReportMyProcess() {
                         />
                     </div>
                     <div className="filter-buttons">
-                        <button className="btn-search" onClick={handleSearch}>
-                            🔍 Tìm kiếm
-                        </button>
-                        <button className="btn-reset" onClick={handleReset}>
-                            🔄 Đặt lại
-                        </button>
+                        <button className="btn-search" onClick={handleSearch}> Tìm kiếm</button>
+                        <button className="btn-reset" onClick={handleReset}> Đặt lại</button>
                     </div>
                 </div>
             </div>
@@ -159,8 +162,8 @@ function ReportMyProcess() {
                                     <th>STT</th>
                                     <th>Mã tài liệu</th>
                                     <th>Tên tài liệu</th>
-                                    <th>Ngày nhận</th>
-                                    <th>Ngày xử lý</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Ngày hết hạn</th>
                                     <th>Trạng thái</th>
                                     <th>Người gửi</th>
                                     <th>Người xử lý</th>
@@ -171,24 +174,22 @@ function ReportMyProcess() {
                                     data.map((item, index) => (
                                         <tr key={index}>
                                             <td>{page * size + index + 1}</td>
-                                            <td>{item.contractCode || "N/A"}</td>
-                                            <td>{item.contractName || "N/A"}</td>
-                                            <td>{item.receivedDate || "N/A"}</td>
-                                            <td>{item.processedDate || "N/A"}</td>
+                                            <td>{item.contractNo || "N/A"}</td>
+                                            <td>{item.name || "N/A"}</td>
+                                            <td>{item.signTime || "N/A"}</td>
+                                            <td>{item.contractExpireTime || "N/A"}</td>
                                             <td>
                                                 <span className={`status-badge status-${item.status}`}>
                                                     {getStatusLabel(item.status)}
                                                 </span>
                                             </td>
-                                            <td>{item.sender || "N/A"}</td>
-                                            <td>{item.processor || "N/A"}</td>
+                                            <td>{getSender(item)}</td>
+                                            <td>{user?.fullName || user?.username || "N/A"}</td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="8" className="no-data">
-                                            Không có dữ liệu
-                                        </td>
+                                        <td colSpan="8" className="no-data">Không có dữ liệu</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -199,18 +200,8 @@ function ReportMyProcess() {
                                 Tổng số: {totalElements} | Trang {page + 1} / {totalPages}
                             </span>
                             <div className="pagination-buttons">
-                                <button
-                                    disabled={page === 0}
-                                    onClick={() => setPage(page - 1)}
-                                >
-                                    ← Trước
-                                </button>
-                                <button
-                                    disabled={page >= totalPages - 1}
-                                    onClick={() => setPage(page + 1)}
-                                >
-                                    Sau →
-                                </button>
+                                <button disabled={page === 0} onClick={() => setPage(page - 1)}>← Trước</button>
+                                <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>Sau →</button>
                             </div>
                         </div>
                     </>
