@@ -242,12 +242,12 @@ function DocumentTemplates() {
                     )}
 
                     {activeTab === "shared" && (
-                        <>
+                        <div className="date-range-wrapper-template">
                             <div className="date-input-wrapper-template">
-                                <label className="date-label">Từ ngày</label>
                                 <input
                                     type="date"
-                                    className="date-input"
+                                    className="date-input-template"
+                                    placeholder="Từ ngày"
                                     value={fromDate}
                                     onChange={(e) => {
                                         setFromDate(e.target.value);
@@ -256,11 +256,12 @@ function DocumentTemplates() {
                                     }}
                                 />
                             </div>
+                            <span className="date-range-separator">-</span>
                             <div className="date-input-wrapper-template">
-                                <label className="date-label">Đến ngày</label>
                                 <input
                                     type="date"
-                                    className="date-input"
+                                    className="date-input-template"
+                                    placeholder="Đến ngày"
                                     value={toDate}
                                     onChange={(e) => {
                                         setToDate(e.target.value);
@@ -269,7 +270,7 @@ function DocumentTemplates() {
                                     }}
                                 />
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
 

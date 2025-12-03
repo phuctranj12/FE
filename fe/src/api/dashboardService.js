@@ -2,7 +2,6 @@
 import apiClient from './apiClient';
 
 const dashboardService = {
-
     // 1️⃣ Lấy thông tin dashboard tài liệu nhận
     getReceivedDocuments: async () => {
         try {
@@ -87,6 +86,23 @@ const dashboardService = {
             return response.data;
         } catch (error) {
             console.error('❌ Lỗi khi lấy tài liệu đang xử lý:', error);
+            throw error.response?.data || error;
+        }
+    },
+
+    getCustomerUserMaxContracts: async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await apiClient.get('contracts/dashboard/statistics/customer-user-max-contracts', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                },
+            });
+            console.log('🚀 Top user nhiều hợp đồng nhất:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Lỗi khi lấy top user nhiều hợp đồng nhất:', error);
             throw error.response?.data || error;
         }
     },

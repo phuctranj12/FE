@@ -208,6 +208,46 @@
     cursor: not-allowed;
 }
 
+/* Date filter inputs (match SearchBar style) */
+.date-input-wrapper-template {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-input-template {
+    padding-left: 16px;
+    height: 42px;
+    border: none;
+    margin-bottom: 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #F1F5FE;
+    width: 100%;
+    cursor: pointer;
+    color: #111827;
+}
+
+.date-input-template::placeholder {
+    color: #9ca3af;
+}
+
+.date-input-template:focus {
+    outline: none;
+    background: #E8F2FF;
+}
+
+.date-range-wrapper-template {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-range-separator {
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .document-templates-wrapper {
@@ -247,40 +287,6 @@
     .header-code,
     .header-date {
         min-width: 100px;
-
-.date-input-wrapper-template {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-}
-
-.date-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #666;
-    margin-bottom: 2px;
-}
-
-.date-input {
-    padding: 8px 12px;
-    height: 42px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    background: white;
-    cursor: pointer;
-    transition: border-color 0.3s ease;
-}
-
-.date-input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.date-input:hover {
-    border-color: #007bff;
-}
     }
 
     .full-pagination-container {
