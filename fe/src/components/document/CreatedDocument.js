@@ -306,6 +306,7 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                 <tr>
                                     <th>Tên tài liệu</th>
                                     <th>Mã hợp đồng</th>
+                                    <th>Số tài liệu</th>
                                     <th>Trạng thái</th>
                                     <th>Thời gian tạo</th>
                                     <th>Thời gian cập nhật</th>
@@ -322,24 +323,96 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                             key={doc.id}
                                             className="document-row"
                                             onClick={() => {
-                                                // Chỉ trigger onDocumentClick nếu không phải "cho-xu-ly" hoặc không có role button
-                                                if (!isWaitProcessing || !roleInfo) {
-                                                    // Nếu parent truyền onDocumentClick thì ưu tiên dùng
-                                                    if (onDocumentClick) {
-                                                        onDocumentClick(doc);
-                                                        return;
-                                                    }
-                                                    // Nếu là tài liệu đã xử lý (da-xu-ly) thì không hiển thị components
-                                                    const isProcessed = selectedStatus === "da-xu-ly" || doc.status === 2;
-                                                    // Chỉ truyền showAllFields=1 nếu không phải tài liệu đã xử lý
-                                                    const queryParam = isProcessed ? '' : '?showAllFields=1';
-                                                    navigate(`/main/c/detail/${doc.id}${queryParam}`);
+                                                if (isWaitProcessing && roleInfo) {
+                                                    // Ở danh sách chờ xử lý: click cả dòng = click button vai trò
+                                                    handleRoleAction(
+                                                        doc.id,
+                                                        roleInfo.role,
+                                                        roleInfo.recipientId
+                                                    );
+                                                    return;
                                                 }
+
+                                                // Các trạng thái khác: giữ behavior cũ
+                                                if (onDocumentClick) {
+                                                    onDocumentClick(doc);
+                                                    return;
+                                                }
+
+                                                const isProcessed =
+                                                    selectedStatus === "da-xu-ly" || doc.status === 2;
+                                                const queryParam = isProcessed ? '' : '?showAllFields=1';
+                                                navigate(`/main/c/detail/${doc.id}${queryParam}`);
                                             }}
                                         >
-                                            <td className="document-title-cell">{doc.name}</td>
+                                            <td className="document-title-cell">
+                                                <div className="svg-container">
+                                                    <div className="svg-bg">
+                                                        <svg
+                                                            className="contract-icon"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                        >
+                                                            <path
+                                                                d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+                                                                stroke="url(#gradient)"
+                                                                strokeWidth="2"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            />
+                                                            <polyline
+                                                                points="14 2 14 8 20 8"
+                                                                stroke="url(#gradient)"
+                                                                strokeWidth="2"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            />
+                                                            <line
+                                                                x1="8"
+                                                                y1="12"
+                                                                x2="16"
+                                                                y2="12"
+                                                                stroke="url(#gradient)"
+                                                                strokeWidth="2"
+                                                                strokeLinecap="round"
+                                                            />
+                                                            <line
+                                                                x1="8"
+                                                                y1="16"
+                                                                x2="16"
+                                                                y2="16"
+                                                                stroke="url(#gradient)"
+                                                                strokeWidth="2"
+                                                                strokeLinecap="round"
+                                                            />
+                                                            <line
+                                                                x1="8"
+                                                                y1="20"
+                                                                x2="12"
+                                                                y2="20"
+                                                                stroke="url(#gradient)"
+                                                                strokeWidth="2"
+                                                                strokeLinecap="round"
+                                                            />
+                                                            <defs>
+                                                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                                    <stop offset="0%" stopColor="#0B57D0" stopOpacity="0.8" />
+                                                                    <stop offset="100%" stopColor="#9333EA" stopOpacity="0.8" />
+                                                                </linearGradient>
+                                                            </defs>
+                                                        </svg>
+                                                    </div>
+                                                    <div className="doc-name">{doc.name}</div>
+                                                </div>
+                                            </td>
                                             <td>{doc.id}</td>
-                                            <td>{getContractStatusLabel(doc.status)}</td>
+                                            <td>{doc.contractNo || "-"}</td>
+                                            <td>
+                                                <span className={`status-badge status-${doc.status}`}>
+                                                    {getContractStatusLabel(doc.status)}
+                                                </span>
+                                            </td>
                                             <td>{formatDate(doc.createdAt)}</td>
                                             <td>{formatDate(doc.updatedAt)}</td>
                                             <td onClick={(e) => e.stopPropagation()}>

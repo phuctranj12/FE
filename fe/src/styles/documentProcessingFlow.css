@@ -122,8 +122,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 50%;
-    border: 1.5px solid #0B57D0;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -210,6 +208,41 @@
 
 .exit-button:hover {
     background-color: #5a6268;
+}
+
+/* Approve button (Xác nhận) */
+.approve-btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #0B57D0, #1D4ED8);
+    box-shadow: 0 4px 10px rgba(11, 87, 208, 0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.approve-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0A4BB8, #1D4ED8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(11, 87, 208, 0.4);
+}
+
+.approve-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 3px 8px rgba(11, 87, 208, 0.3);
+}
+
+.approve-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 /* Responsive */

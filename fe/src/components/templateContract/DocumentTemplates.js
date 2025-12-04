@@ -6,6 +6,7 @@ import Button from "../common/Button";
 import Pagination from "../common/Pagination";
 import TemplateContractItem from "./TemplateContractItem";
 import TemplateForm from "./TemplateForm";
+import ConfirmDeleteModal from "../document/ConfirmDeleteModal";
 import contractService from "../../api/contractService";
 
 // Simple debounce utility
@@ -38,6 +39,9 @@ function DocumentTemplates() {
     const [documentTypesList, setDocumentTypesList] = useState([]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [searchTrigger, setSearchTrigger] = useState(0);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState(null);
+    const [toasts, setToasts] = useState([]);
     
     useEffect(() => {
         const fetchTemplates = async () => {
@@ -169,16 +173,269 @@ function DocumentTemplates() {
         console.log("Share template:", template);
     };
 
-    const handleCopy = (template) => {
-        console.log("Copy template:", template);
+    const generateRandomContractNo = () => {
+        const prefix = 'HD';
+        const timestamp = Date.now().toString().slice(-8);
+        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        return `${prefix}-${timestamp}-${random}`;
+    };
+
+    const handleCopy = async (template) => {
+        const templateId = template.id || template.contractId;
+        if (!templateId) {
+            showToast("Không tìm thấy ID của mẫu tài liệu", 'error');
+            return;
+        }
+
+        try {
+            showToast("Đang sao chép mẫu tài liệu...", 'success');
+            
+            // Bước 1: Lấy thông tin template contract
+            const templateContractRes = await contractService.getTemplateContractById(templateId);
+            if (templateContractRes?.code !== 'SUCCESS' || !templateContractRes?.data) {
+                throw new Error("Không thể lấy thông tin mẫu tài liệu");
+            }
+            const templateContract = templateContractRes.data;
+            const contractId = templateContract.id || templateContract.contractId;
+
+            // Bước 2: Lấy participants với recipients
+            let templateParticipants = [];
+            try {
+                const participantsRes = await contractService.getTemplateParticipantsByContract(contractId);
+                if (participantsRes?.code === 'SUCCESS' && participantsRes?.data) {
+                    templateParticipants = Array.isArray(participantsRes.data) ? participantsRes.data : [];
+                }
+            } catch (err) {
+                console.warn("Lỗi khi lấy participants:", err);
+            }
+
+            // Bước 3: Lấy fields
+            let templateFields = [];
+            try {
+                const fieldsRes = await contractService.getTemplateFieldsByContract(contractId);
+                if (fieldsRes?.code === 'SUCCESS' && fieldsRes?.data) {
+                    templateFields = Array.isArray(fieldsRes.data) ? fieldsRes.data : [];
+                }
+            } catch (err) {
+                console.warn("Lỗi khi lấy fields:", err);
+            }
+
+            // Bước 4: Lấy documents
+            let templateDocuments = [];
+            try {
+                const documentsRes = await contractService.getTemplateDocumentsByContract(contractId);
+                if (documentsRes?.code === 'SUCCESS' && documentsRes?.data) {
+                    templateDocuments = Array.isArray(documentsRes.data) ? documentsRes.data : [];
+                }
+            } catch (err) {
+                console.warn("Lỗi khi lấy documents:", err);
+            }
+
+            // Bước 5: Generate contractNo mới
+            const newContractNo = generateRandomContractNo();
+
+            // Bước 6: Tạo contract mới (template contract)
+            const newContractData = {
+                name: `${templateContract.name || 'Mẫu tài liệu'} (Bản sao)`,
+                contractNo: newContractNo,
+                typeId: templateContract.typeId,
+                contractExpireTime: templateContract.contractExpireTime || null,
+                note: templateContract.note || '',
+                isTemplate: true
+            };
+
+            const createContractRes = await contractService.createTemplateContract(newContractData);
+            if (createContractRes?.code !== 'SUCCESS' || !createContractRes?.data) {
+                throw new Error("Không thể tạo hợp đồng mẫu mới");
+            }
+            const newContractId = createContractRes.data.id || createContractRes.data.contractId;
+
+            // Bước 7: Tạo participants với recipients và map recipientId
+            const recipientIdMap = new Map(); // Map old recipientId -> new recipientId
+            if (templateParticipants.length > 0) {
+                const participantsPayload = templateParticipants.map(participant => ({
+                    name: participant.name,
+                    type: participant.type,
+                    ordering: participant.ordering,
+                    status: participant.status || 1,
+                    contractId: newContractId,
+                    recipients: (participant.recipients || []).map(recipient => ({
+                        name: recipient.name,
+                        email: recipient.email || '',
+                        phone: recipient.phone || '',
+                        cardId: recipient.cardId || '',
+                        role: recipient.role,
+                        ordering: recipient.ordering,
+                        status: recipient.status || 0,
+                        signType: recipient.signType || 6
+                    }))
+                }));
+
+                const createParticipantsRes = await contractService.createTemplateParticipant(newContractId, participantsPayload);
+                
+                // Map recipientId cũ sang mới
+                if (createParticipantsRes?.code === 'SUCCESS' && createParticipantsRes?.data) {
+                    const newParticipants = Array.isArray(createParticipantsRes.data) ? createParticipantsRes.data : [];
+                    
+                    templateParticipants.forEach((oldParticipant, pIndex) => {
+                        const newParticipant = newParticipants[pIndex];
+                        if (newParticipant && newParticipant.recipients) {
+                            (oldParticipant.recipients || []).forEach((oldRecipient, rIndex) => {
+                                const newRecipient = newParticipant.recipients[rIndex];
+                                if (oldRecipient.id && newRecipient?.id) {
+                                    recipientIdMap.set(oldRecipient.id, newRecipient.id);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+
+            // Bước 8: Tạo documents trước để có documentId cho fields
+            const documentIdMap = new Map(); // Map old documentId -> new documentId
+            if (templateDocuments.length > 0) {
+                for (const doc of templateDocuments) {
+                    const documentData = {
+                        name: doc.name || '',
+                        type: doc.type,
+                        contractId: newContractId,
+                        fileName: doc.fileName || '',
+                        path: doc.path || '',
+                        status: doc.status || 1
+                    };
+                    const createDocRes = await contractService.createTemplateDocument(documentData);
+                    if (createDocRes?.code === 'SUCCESS' && createDocRes?.data?.id) {
+                        const oldDocId = doc.id || doc.documentId;
+                        const newDocId = createDocRes.data.id;
+                        if (oldDocId) {
+                            documentIdMap.set(oldDocId, newDocId);
+                        }
+                    }
+                }
+            }
+
+            // Bước 9: Tạo fields với documentId và recipientId đã được map
+            if (templateFields.length > 0) {
+                const fieldsPayload = templateFields.map(field => {
+                    const oldDocId = field.documentId;
+                    const newDocId = oldDocId ? documentIdMap.get(oldDocId) : null;
+                    
+                    const oldRecipientId = field.recipientId;
+                    const newRecipientId = oldRecipientId ? recipientIdMap.get(oldRecipientId) : null;
+
+                    const parseNumber = (val, fallback = 0) => {
+                        if (typeof val === 'number') return val;
+                        const n = parseFloat(val);
+                        return Number.isNaN(n) ? fallback : n;
+                    };
+
+                    const boxX = parseNumber(field.boxX ?? field.x, 0);
+                    const boxY = parseNumber(field.boxY ?? field.y, 0);
+                    const boxW = parseNumber(field.boxW ?? field.width, 100);
+                    const rawBoxH = field.boxH ?? field.height ?? '30';
+                    const boxH =
+                        typeof rawBoxH === 'string'
+                            ? rawBoxH
+                            : rawBoxH.toString();
+
+                    return {
+                        name: field.name,
+                        font: field.font || 'Times New Roman',
+                        fontSize: field.fontSize || 11,
+                        boxX,
+                        boxY,
+                        page: field.page ? field.page.toString() : '1',
+                        ordering: field.ordering ?? 0,
+                        boxW,
+                        boxH,
+                        contractId: newContractId,
+                        documentId: newDocId || null,
+                        type: field.type || 1,
+                        recipientId: newRecipientId || null,
+                        status: field.status ?? 0
+                    };
+                });
+
+                console.log('[Template Copy] Fields payload to createTemplateField:', fieldsPayload);
+                await contractService.createTemplateField(fieldsPayload);
+            }
+
+            // Bước 10: Đổi trạng thái hợp đồng mẫu mới sang 10 (CREATED)
+            try {
+                const statusRes = await contractService.changeTemplateContractStatus(
+                    newContractId,
+                    10
+                );
+                if (statusRes?.code !== 'SUCCESS') {
+                    console.warn('Không thể đổi trạng thái template copy sang 10:', statusRes);
+                }
+            } catch (statusErr) {
+                console.warn('Lỗi khi đổi trạng thái template copy sang 10:', statusErr);
+            }
+
+            showToast("Sao chép mẫu tài liệu thành công", 'success');
+            // Refresh lại danh sách
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error) {
+            console.error("Lỗi khi sao chép mẫu tài liệu:", error);
+            const errorMessage = error.response?.data?.message || error.message || "Không thể sao chép mẫu tài liệu";
+            showToast(errorMessage, 'error');
+        }
     };
 
     const handleCreateWithFlow = (template) => {
         console.log("Create document with flow from template:", template);
     };
 
+    const showToast = (message, variant = 'success') => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 3000);
+    };
+
+    const removeToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
+
     const handleDelete = (template) => {
-        console.log("Delete template:", template);
+        setTemplateToDelete(template);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!templateToDelete) return;
+
+        const templateId = templateToDelete.id || templateToDelete.contractId;
+        if (!templateId) {
+            showToast("Không tìm thấy ID của mẫu tài liệu", 'error');
+            setShowDeleteConfirm(false);
+            setTemplateToDelete(null);
+            return;
+        }
+
+        try {
+            await contractService.deleteTemplateContract(templateId);
+            showToast("Xóa mẫu tài liệu thành công", 'success');
+            setShowDeleteConfirm(false);
+            setTemplateToDelete(null);
+            // Refresh lại danh sách
+            setRefreshTrigger(prev => prev + 1);
+            // Nếu trang hiện tại không còn item nào, quay về trang trước
+            if (currentTemplates.length === 1 && currentPage > 1) {
+                setCurrentPage(prev => prev - 1);
+            }
+        } catch (error) {
+            console.error("Lỗi khi xóa mẫu tài liệu:", error);
+            const errorMessage = error.response?.data?.message || error.message || "Không thể xóa mẫu tài liệu";
+            showToast(errorMessage, 'error');
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setShowDeleteConfirm(false);
+        setTemplateToDelete(null);
     };
 
     const handlePageChange = (page) => {
@@ -338,6 +595,62 @@ function DocumentTemplates() {
                 endIndex={endIndex}
                 onPageChange={handlePageChange}
             />
+
+            {/* Confirm Delete Modal */}
+            <ConfirmDeleteModal
+                show={showDeleteConfirm}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                documentName={templateToDelete?.name || templateToDelete?.contractName || "mẫu tài liệu này"}
+            />
+
+            {/* Toast Notifications */}
+            {toasts.length > 0 && (
+                <div style={{ 
+                    position: 'fixed', 
+                    top: 16, 
+                    right: 16, 
+                    zIndex: 10000, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: 8 
+                }}>
+                    {toasts.map((t) => (
+                        <div
+                            key={t.id}
+                            style={{
+                                minWidth: 260,
+                                maxWidth: 420,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                color: t.variant === 'success' ? '#0a3622' : '#842029',
+                                background: t.variant === 'success' ? '#d1e7dd' : '#f8d7da',
+                                border: `1px solid ${t.variant === 'success' ? '#a3cfbb' : '#f5c2c7'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <span style={{ flex: 1 }}>{t.message}</span>
+                            <button
+                                onClick={() => removeToast(t.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '18px',
+                                    cursor: 'pointer',
+                                    color: 'inherit',
+                                    marginLeft: '12px',
+                                    padding: '0 4px'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

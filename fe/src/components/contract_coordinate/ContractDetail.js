@@ -887,14 +887,6 @@ function ContractDetail() {
                                 className="approve-btn"
                                 onClick={handleReviewConfirm}
                                 disabled={loading}
-                                style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: '#28a745',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: loading ? 'not-allowed' : 'pointer'
-                                }}
                             >
                                 {loading ? 'Đang xử lý...' : 'Xác nhận'}
                             </button>

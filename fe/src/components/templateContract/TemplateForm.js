@@ -9,6 +9,7 @@ import contractService from '../../api/contractService';
 
 const TemplateForm = ({ onBack, editTemplate = null }) => {
     const [currentStep, setCurrentStep] = useState(1);
+    const isEdit = !!editTemplate;
 
     // Flow cố định: tài liệu đơn lẻ không theo mẫu (cho hợp đồng mẫu)
     const documentTypeMode = 'single-no-template';
@@ -40,11 +41,18 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
     // Participants & Fields
     const [participantsData, setParticipantsData] = useState([]);
     const [fieldsData, setFieldsData] = useState([]);
+    const [originalFieldsData, setOriginalFieldsData] = useState([]);
     const [unassignedComponentCount, setUnassignedComponentCount] = useState(0);
 
     // Check mã mẫu (contract_no)
     const [isTemplateCodeValid, setIsTemplateCodeValid] = useState(true);
     const [isCheckingTemplateCode, setIsCheckingTemplateCode] = useState(false);
+    const [initialTemplateCode, setInitialTemplateCode] = useState(
+        editTemplate?.contractNo ||
+            editTemplate?.contractCode ||
+            editTemplate?.templateCode ||
+            ''
+    );
 
     // Form data cho template
     const [formData, setFormData] = useState(() => ({
@@ -147,6 +155,151 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
 
         fetchInitialData();
     }, []);
+
+    // Load dữ liệu khi sửa hợp đồng mẫu
+    useEffect(() => {
+        const normalizeFieldFromApi = (field) => ({
+            ...field,
+            boxX:
+                typeof field.boxX === 'number'
+                    ? field.boxX
+                    : parseFloat(field.boxX) || 0,
+            boxY:
+                typeof field.boxY === 'number'
+                    ? field.boxY
+                    : parseFloat(field.boxY) || 0,
+            boxW:
+                typeof field.boxW === 'number'
+                    ? field.boxW
+                    : parseFloat(field.boxW) || 0,
+            boxH:
+                typeof field.boxH === 'string'
+                    ? field.boxH
+                    : (field.boxH ?? '').toString(),
+            font: field.font || 'Times New Roman',
+            fontSize: field.fontSize || 11,
+            page: field.page ? field.page.toString() : '1',
+            status: field.status ?? 0,
+            contractId: field.contractId,
+            documentId: field.documentId,
+            recipientId: field.recipientId || null
+        });
+
+        const loadTemplateForEdit = async () => {
+            if (!isEdit || !editTemplate) return;
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                const templateId =
+                    editTemplate.id ||
+                    editTemplate.contractId ||
+                    editTemplate.templateId;
+                if (!templateId) {
+                    throw new Error('Không xác định được ID mẫu để sửa');
+                }
+
+                const contractRes =
+                    await contractService.getTemplateContractById(templateId);
+                if (contractRes?.code !== 'SUCCESS' || !contractRes?.data) {
+                    throw new Error(
+                        contractRes?.message ||
+                            'Không thể lấy thông tin hợp đồng mẫu'
+                    );
+                }
+
+                const contract = contractRes.data;
+                const cid = contract.id || contract.contractId;
+                setContractId(cid);
+                setInitialTemplateCode(contract.contractNo || '');
+                setIsTemplateCodeValid(true);
+
+                setFormData((prev) => ({
+                    ...prev,
+                    templateName: contract.name || '',
+                    templateCode: contract.contractNo || '',
+                    documentType: contract.typeId
+                        ? String(contract.typeId)
+                        : '',
+                    startDate: contract.signTime
+                        ? contract.signTime.split('T')[0]
+                        : '',
+                    endDate: contract.contractExpireTime
+                        ? contract.contractExpireTime.split('T')[0]
+                        : '',
+                    message: contract.note || '',
+                    pdfFile: null,
+                    pdfFileName: prev.pdfFileName
+                }));
+
+                // Documents
+                try {
+                    const docsRes =
+                        await contractService.getTemplateDocumentsByContract(
+                            cid
+                        );
+                    if (docsRes?.code === 'SUCCESS' && Array.isArray(docsRes.data)) {
+                        const mainDoc =
+                            docsRes.data.find((doc) => doc.type === 1) ||
+                            docsRes.data[0];
+                        if (mainDoc) {
+                            setDocumentId(mainDoc.id);
+                            setFormData((prev) => ({
+                                ...prev,
+                                pdfFileName: mainDoc.fileName || prev.pdfFileName,
+                                pdfPageCount: prev.pdfPageCount || 1
+                            }));
+                        }
+                    }
+                } catch (docErr) {
+                    console.warn('Không thể tải documents của mẫu:', docErr);
+                }
+
+                // Participants
+                try {
+                    const participantsRes =
+                        await contractService.getTemplateParticipantsByContract(
+                            cid
+                        );
+                    if (participantsRes?.code === 'SUCCESS' && participantsRes?.data) {
+                        setParticipantsData(
+                            Array.isArray(participantsRes.data)
+                                ? participantsRes.data
+                                : []
+                        );
+                    }
+                } catch (paErr) {
+                    console.warn('Không thể tải participants của mẫu:', paErr);
+                }
+
+                // Fields
+                try {
+                    const fieldsRes =
+                        await contractService.getTemplateFieldsByContract(cid);
+                    if (fieldsRes?.code === 'SUCCESS' && fieldsRes?.data) {
+                        const normalizedFields = Array.isArray(fieldsRes.data)
+                            ? fieldsRes.data.map(normalizeFieldFromApi)
+                            : [];
+                        setFieldsData(normalizedFields);
+                        setOriginalFieldsData(normalizedFields);
+                    }
+                } catch (fieldErr) {
+                    console.warn('Không thể tải fields của mẫu:', fieldErr);
+                }
+            } catch (err) {
+                console.error('Error loading template for edit:', err);
+                const msg =
+                    err.message || 'Không thể tải dữ liệu mẫu để sửa';
+                setError(msg);
+                showToast(msg, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadTemplateForEdit();
+    }, [isEdit, editTemplate]);
 
     // Khi vào step 2, nếu chưa có tên tổ chức thì gọi chi tiết + load lại participants nếu có
     useEffect(() => {
@@ -264,6 +417,11 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
 
         if (!code) {
             setIsTemplateCodeValid(false);
+            return;
+        }
+
+        if (isEdit && code === initialTemplateCode) {
+            setIsTemplateCodeValid(true);
             return;
         }
 
@@ -856,7 +1014,9 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
         }
 
         if (!formData.pdfFile) {
-            errors.push('Vui lòng tải lên file PDF mẫu tài liệu');
+            if (!isEdit || (isEdit && !documentId)) {
+                errors.push('Vui lòng tải lên file PDF mẫu tài liệu');
+            }
         }
 
         if (errors.length > 0) {
@@ -896,92 +1056,143 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                         convertToISODateFromDateInput(formData.endDate)
                 };
 
-                const contractResponse =
-                    await contractService.createTemplateContract(contractData);
+                let currentContractId = contractId;
+                let currentDocumentId = documentId;
 
-                if (
-                    contractResponse.code !== 'SUCCESS' ||
-                    !contractResponse.data?.id
-                ) {
-                    throw new Error(
-                        contractResponse.message ||
-                            'Không thể tạo hợp đồng mẫu'
-                    );
+                if (isEdit && currentContractId) {
+                    const updateResponse =
+                        await contractService.updateTemplateContract(
+                            currentContractId,
+                            contractData
+                        );
+                    if (updateResponse.code !== 'SUCCESS') {
+                        throw new Error(
+                            updateResponse.message ||
+                                'Không thể cập nhật hợp đồng mẫu'
+                        );
+                    }
+                } else {
+                    const contractResponse =
+                        await contractService.createTemplateContract(
+                            contractData
+                        );
+
+                    if (
+                        contractResponse.code !== 'SUCCESS' ||
+                        !contractResponse.data?.id
+                    ) {
+                        throw new Error(
+                            contractResponse.message ||
+                                'Không thể tạo hợp đồng mẫu'
+                        );
+                    }
+
+                    currentContractId = contractResponse.data.id;
+                    setContractId(currentContractId);
                 }
 
-                const newContractId = contractResponse.data.id;
-                setContractId(newContractId);
+                // Upload file chính nếu user chọn file mới
+                let lastUploadedFileName = formData.pdfFileName;
 
-                const uploadResponse = await contractService.uploadTemplateDocument(
-                    formData.pdfFile
-                );
+                if (formData.pdfFile) {
+                    const uploadResponse =
+                        await contractService.uploadTemplateDocument(
+                            formData.pdfFile
+                        );
 
-                if (uploadResponse.code !== 'SUCCESS' || !uploadResponse.data) {
-                    throw new Error(
-                        uploadResponse.message || 'Không thể upload file PDF'
-                    );
+                    if (
+                        uploadResponse.code !== 'SUCCESS' ||
+                        !uploadResponse.data
+                    ) {
+                        throw new Error(
+                            uploadResponse.message || 'Không thể upload file PDF'
+                        );
+                    }
+
+                    const { path: uploadedPath, fileName: uploadedFileName } =
+                        uploadResponse.data;
+                    lastUploadedFileName = uploadedFileName;
+
+                    const documentData = {
+                        name: formData.templateName.trim(),
+                        type: 1,
+                        contractId: currentContractId,
+                        fileName: uploadedFileName,
+                        path: uploadedPath,
+                        status: 1
+                    };
+
+                    const documentResponse =
+                        await contractService.createTemplateDocument(
+                            documentData
+                        );
+
+                    if (
+                        documentResponse.code !== 'SUCCESS' ||
+                        !documentResponse.data?.id
+                    ) {
+                        throw new Error(
+                            documentResponse.message ||
+                                'Không thể lưu thông tin tài liệu'
+                        );
+                    }
+
+                    currentDocumentId = documentResponse.data.id;
+                    setDocumentId(currentDocumentId);
+                    setFormData((prev) => ({
+                        ...prev,
+                        pdfFile: null,
+                        pdfFileName: uploadedFileName
+                    }));
+                } else if (!currentDocumentId) {
+                    throw new Error('Vui lòng tải lên file PDF mẫu tài liệu');
                 }
-
-                const { path: uploadedPath, fileName: uploadedFileName } =
-                    uploadResponse.data;
-
-                const documentData = {
-                    name: formData.templateName.trim(),
-                    type: 1,
-                    contractId: newContractId,
-                    fileName: uploadedFileName,
-                    path: uploadedPath,
-                    status: 1
-                };
-
-                const documentResponse =
-                    await contractService.createTemplateDocument(documentData);
-
-                if (
-                    documentResponse.code !== 'SUCCESS' ||
-                    !documentResponse.data?.id
-                ) {
-                    throw new Error(
-                        documentResponse.message ||
-                            'Không thể lưu thông tin tài liệu'
-                    );
-                }
-
-                const newDocumentId = documentResponse.data.id;
-                setDocumentId(newDocumentId);
 
                 // Upload file đính kèm nếu có (type = 3)
                 if (formData.attachedFiles && formData.attachedFiles.length > 0) {
-                    console.log('Uploading attached files for template...');
-
                     for (const file of formData.attachedFiles) {
                         try {
-                            // Upload file to MinIO
-                            const attachUploadResponse = await contractService.uploadDocument(file);
+                            const attachUploadResponse =
+                                await contractService.uploadDocument(file);
 
-                            if (attachUploadResponse.code === 'SUCCESS' && attachUploadResponse.data) {
-                                // Save document record (type = 3: file đính kèm)
+                            if (
+                                attachUploadResponse.code === 'SUCCESS' &&
+                                attachUploadResponse.data
+                            ) {
                                 const attachDocData = {
                                     name: file.name,
-                                    type: 3, // File đính kèm
-                                    contractId: newContractId,
+                                    type: 3,
+                                    contractId: currentContractId,
                                     fileName: attachUploadResponse.data.fileName,
                                     path: attachUploadResponse.data.path,
                                     status: 1
                                 };
 
-                                await contractService.createTemplateDocument(attachDocData);
-                                console.log('Attached file uploaded for template:', file.name);
+                                await contractService.createTemplateDocument(
+                                    attachDocData
+                                );
                             }
                         } catch (err) {
-                            console.error('Error uploading attached file for template:', file.name, err);
-                            // Continue với các file khác nếu 1 file lỗi
+                            console.error(
+                                'Error uploading attached file for template:',
+                                file.name,
+                                err
+                            );
                         }
                     }
+
+                    setFormData((prev) => ({
+                        ...prev,
+                        attachedFiles: [],
+                        attachedFile: ''
+                    }));
                 }
 
                 showToast(
-                    'Tạo hợp đồng mẫu thành công! ID: ' + newContractId,
+                    isEdit
+                        ? 'Cập nhật thông tin mẫu tài liệu thành công!'
+                        : 'Tạo hợp đồng mẫu thành công! ID: ' +
+                              currentContractId,
                     'success',
                     3000
                 );
@@ -991,7 +1202,7 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                 console.error('Error in template step 1:', err);
                 showToast(
                     err.message ||
-                        'Không thể tạo hợp đồng mẫu. Vui lòng thử lại.',
+                        'Không thể lưu thông tin bước 1. Vui lòng thử lại.',
                     'error'
                 );
             } finally {
@@ -1086,11 +1297,69 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
         try {
             setLoading(true);
 
-            const fieldsResponse = await contractService.createTemplateField(fieldsData);
-            if (fieldsResponse.code !== 'SUCCESS') {
-                throw new Error(
-                    fieldsResponse.message || 'Không thể tạo fields cho mẫu'
+            if (!isEdit) {
+                const fieldsResponse = await contractService.createTemplateField(
+                    fieldsData
                 );
+                if (fieldsResponse.code !== 'SUCCESS') {
+                    throw new Error(
+                        fieldsResponse.message || 'Không thể tạo fields cho mẫu'
+                    );
+                }
+            } else {
+                const toCreate = [];
+                const toUpdate = [];
+
+                fieldsData.forEach((field) => {
+                    const payload = {
+                        name: field.name,
+                        font: field.font || 'Times New Roman',
+                        fontSize: field.fontSize || 11,
+                        boxX: field.boxX ?? field.x ?? 0,
+                        boxY: field.boxY ?? field.y ?? 0,
+                        page: field.page ? field.page.toString() : '1',
+                        ordering: field.ordering ?? 0,
+                        boxW: field.boxW ?? field.width ?? 0,
+                        boxH: (field.boxH ?? field.height ?? '30').toString(),
+                        contractId,
+                        documentId: field.documentId || documentId,
+                        type: field.type || 1,
+                        recipientId: field.recipientId || null,
+                        status: field.status ?? 0
+                    };
+
+                    if (field.id) {
+                        toUpdate.push({ id: field.id, payload });
+                    } else {
+                        toCreate.push(payload);
+                    }
+                });
+
+                if (toCreate.length > 0) {
+                    const createRes = await contractService.createTemplateField(
+                        toCreate
+                    );
+                    if (createRes.code !== 'SUCCESS') {
+                        throw new Error(
+                            createRes.message || 'Không thể tạo field mới'
+                        );
+                    }
+                }
+
+                for (const item of toUpdate) {
+                    const updateRes =
+                        await contractService.updateTemplateField(
+                            item.id,
+                            item.payload
+                        );
+                    if (updateRes.code !== 'SUCCESS') {
+                        throw new Error(
+                            updateRes.message ||
+                                'Không thể cập nhật field hiện có'
+                        );
+                    }
+                }
+                // TODO: Nếu backend hỗ trợ delete field, so sánh originalFieldsData để xóa
             }
 
             const statusResponse = await contractService.changeTemplateContractStatus(
@@ -1105,7 +1374,9 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
             }
 
             showToast(
-                'Tạo hợp đồng mẫu thành công với trạng thái "Đã tạo".',
+                isEdit
+                    ? 'Cập nhật mẫu tài liệu thành công.'
+                    : 'Tạo hợp đồng mẫu thành công với trạng thái "Đã tạo".',
                 'success',
                 5000
             );
