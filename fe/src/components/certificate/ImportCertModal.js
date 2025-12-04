@@ -53,7 +53,6 @@ function ImportCertModal({ open, onClose, onImported }) {
         setLoading(true);
 
         try {
-            // ✅ Tạo FormData đúng cách
             const formData = new FormData();
 
             // 1. Append file
@@ -79,7 +78,7 @@ function ImportCertModal({ open, onClose, onImported }) {
             }
 
             // Debug: In ra FormData
-            console.log("📦 FormData content:");
+            console.log(" FormData content:");
             for (let pair of formData.entries()) {
                 console.log(`  ${pair[0]}: ${pair[1]}`);
             }
@@ -99,7 +98,7 @@ function ImportCertModal({ open, onClose, onImported }) {
             onClose();
 
         } catch (error) {
-            console.error("❌ Lỗi import:", error);
+            console.error(" Lỗi import:", error);
             const errorMsg = error?.message || error?.msg || "Import thất bại!";
             alert(errorMsg);
         } finally {
@@ -121,7 +120,7 @@ function ImportCertModal({ open, onClose, onImported }) {
                     style={{ cursor: 'pointer' }}
                 >
                     {file ? (
-                        <p>✅ {file.name}</p>
+                        <p> {file.name}</p>
                     ) : (
                         <p>Kéo thả file .p12 vào đây hoặc click để chọn</p>
                     )}

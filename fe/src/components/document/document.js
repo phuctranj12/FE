@@ -191,20 +191,35 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
     const handleCopy = async (doc) => {
         if (!doc?.id) return;
 
-        try {
-            const contractData = await documentService.getContractById(doc.id);
-            navigate('/main/contract/create', {
-                state: {
-                    copyFrom: contractData?.data || contractData,
-                    isCopy: true
-                }
-            });
+        // try {
+        //     const contractData = await documentService.getContractById(doc.id);
+        //     navigate('/main/contract/create', {
+        //         state: {
+        //             copyFrom: contractData?.data || contractData,
+        //             isCopy: true
+        //         }
+        //     });
 
-            setSuccessMessage("Đang chuẩn bị sao chép tài liệu...");
-        } catch (error) {
-            setErrorMessage("Không thể sao chép tài liệu. Vui lòng thử lại.");
-            console.error(error);
-        }
+        //     setSuccessMessage("Đang chuẩn bị sao chép tài liệu...");
+        // } catch (error) {
+        //     setErrorMessage("Không thể sao chép tài liệu. Vui lòng thử lại.");
+        //     console.error(error);
+        // }
+        const statusMap = {
+            0: "draft",
+            10: "created",
+            20: "processing",
+            30: "signed",
+            40: "liquidated",
+            31: "rejected",
+            32: "cancel",
+            1: "about-expire",
+            2: "expire",
+            35: "scan",
+        };
+
+        const statusSlug = statusMap[doc.status] || "unknown";
+        navigate(`/main/contract/create/${statusSlug}/${doc.id}`);
     };
 
     const handleDelete = async (docId) => {
@@ -300,7 +315,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                 <tr>
                                     <th>Tên tài liệu</th>
                                     <th>Mã hợp đồng</th>
-                                    <th>Số tài liệu</th>
                                     <th>Trạng thái</th>
                                     <th>Thời gian tạo</th>
                                     <th>Thời gian cập nhật</th>
@@ -375,7 +389,6 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                                 <div className="doc-name">{doc.name}</div>
                                             </div>
                                         </td>
-                                        <td>{doc.id}</td>
                                         <td>{doc.contractNo || "-"}</td>
                                         <td>
                                             <span className={`status-badge status-${doc.status}`}>

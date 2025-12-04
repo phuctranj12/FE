@@ -60,7 +60,7 @@ function CertificateDetailsModal({ open, certificateId, onClose }) {
 
                             <div className="certDetails-row">
                                 <div className="certDetails-label">MST/CCCD:</div>
-                                <div className="certDetails-value">{cccd || mst || "-"}</div>
+                                <div className="certDetails-value">{mst || cccd || "-"}</div>
                             </div>
                         </div>
 

@@ -115,6 +115,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
 
 
+
     const [reviewers, setReviewers] = useState([]);
     const [signers, setSigners] = useState([
         {
@@ -1400,10 +1401,10 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             } catch (err) {
                 console.error('Error saving participants:', err);
                 // Ưu tiên lấy message từ response, sau đó mới đến err.message
-                const errorMessage = err.response?.data?.message || 
-                                   err.response?.data?.error || 
-                                   err.message || 
-                                   'Không thể lưu người xử lý. Vui lòng thử lại.';
+                const errorMessage = err.response?.data?.message ||
+                    err.response?.data?.error ||
+                    err.message ||
+                    'Không thể lưu người xử lý. Vui lòng thử lại.';
                 showToast(errorMessage, 'error');
             } finally {
                 setLoading(false);
