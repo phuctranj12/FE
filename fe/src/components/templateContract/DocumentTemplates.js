@@ -7,6 +7,7 @@ import Pagination from "../common/Pagination";
 import TemplateContractItem from "./TemplateContractItem";
 import TemplateForm from "./TemplateForm";
 import ConfirmDeleteModal from "../document/ConfirmDeleteModal";
+import TemplateShareModal from "./TemplateShareModal";
 import contractService from "../../api/contractService";
 
 // Simple debounce utility
@@ -41,6 +42,8 @@ function DocumentTemplates() {
     const [searchTrigger, setSearchTrigger] = useState(0);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState(null);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [templateToShare, setTemplateToShare] = useState(null);
     const [toasts, setToasts] = useState([]);
     
     useEffect(() => {
@@ -170,7 +173,8 @@ function DocumentTemplates() {
     };
 
     const handleShare = (template) => {
-        console.log("Share template:", template);
+        setTemplateToShare(template);
+        setShowShareModal(true);
     };
 
     const generateRandomContractNo = () => {
@@ -602,6 +606,21 @@ function DocumentTemplates() {
                 onClose={handleCancelDelete}
                 onConfirm={handleConfirmDelete}
                 documentName={templateToDelete?.name || templateToDelete?.contractName || "mẫu tài liệu này"}
+            />
+
+            {/* Share Template Modal */}
+            <TemplateShareModal
+                show={showShareModal}
+                onClose={() => {
+                    setShowShareModal(false);
+                    setTemplateToShare(null);
+                }}
+                templateId={templateToShare?.id || templateToShare?.contractId}
+                templateName={
+                    templateToShare?.name ||
+                    templateToShare?.templateId ||
+                    "Mẫu tài liệu"
+                }
             />
 
             {/* Toast Notifications */}

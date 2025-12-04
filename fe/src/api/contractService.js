@@ -156,6 +156,20 @@ const contractService = {
         }
     },
 
+    // 7.1.2.7.x Chia sẻ hợp đồng mẫu
+    shareTemplateContract: async (contractId, emails = []) => {
+        try {
+            const body = {
+                email: emails,
+                contractId: contractId
+            };
+            const response = await apiClient.post('/contracts/template-share', body);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // 7.1.2.8. Lấy danh sách template của tôi
     getMyTemplateContracts: async (params = {}) => {
         try {
