@@ -10,6 +10,26 @@ import createdDocumentService from "../../api/createdDocumentService";
 import customerService from "../../api/customerService";
 
 function CreatedDocument({ selectedStatus, onDocumentClick }) {
+    const mockDocuments = [
+        {
+            id: 101,
+            name: "Hợp đồng lao động số 01",
+            contractNo: "HD-2025-001",
+            status: 20, // Đang xử lý
+            createdAt: "2025-01-12T10:23:00",
+            updatedAt: "2025-01-12T15:40:00",
+            type: 1,
+            participants: [
+                {
+                    id: 1,
+                    recipients: [
+                        { id: 999, email: "example@gmail.com", role: 3 } // Vai trò ký
+                    ]
+                }
+            ]
+        }
+    ];
+
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -132,8 +152,11 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                 response = await createdDocumentService.getCreatedContracts(filter);
             }
             const { list, total } = extractListAndTotal(response);
-            setDocs(list);
-            setTotalDocs(total);
+            // setDocs(list);
+            // setTotalDocs(total);
+            setDocs(mockDocuments);
+            setTotalDocs(1);
+
 
             // Nếu là "cho-xu-ly" và có user email, derive role trực tiếp từ list (không call thêm API)
             if (selectedStatus === "cho-xu-ly" && currentUserEmail && list.length > 0) {
@@ -304,8 +327,7 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Tên tài liệu</th>
-                                    <th>Mã hợp đồng</th>
+                                    <th style={{ textAlign: "center" }}>Tên tài liệu</th>
                                     <th>Số tài liệu</th>
                                     <th>Trạng thái</th>
                                     <th>Thời gian tạo</th>
@@ -406,7 +428,6 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                                     <div className="doc-name">{doc.name}</div>
                                                 </div>
                                             </td>
-                                            <td>{doc.id}</td>
                                             <td>{doc.contractNo || "-"}</td>
                                             <td>
                                                 <span className={`status-badge status-${doc.status}`}>
