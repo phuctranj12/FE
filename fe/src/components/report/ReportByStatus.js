@@ -60,15 +60,31 @@ function ReportByStatus() {
             const response = await reportService.getReportByStatus(organizationId, params);
 
             // Map data theo chuẩn response
-            const mappedData = (response.content || []).map(item => ({
-                contractId: item.id,
-                contractName: item.name,
-                contractCode: item.contractNo,
-                status: item.status,
-                updatedDate: item.updatedAt?.slice(0, 10) || "N/A",
-                processedBy: item.updatedBy || "N/A",
-                note: item.note || "",
-            }));
+            const mappedData = (response.content || []).map(item => {
+                let processedBy = "N/A";
+
+                // Tìm người xử lý có role = 3
+                const signer = item.participants
+                    ?.flatMap(p => p.recipients || [])
+                    ?.find(r => r.role === 3);
+
+                if (signer) {
+                    processedBy = signer.name;
+                } else if (item.updatedBy) {
+                    processedBy = item.updatedBy;
+                }
+
+                return {
+                    contractId: item.id,
+                    contractName: item.name,
+                    contractCode: item.contractNo,
+                    status: item.status,
+                    updatedDate: item.updatedAt?.slice(0, 10) || "N/A",
+                    processedBy,
+                    note: item.note || "",
+                };
+            });
+
 
             setData(mappedData);
             setTotalPages(response.totalPages || 0);
