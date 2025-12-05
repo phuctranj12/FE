@@ -180,7 +180,6 @@ function Header({ breadcrumb }) {
                         <div className="dropdown-box user-menu">
                             <div className="menu-item" onClick={handleshowUserInfor}>Thông tin tài khoản</div>
                             <div className="menu-item">Đổi mật khẩu</div>
-                            <div className="menu-item">Plugin ký Token</div>
                             <div className="menu-item logout" onClick={handleLogout}>
                                 Đăng xuất
                             </div>
