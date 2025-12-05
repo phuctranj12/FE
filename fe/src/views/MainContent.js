@@ -24,6 +24,7 @@ function MainContent() {
         if (location.pathname.startsWith('/main/user-detail')) return "Quản lý người dùng > Chi tiết người dùng";
         if (location.pathname.startsWith('/main/form-user/add')) return "Quản lý người dùng > Thêm người dùng";
         if (location.pathname.startsWith('/main/form-user/edit')) return "Quản lý người dùng > Sửa người dùng";
+        if (location.pathname.startsWith('/main/user/information')) return "Thông tin cá nhân";
         if (location.pathname.startsWith('/main/user')) return "Quản lý người dùng > Danh sách người dùng";
         if (location.pathname.startsWith('/main/role')) return "Quản lý người dùng > Danh sách vai trò";
         if (location.pathname.startsWith('/main/document')) return "Tài liệu đã tạo";
