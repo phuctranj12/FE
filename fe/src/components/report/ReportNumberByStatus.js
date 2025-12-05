@@ -5,7 +5,7 @@ import "../../styles/report.css";
 
 const STATUS_MAP = {
     totalDraff: "Bản nháp",
-    totalCreated: "Đang xử lý",
+    totalCreated: "Đã tạo",
     totalProcessing: "Đang xử lý",
     totalSigned: "Hoàn thành",
     totalReject: "Từ chối",
