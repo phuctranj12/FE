@@ -47,7 +47,7 @@
     z-index: 1;
 }
 
-.step.active:not(:last-child)::after {
+.step.completed:not(:last-child)::after {
     background: #007bff;
 }
 
@@ -71,6 +71,11 @@
     color: white;
 }
 
+.step-circle.completed {
+    background: #007bff;
+    color: white;
+}
+
 .step-title {
     font-size: 12px;
     text-align: center;
@@ -79,6 +84,11 @@
 }
 
 .step.active .step-title {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.step.completed .step-title {
     color: #007bff;
     font-weight: 600;
 }

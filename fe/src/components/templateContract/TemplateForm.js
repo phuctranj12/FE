@@ -1618,25 +1618,25 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                 <div className="document-form-wrapper">
                     <div className="form-header">
                         <div className="step-indicator">
-                            {steps.map((step) => (
-                                <div
-                                    key={step.id}
-                                    className={`step ${
-                                        step.active ? 'active' : ''
-                                    }`}
-                                >
+                            {steps.map((step) => {
+                                const isCompleted = step.id < currentStep;
+                                const isActive = step.active;
+                                return (
                                     <div
-                                        className={`step-circle ${
-                                            step.active ? 'active' : ''
-                                        }`}
+                                        key={step.id}
+                                        className={`step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
                                     >
-                                        {step.id}
+                                        <div
+                                            className={`step-circle ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                                        >
+                                            {step.id}
+                                        </div>
+                                        <div className="step-title">
+                                            {step.title}
+                                        </div>
                                     </div>
-                                    <div className="step-title">
-                                        {step.title}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 

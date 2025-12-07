@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import '../../styles/documentConfirmation.css';
 
 function TemplateConfirmation({ 
@@ -7,35 +7,23 @@ function TemplateConfirmation({
     reviewers, 
     signers, 
     documentClerks, 
+    loading = false,
     onBack, 
     onComplete, 
     onSaveDraft 
 }) {
-    const [endDate, setEndDate] = useState(formData.endDate || '2025-11-23');
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleEndDateChange = (e) => {
-        setEndDate(e.target.value);
-        setFormData(prev => ({
-            ...prev,
-            endDate: e.target.value
-        }));
-    };
-
-    const formatDateForDisplay = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
+    const formatDateForInput = (value) => {
+        if (!value) return '';
+        if (value.includes('T')) {
+            return value.substring(0, 10);
+        }
+        if (value.includes('/')) {
+            const [day, month, year] = value.split('/');
+            if (day && month && year) {
+                return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+        }
+        return value;
     };
 
     const getDocumentTypeLabel = (typeId) => {
@@ -77,19 +65,25 @@ function TemplateConfirmation({
 
                     <div className="summary-item">
                         <label className="summary-label">Ngày bắt đầu hiệu lực</label>
-                        <div className="summary-value">{formatDateForDisplay(formData.startDate) || 'Chưa chọn'}</div>
+                        <div className="date-input-container">
+                            <input
+                                type="date"
+                                value={formatDateForInput(formData.startDate || '')}
+                                readOnly
+                                className="date-input-readonly"
+                            />
+                        </div>
                     </div>
                     
                     <div className="summary-item">
                         <label className="summary-label">Ngày kết thúc hiệu lực</label>
-                        <div className="date-input-wrapper">
+                        <div className="date-input-container">
                             <input
                                 type="date"
-                                value={endDate}
-                                onChange={handleEndDateChange}
-                                className="date-input"
+                                value={formatDateForInput(formData.endDate || '')}
+                                readOnly
+                                className="date-input-readonly"
                             />
-                            <span className="date-display">{formatDateForDisplay(endDate)}</span>
                         </div>
                     </div>
 
@@ -163,15 +157,19 @@ function TemplateConfirmation({
 
             {/* Footer Buttons */}
             <div className="step-footer">
-                <button className="back-btn" onClick={onBack}>
+                <button className="back-btn" onClick={onBack} disabled={loading}>
                     Quay lại
                 </button>
                 <div className="footer-right">
-                    <button className="save-draft-btn" onClick={onSaveDraft}>
+                    <button className="save-draft-btn" onClick={onSaveDraft} disabled={loading}>
                         Lưu nháp
                     </button>
-                    <button className="complete-btn" onClick={onComplete}>
-                        Hoàn thành
+                    <button 
+                        className="complete-btn" 
+                        onClick={onComplete}
+                        disabled={loading}
+                    >
+                        {loading ? 'Đang xử lý...' : 'Hoàn thành'}
                     </button>
                 </div>
             </div>
