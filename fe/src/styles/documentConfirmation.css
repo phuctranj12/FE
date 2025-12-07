@@ -38,7 +38,7 @@
 
 /* Document Summary */
 .document-summary {
-    max-width: 800px;
+    max-width: 2000px;
     margin: 0 auto;
     background: white;
     border-radius: 8px;
@@ -47,9 +47,9 @@
 }
 
 .summary-title {
-    font-size: 20px;
+    font-size: 29px;
     font-weight: bold;
-    color: #333;
+    color: #000000;
     margin-bottom: 30px;
     text-align: center;
 }
@@ -121,38 +121,32 @@
 }
 
 /* Date Input */
-.date-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.date-input-container {
+    position: relative;
 }
 
-.date-input {
+.date-input-readonly {
     padding: 12px 16px;
-    border: 1px solid #ddd;
+    padding-right: 40px;
+    border: 1px solid #b3d9ff;
     border-radius: 6px;
     font-size: 14px;
-    background: white;
-    transition: border-color 0.2s ease;
-    min-width: 150px;
-}
-
-.date-input:focus {
-    outline: none;
-    border-color: #0B57D0;
-    box-shadow: 0 0 0 2px rgba(11, 87, 208, 0.1);
-}
-
-.date-display {
-    font-size: 14px;
-    color: #666;
+    background: #e8f2ff;
+    color: #0B57D0;
     font-weight: 500;
-    padding: 12px 16px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
-    min-width: 120px;
-    text-align: center;
+    cursor: not-allowed;
+    min-width: 150px;
+    max-width: 300px;
+}
+
+.date-input-readonly:focus {
+    outline: none;
+    border-color: #b3d9ff;
+}
+
+.date-input-readonly::-webkit-calendar-picker-indicator {
+    cursor: not-allowed;
+    opacity: 0.4;
 }
 
 /* Footer */

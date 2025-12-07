@@ -17,7 +17,6 @@ function DocumentConfirmation({
     onComplete, 
     onSaveDraft 
 }) {
-    const [expirationDate, setExpirationDate] = useState('2025-11-23');
     const [currentBatchDoc, setCurrentBatchDoc] = useState(1);
     const totalBatchDocs = 1; // Mock data
     const [currentPage, setCurrentPage] = useState(1);
@@ -40,22 +39,18 @@ function DocumentConfirmation({
         }));
     };
 
-    const handleExpirationDateChange = (e) => {
-        setExpirationDate(e.target.value);
-        setFormData(prev => ({
-            ...prev,
-            expirationDate: e.target.value
-        }));
-    };
-
-
-    const formatDateForDisplay = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
+    const formatDateForInput = (value) => {
+        if (!value) return '';
+        if (value.includes('T')) {
+            return value.substring(0, 10);
+        }
+        if (value.includes('/')) {
+            const [day, month, year] = value.split('/');
+            if (day && month && year) {
+                return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+        }
+        return value;
     };
 
     const getDocumentTypeLabel = (type) => {
@@ -254,14 +249,13 @@ function DocumentConfirmation({
                     
                     <div className="summary-item">
                         <label className="summary-label">Ngày hết hạn ký</label>
-                        <div className="date-input-wrapper">
+                        <div className="date-input-container">
                             <input
                                 type="date"
-                                value={expirationDate}
-                                onChange={handleExpirationDateChange}
-                                className="date-input"
+                                value={formatDateForInput(formData.signingExpirationDate || '')}
+                                readOnly
+                                className="date-input-readonly"
                             />
-                            <span className="date-display">{formatDateForDisplay(expirationDate)}</span>
                         </div>
                     </div>
                 </div>
