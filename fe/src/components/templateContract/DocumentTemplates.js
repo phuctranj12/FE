@@ -5,7 +5,6 @@ import SearchBar from "../common/SearchBar";
 import Button from "../common/Button";
 import Pagination from "../common/Pagination";
 import TemplateContractItem from "./TemplateContractItem";
-import TemplateForm from "./TemplateForm";
 import ConfirmDeleteModal from "../document/ConfirmDeleteModal";
 import TemplateShareModal from "./TemplateShareModal";
 import contractService from "../../api/contractService";
@@ -35,8 +34,6 @@ function DocumentTemplates() {
     const [totalItems, setTotalItems] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [editingTemplate, setEditingTemplate] = useState(null);
     const [documentTypesList, setDocumentTypesList] = useState([]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [searchTrigger, setSearchTrigger] = useState(0);
@@ -137,13 +134,11 @@ function DocumentTemplates() {
     };
 
     const handleAddNew = () => {
-        setShowAddForm(true);
-        setEditingTemplate(null);
+        navigate('/main/contract-template/add');
     };
 
     const handleBackToList = () => {
-        setShowAddForm(false);
-        setEditingTemplate(null);
+        navigate('/main/contract-template');
         // Refresh lại danh sách templates khi quay về từ form tạo/sửa
         setRefreshTrigger(prev => prev + 1);
     };
@@ -156,8 +151,8 @@ function DocumentTemplates() {
     };
 
     const handleEdit = (template) => {
-        setEditingTemplate(template);
-        setShowAddForm(true);
+        // Edit sẽ được xử lý trong TemplateDetail
+        navigate(`/main/contract-template/detail/${template.id}`);
     };
 
     const handleBatchCreate = (template) => {
@@ -446,9 +441,6 @@ function DocumentTemplates() {
         setCurrentPage(page);
     };
 
-    if (showAddForm) {
-        return <TemplateForm onBack={handleBackToList} editTemplate={editingTemplate} />;
-    }
 
     return (
         <div className="document-templates-wrapper">

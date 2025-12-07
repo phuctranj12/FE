@@ -12,6 +12,7 @@ import AddNewUser from './components/userManagement/AddNewUser';
 import RoleList from './components/userManagement/RoleList';
 import DocumentTemplates from './components/templateContract/DocumentTemplates';
 import TemplateDetail from './components/templateContract/TemplateDetail';
+import TemplateForm from './components/templateContract/TemplateForm';
 import DocTypeList from './components/configuration/DocTypeList';
 import Document from './components/document/document';
 import DocumentStatusRoute from './components/document/DocumentStatusRoute';
@@ -37,6 +38,7 @@ function App() {
       <Route path="/main/*" element={<MainContent />}>
         <Route path="dashboard" element={<DashboardHome />} />
         <Route path="contract-template" element={<DocumentTemplates />} />
+        <Route path="contract-template/add" element={<TemplateForm onBack={() => window.history.back()} />} />
         <Route path="contract-template/detail/:template_contract_id" element={<TemplateDetail />} />
         <Route path="contract-type" element={<DocTypeList />} />
         <Route path="form-contract/add" element={<DocumentForm />} />
