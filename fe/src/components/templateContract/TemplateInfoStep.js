@@ -18,7 +18,13 @@ function TemplateInfoStep({
 
     return (
         <div className="step-content">
-            <div className="file-upload-area">
+            <div 
+                className="file-upload-area" 
+                onClick={() => {
+                    const input = document.getElementById('file-upload-template');
+                    if (input) input.click();
+                }}
+            >
                 <div className="upload-icon">⬆️</div>
                 <div className="upload-text">
                     Kéo thả hoặc tải lên file tài liệu <span className="highlight">Tại đây</span>
@@ -31,7 +37,11 @@ function TemplateInfoStep({
                     style={{ display: 'none' }}
                     id="file-upload-template"
                 />
-                <label htmlFor="file-upload-template" className="file-upload-label">
+                <label 
+                    htmlFor="file-upload-template" 
+                    className="file-upload-label"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {formData.pdfFileName || 'Chọn file'}
                 </label>
             </div>

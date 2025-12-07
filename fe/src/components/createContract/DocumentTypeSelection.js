@@ -111,7 +111,13 @@ function DocumentTypeSelection({
                     </div>
                 </div>
 
-                <div className="file-upload-area">
+                <div 
+                    className="file-upload-area" 
+                    onClick={() => {
+                        const input = document.getElementById('file-upload-batch');
+                        if (input) input.click();
+                    }}
+                >
                     <div className="upload-icon">📊</div>
                     <div className="upload-text">
                         Kéo thả hoặc tải lên file tài liệu <span className="highlight">Tại đây</span>
@@ -124,7 +130,11 @@ function DocumentTypeSelection({
                         style={{ display: 'none' }}
                         id="file-upload-batch"
                     />
-                    <label htmlFor="file-upload-batch" className="file-upload-label">
+                    <label 
+                        htmlFor="file-upload-batch" 
+                        className="file-upload-label"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {formData.batchFile || 'Chọn file'}
                     </label>
                 </div>
@@ -330,7 +340,16 @@ function DocumentTypeSelection({
                 </div>
             </div>
 
-            <div className="file-upload-area">
+            <div 
+                className="file-upload-area" 
+                onClick={() => {
+                    if (!loading) {
+                        const input = document.getElementById('file-upload-single');
+                        if (input) input.click();
+                    }
+                }}
+                style={{ cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+            >
                 <div className="upload-icon">⬆️</div>
                 <div className="upload-text">
                     Kéo thả hoặc tải lên file tài liệu <span className="highlight">Tại đây</span>
@@ -344,7 +363,11 @@ function DocumentTypeSelection({
                     id="file-upload-single"
                     disabled={loading}
                 />
-                <label htmlFor="file-upload-single" className={`file-upload-label ${loading ? 'disabled' : ''}`}>
+                <label 
+                    htmlFor="file-upload-single" 
+                    className={`file-upload-label ${loading ? 'disabled' : ''}`}
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {loading ? 'Đang xử lý...' : (formData.pdfFileName || formData.attachedFile || 'Chọn file PDF')}
                 </label>
                 {formData.pdfPageCount > 0 && (

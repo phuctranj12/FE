@@ -102,11 +102,36 @@ function CheckSignDigital() {
 
         // Trường hợp có chữ ký số
         if (result.signatures && result.signatures.length > 0) {
+            // Kiểm tra trạng thái hiệu lực văn bản
+            // Nếu có bất kỳ chữ ký nào có isDocumentIntact = false thì hiển thị cảnh báo
+            const hasInvalidDocument = result.signatures.some(sig => sig.isDocumentIntact === false);
+            const allValid = result.signatures.every(sig => sig.isDocumentIntact === true);
+
             return (
                 <div>
                     <p style={{ marginBottom: '16px', fontWeight: '500' }}>
                         <strong>File có {result.signatures.length} chữ ký số</strong>
                     </p>
+                    
+                    {/* Hiển thị trạng thái hiệu lực văn bản */}
+                    {allValid && (
+                        <div className="document-intact-status valid">
+                            <svg className="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="#0a3622" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>Hiệu lực văn bản: Nội dung văn bản chưa bị thay đổi</span>
+                        </div>
+                    )}
+                    
+                    {hasInvalidDocument && (
+                        <div className="document-intact-status invalid">
+                            <svg className="x-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 6L6 18M6 6L18 18" stroke="#842029" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>Hiệu lực văn bản: Nội dung văn bản đã bị thay đổi</span>
+                        </div>
+                    )}
+                    
                     <table className="signature-table">
                         <thead>
                             <tr>
@@ -161,14 +186,18 @@ function CheckSignDigital() {
                         accept="application/pdf"
                         style={{ display: 'none' }}
                         onChange={handleFileChange}
+                        id="file-upload-check-sign"
                     />
-                    <button
-                        className="check-btn primary-upload-btn"
-                        onClick={handleSelectFileClick}
-                        disabled={checking}
-                    >
-                        {checking ? 'Đang kiểm tra...' : 'Tải lên file ký số'}
-                    </button>
+                    <div className="file-upload-area" onClick={handleSelectFileClick} style={{ cursor: checking ? 'not-allowed' : 'pointer', opacity: checking ? 0.7 : 1 }}>
+                        <div className="upload-icon">📄</div>
+                        <div className="upload-text">
+                            Kéo thả hoặc tải lên file PDF có chữ ký số <span className="highlight">Tại đây</span>
+                        </div>
+                        <div className="upload-support">Hỗ trợ file PDF</div>
+                        <label htmlFor="file-upload-check-sign" className="file-upload-label" onClick={(e) => e.stopPropagation()}>
+                            {checking ? 'Đang kiểm tra...' : 'Chọn file PDF'}
+                        </label>
+                    </div>
                     {error && <p className="error-text">{error}</p>}
                 </div>
 
