@@ -160,7 +160,15 @@ function DocumentTemplates() {
     };
 
     const handleSingleCreate = (template) => {
-        console.log("Single create from template:", template);
+        const templateId = template.id || template.contractId;
+        if (!templateId) {
+            showToast("Không tìm thấy ID của mẫu tài liệu", 'error');
+            return;
+        }
+        // Navigate to DocumentForm với templateId trong state
+        navigate('/main/form-contract/add', {
+            state: { templateId: templateId }
+        });
     };
 
     const handleStopPublish = (template) => {

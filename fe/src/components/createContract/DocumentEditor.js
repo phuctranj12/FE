@@ -20,7 +20,9 @@ function DocumentEditor({
     onAssignmentStateChange = null,
     showLockedBadge = true,
     // Khi true: sử dụng API template-documents để lấy presigned URL
-    isTemplateDocument = false
+    isTemplateDocument = false,
+    // Nếu truyền vào, ưu tiên hiển thị PDF này (dùng cho template)
+    templatePdfUrl = null
 }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -396,6 +398,15 @@ function DocumentEditor({
             setTotalPages(initialTotalPages);
         }
     }, [initialTotalPages]);
+
+    // Ưu tiên dùng templatePdfUrl nếu có (tránh gọi presigned khi đã có URL)
+    useEffect(() => {
+        if (templatePdfUrl) {
+            setPdfUrl(templatePdfUrl);
+            setPdfError(null);
+            setPdfLoading(false);
+        }
+    }, [templatePdfUrl]);
 
     // Log khi currentPage thay đổi (bắt cả scroll và click)
     useEffect(() => {

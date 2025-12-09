@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../../styles/documentForm.css';
 import DocumentTypeSelection from './DocumentTypeSelection';
 import DocumentSigners from './DocumentSigners';
@@ -10,8 +11,11 @@ import contractService from '../../api/contractService';
 
 const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [currentStep, setCurrentStep] = useState(1);
-    const [documentType, setDocumentType] = useState('single-no-template');
+    // Nếu có templateId từ location.state, set documentType = 'single-template'
+    const templateIdFromState = location.state?.templateId;
+    const [documentType, setDocumentType] = useState(templateIdFromState ? 'single-template' : 'single-no-template');
 
     // User and Organization data
     const [currentUser, setCurrentUser] = useState(null);
@@ -48,7 +52,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const [formData, setFormData] = useState({
         documentName: '',
         documentNumber: '',
-        documentTemplate: '',
+        documentTemplate: templateIdFromState || '',
         documentType: '',
         relatedDocuments: '',
         message: '',
@@ -70,6 +74,17 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         // Thông tin file đính kèm
         attachedFiles: [] // Array of File objects
     });
+
+    // Set documentTemplate khi có templateId từ location state
+    useEffect(() => {
+        if (templateIdFromState && !formData.documentTemplate) {
+            setFormData(prev => ({
+                ...prev,
+                documentTemplate: templateIdFromState
+            }));
+        }
+    }, [templateIdFromState]);
+
     useEffect(() => {
         if (initialData && isEdit) {
             // Map thông tin cơ bản
@@ -133,6 +148,16 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     // Partners state - array of partner objects
     const [partners, setPartners] = useState([]);
 
+    // Template metadata & loading state
+    const [templateMeta, setTemplateMeta] = useState(null);
+    const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+
+    const downloadTemplatePdf = async (url, fileName = 'template.pdf') => {
+        const res = await axios.get(url, { responseType: 'blob' });
+        const mime = res.headers['content-type'] || 'application/pdf';
+        return new File([res.data], fileName, { type: mime });
+    };
+
     // Fetch initial data when component mounts
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -190,6 +215,224 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
         fetchInitialData();
     }, []);
+
+    // Load template details + prefill when choose template in single-template mode
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadTemplate = async () => {
+            if (documentType !== 'single-template' || !formData.documentTemplate) {
+                setTemplateMeta(null);
+                return;
+            }
+
+            try {
+                setIsLoadingTemplate(true);
+
+                const templateId = formData.documentTemplate;
+
+                const [
+                    templateRes,
+                    participantsRes,
+                    fieldsRes,
+                    documentsRes
+                ] = await Promise.all([
+                    contractService.getTemplateContractById(templateId),
+                    contractService.getTemplateParticipantsByContract(templateId),
+                    contractService.getTemplateFieldsByContract(templateId),
+                    contractService.getTemplateDocumentsByContract(templateId)
+                ]);
+
+                if (templateRes?.code !== 'SUCCESS' || !templateRes?.data) {
+                    throw new Error(templateRes?.message || 'Không thể tải thông tin mẫu');
+                }
+
+                const template = templateRes.data;
+                const templateParticipants = Array.isArray(participantsRes?.data) ? participantsRes.data : [];
+                const templateFields = Array.isArray(fieldsRes?.data) ? fieldsRes.data : [];
+                const templateDocuments = Array.isArray(documentsRes?.data) ? documentsRes.data : [];
+
+                const mainDoc =
+                    templateDocuments.find(doc => doc.type === 1) ||
+                    templateDocuments[0];
+
+                let templatePdfUrl = null;
+                let templatePageCount = mainDoc?.pageCount || template?.pageCount || 0;
+                let templateFileName = mainDoc?.fileName || template?.fileName || template?.templateName || 'template.pdf';
+
+                if (mainDoc?.id) {
+                    try {
+                        const presignedRes = await contractService.getTemplateDocumentPresignedUrl(mainDoc.id);
+                        if (presignedRes?.code === 'SUCCESS') {
+                            templatePdfUrl =
+                                typeof presignedRes.data === 'string'
+                                    ? presignedRes.data
+                                    : presignedRes.data?.url || presignedRes.data?.message || presignedRes.url;
+                        }
+                    } catch (err) {
+                        console.warn('[Template] Không lấy được presigned URL, fallback path', err);
+                        templatePdfUrl = mainDoc?.path || null;
+                    }
+                }
+
+                if (!templatePdfUrl) {
+                    throw new Error('Không tìm thấy file PDF của mẫu');
+                }
+
+                // Download PDF as File object
+                const file = await downloadTemplatePdf(templatePdfUrl, templateFileName || 'template.pdf');
+
+                // Get page size (prefer API result)
+                try {
+                    const pageSizeResponse = await contractService.getPageSize(file);
+                    if (pageSizeResponse?.code === 'SUCCESS') {
+                        templatePageCount = pageSizeResponse?.data?.numberOfPages || templatePageCount || 0;
+                    }
+                } catch (err) {
+                    console.warn('[Template] Không lấy được pageSize', err);
+                }
+
+                // Check signature but always keep hasSignature=false
+                try {
+                    await contractService.checkSignature(file);
+                } catch (err) {
+                    console.warn('[Template] checkSignature lỗi, bỏ qua', err);
+                }
+
+                if (cancelled) return;
+
+                setTemplateMeta({
+                    template,
+                    participants: templateParticipants,
+                    fields: templateFields,
+                    document: mainDoc,
+                    templatePdfUrl,
+                    pageCount: templatePageCount,
+                    fileName: templateFileName
+                });
+
+                // Prefill basic form only when empty
+                setFormData(prev => ({
+                    ...prev,
+                    pdfFile: file,
+                    pdfFileName: file.name,
+                    pdfPageCount: templatePageCount || 0,
+                    hasSignature: false,
+                    attachedFile: file.name,
+                    documentName: prev.documentName || template?.templateName || '',
+                    documentNumber: prev.documentNumber || template?.templateNo || '',
+                    signingExpirationDate: prev.signingExpirationDate || template?.signingExpireDefault || '',
+                    expirationDate: prev.expirationDate || template?.expireDefault || ''
+                }));
+
+                // Prefill participants only if user has not filled
+                const hasUserReviewers = reviewers.length > 0;
+                const hasUserClerks = documentClerks.length > 0;
+                const hasUserSigners = !(
+                    signers.length === 1 &&
+                    !signers[0].fullName &&
+                    !signers[0].email &&
+                    !signers[0].phone
+                );
+
+                if (!hasUserReviewers && !hasUserClerks && !hasUserSigners && templateParticipants.length > 0) {
+                    const newReviewers = [];
+                    const newSigners = [];
+                    const newClerks = [];
+                    const newPartners = [];
+
+                    templateParticipants.forEach((participant, pIndex) => {
+                        const isMyOrg = participant.type === 1;
+                        const baseOrdering = participant.ordering || pIndex + 1;
+
+                        (participant.recipients || []).forEach((recipient, rIndex) => {
+                            const mapped = {
+                                id: Date.now() + pIndex + rIndex,
+                                recipientId: recipient.id,
+                                fullName: recipient.name || '',
+                                email: recipient.email || '',
+                                phone: recipient.phone || '',
+                                card_id: recipient.cardId || recipient.card_id || '',
+                                cardId: recipient.cardId || recipient.card_id || '',
+                                ordering: recipient.ordering || rIndex + 1,
+                                loginByPhone: recipient.loginByPhone || false
+                            };
+
+                            if (isMyOrg) {
+                                if (recipient.role === 2) newReviewers.push(mapped);
+                                else if (recipient.role === 3) newSigners.push(mapped);
+                                else if (recipient.role === 4) newClerks.push(mapped);
+                            } else {
+                                // Partner participants -> push into partners array
+                                let partner = newPartners.find(p => p.participantId === participant.id);
+                                if (!partner) {
+                                    partner = {
+                                        id: Date.now() + pIndex,
+                                        participantId: participant.id,
+                                        type: participant.type || 2,
+                                        name: participant.name || `Đối tác ${pIndex + 1}`,
+                                        ordering: baseOrdering,
+                                        coordinators: [],
+                                        reviewers: [],
+                                        signers: [],
+                                        clerks: []
+                                    };
+                                    newPartners.push(partner);
+                                }
+
+                                if (recipient.role === 1) partner.coordinators.push(mapped);
+                                else if (recipient.role === 2) partner.reviewers.push(mapped);
+                                else if (recipient.role === 3) partner.signers.push(mapped);
+                                else if (recipient.role === 4) partner.clerks.push(mapped);
+                            }
+                        });
+                    });
+
+                    setReviewers(newReviewers);
+                    setSigners(newSigners.length ? newSigners : signers);
+                    setDocumentClerks(newClerks);
+                    setPartners(newPartners);
+                }
+
+                // Prefill fields only when empty
+                if (!fieldsData || fieldsData.length === 0) {
+                    const mappedFields = templateFields.map((field, index) => ({
+                        id: field.id,
+                        name: field.name || field.label || '',
+                        font: field.font || 'Times New Roman',
+                        fontSize: field.fontSize || 11,
+                        boxX: field.boxX ?? field.x ?? 0,
+                        boxY: field.boxY ?? field.y ?? 0,
+                        page: field.page ? field.page.toString() : '1',
+                        ordering: field.ordering ?? index + 1,
+                        boxW: field.boxW ?? field.w ?? field.width ?? 100,
+                        boxH: (field.boxH ?? field.h ?? field.height ?? '30').toString(),
+                        contractId: null,
+                        documentId: null,
+                        type: field.type || 1,
+                        recipientId: field.recipientId || null,
+                        status: field.status ?? 0
+                    }));
+                    setFieldsData(mappedFields);
+                }
+            } catch (err) {
+                console.error('[Template] Lỗi tải mẫu', err);
+                if (!cancelled) {
+                    showToast(err.message || 'Không thể tải mẫu. Vui lòng thử lại hoặc chọn file thủ công.', 'error');
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsLoadingTemplate(false);
+                }
+            }
+        };
+
+        loadTemplate();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [documentType, formData.documentTemplate, reviewers, signers, documentClerks, fieldsData]);
 
     // Load organization details and participants data when entering step 2
     useEffect(() => {
@@ -1611,6 +1854,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 fieldsData={fieldsData}
                 onFieldsChange={setFieldsData}
                 totalPages={formData.pdfPageCount || 1}
+                templatePdfUrl={templateMeta?.templatePdfUrl}
                 onBack={() => setCurrentStep(2)}
                 onNext={() => setCurrentStep(4)}
                 onSaveDraft={() => {
