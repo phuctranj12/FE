@@ -348,7 +348,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                         (participant.recipients || []).forEach((recipient, rIndex) => {
                             const mapped = {
                                 id: Date.now() + pIndex + rIndex,
-                                recipientId: recipient.id,
+                                // KHÔNG set recipientId khi tạo mới từ template
+                                // recipientId chỉ dùng khi edit và recipient đã tồn tại trong hợp đồng này
                                 fullName: recipient.name || '',
                                 email: recipient.email || '',
                                 phone: recipient.phone || '',
@@ -432,7 +433,9 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         return () => {
             cancelled = true;
         };
-    }, [documentType, formData.documentTemplate, reviewers, signers, documentClerks, fieldsData]);
+        // Loại bỏ fieldsData khỏi dependency để tránh infinite loop
+        // fieldsData được check bên trong useEffect với điều kiện if (!fieldsData || fieldsData.length === 0)
+    }, [documentType, formData.documentTemplate, reviewers, signers, documentClerks]);
 
     // Load organization details and participants data when entering step 2
     useEffect(() => {
@@ -526,6 +529,40 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
         loadStep2Data();
     }, [currentStep, organizationId, currentUser, contractId]);
+
+    // Clean up invalid recipientId trong fieldsData khi participantsData được load
+    // (Khi tạo hợp đồng từ template, recipientId từ template không tồn tại trong hợp đồng mới)
+    useEffect(() => {
+        if (participantsData && participantsData.length > 0 && fieldsData && fieldsData.length > 0) {
+            // Lấy danh sách tất cả recipientId hợp lệ
+            const validRecipientIds = new Set();
+            participantsData.forEach(participant => {
+                if (participant.recipients && participant.recipients.length > 0) {
+                    participant.recipients.forEach(recipient => {
+                        if (recipient.id) {
+                            validRecipientIds.add(recipient.id);
+                        }
+                    });
+                }
+            });
+
+            // Kiểm tra và reset recipientId không hợp lệ
+            const hasInvalidRecipientId = fieldsData.some(field => 
+                field.recipientId && !validRecipientIds.has(field.recipientId)
+            );
+
+            if (hasInvalidRecipientId) {
+                const cleanedFields = fieldsData.map(field => ({
+                    ...field,
+                    // Reset recipientId nếu không tồn tại trong participantsData
+                    recipientId: field.recipientId && validRecipientIds.has(field.recipientId) 
+                        ? field.recipientId 
+                        : null
+                }));
+                setFieldsData(cleanedFields);
+            }
+        }
+    }, [participantsData]);
 
     // Điều chỉnh số bước dựa trên loại tài liệu
     const getSteps = () => {
@@ -1358,8 +1395,9 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
                 // signType luôn = 6 theo CreateContractFlow.md
                 recipientsArray.push({
-                    // Include id if exists (for editing when returning to step 2)
-                    ...(item.recipientId && { id: item.recipientId }),
+                    // Chỉ include id khi đang edit và recipient đã tồn tại trong hợp đồng này
+                    // KHÔNG include id khi tạo mới (kể cả từ template) để tránh lỗi detached entity
+                    ...(isEdit && item.recipientId && { id: item.recipientId }),
                     name: fullName,
                     email,
                     phone,
@@ -1458,8 +1496,12 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             errors.push('Vui lòng tải lên file PDF');
         }
 
-        if ((documentType === 'single-template' || documentType === 'batch') && !formData.documentTemplate?.trim()) {
-            errors.push('Vui lòng chọn mẫu tài liệu');
+        if ((documentType === 'single-template' || documentType === 'batch')) {
+            const templateValue = formData.documentTemplate;
+            const templateStr = templateValue ? String(templateValue).trim() : '';
+            if (!templateStr) {
+                errors.push('Vui lòng chọn mẫu tài liệu');
+            }
         }
 
         if (documentType === 'batch' && !formData.batchFile) {
@@ -1657,6 +1699,47 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 showToast(`Vui lòng gán người xử lý cho ${unassignedComponentCount} thành phần trước khi tiếp tục.`, 'error');
                 return;
             }
+
+            // Validate tất cả fields đã có recipientId hợp lệ (tồn tại trong participantsData)
+            if (fieldsData && fieldsData.length > 0 && participantsData && participantsData.length > 0) {
+                // Lấy danh sách tất cả recipientId hợp lệ từ participantsData
+                const validRecipientIds = new Set();
+                participantsData.forEach(participant => {
+                    if (participant.recipients && participant.recipients.length > 0) {
+                        participant.recipients.forEach(recipient => {
+                            if (recipient.id) {
+                                validRecipientIds.add(recipient.id);
+                            }
+                        });
+                    }
+                });
+
+                // Kiểm tra fields có recipientId không hợp lệ
+                const invalidFields = fieldsData.filter(field => {
+                    // Nếu field có recipientId nhưng không tồn tại trong validRecipientIds
+                    if (field.recipientId && !validRecipientIds.has(field.recipientId)) {
+                        return true;
+                    }
+                    // Nếu field không có recipientId (null hoặc undefined)
+                    if (!field.recipientId) {
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (invalidFields.length > 0) {
+                    showToast(`Vui lòng gán người xử lý hợp lệ cho ${invalidFields.length} field(s) trước khi tiếp tục.`, 'error');
+                    return;
+                }
+            } else if (fieldsData && fieldsData.length > 0) {
+                // Nếu có fields nhưng chưa có participantsData, yêu cầu hoàn thành step 2 trước
+                const fieldsWithoutRecipient = fieldsData.filter(field => !field.recipientId);
+                if (fieldsWithoutRecipient.length > 0) {
+                    showToast(`Vui lòng gán người xử lý cho ${fieldsWithoutRecipient.length} field(s) trước khi tiếp tục.`, 'error');
+                    return;
+                }
+            }
+
             if (currentStep < maxStep) {
                 setCurrentStep(currentStep + 1);
             }
@@ -1698,8 +1781,10 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             setLoading(true);
 
             // 4.1. Tạo Fields
-            console.log('[Step 4] Creating fields...', fieldsData);
-            const fieldsResponse = await contractService.createField(fieldsData);
+            // Loại bỏ id khỏi payload khi tạo mới (id chỉ dùng khi edit)
+            const fieldsPayload = fieldsData.map(({ id, ...field }) => field);
+            console.log('[Step 4] Creating fields...', fieldsPayload);
+            const fieldsResponse = await contractService.createField(fieldsPayload);
 
             if (fieldsResponse.code !== 'SUCCESS') {
                 throw new Error(fieldsResponse.message || 'Không thể tạo fields');
