@@ -152,10 +152,10 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                 response = await createdDocumentService.getCreatedContracts(filter);
             }
             const { list, total } = extractListAndTotal(response);
-            // setDocs(list);
-            // setTotalDocs(total);
-            setDocs(mockDocuments);
-            setTotalDocs(1);
+            setDocs(list);
+            setTotalDocs(total);
+            // setDocs(mockDocuments);
+            // setTotalDocs(1);
 
 
             // Nếu là "cho-xu-ly" và có user email, derive role trực tiếp từ list (không call thêm API)
