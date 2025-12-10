@@ -40,8 +40,12 @@ function ViewFlowModal({ show, onClose, contractId }) {
     const getStatusLabel = (status) => {
         switch (status) {
             case 0: return "Chưa xử lý";
-            case 1: return "Đang xử lý";
-            case 2: return "Đã xử lý";
+            case 20: return "Đang xử lý";
+            case 30: return "Hoàn thành";
+            case 31: return "Từ chối";
+            case 32: return "Hủy bỏ";
+            case 1: return "Sắp hết hạn";
+            case 2: return "Hết hạn";
             default: return "Không xác định";
         }
     };
@@ -110,7 +114,7 @@ function ViewFlowModal({ show, onClose, contractId }) {
                                         {flowData.recipients.map((recipient, index) => (
                                             <div key={recipient.id} className="recipient-card">
                                                 <div className="recipient-header">
-                                                    <span className="recipient-number">#{index + 1}</span>
+                                                    <span className="recipient-number">{index + 1}</span>
                                                     <span className={`status-badge ${getStatusClass(recipient.status)}`}>
                                                         {getStatusLabel(recipient.status)}
                                                     </span>
