@@ -15,7 +15,12 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const [currentStep, setCurrentStep] = useState(1);
     // Nếu có templateId từ location.state, set documentType = 'single-template'
     const templateIdFromState = location.state?.templateId;
-    const [documentType, setDocumentType] = useState(templateIdFromState ? 'single-template' : 'single-no-template');
+    // Nếu có copyFromContractId từ location.state, set documentType = 'single-template' và isCopy = true
+    const copyFromContractId = location.state?.copyFromContractId;
+    const isCopy = location.state?.isCopy || false;
+    const [documentType, setDocumentType] = useState(
+        templateIdFromState || copyFromContractId ? 'single-template' : 'single-no-template'
+    );
 
     // User and Organization data
     const [currentUser, setCurrentUser] = useState(null);
@@ -49,6 +54,16 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const [isDocumentNumberValid, setIsDocumentNumberValid] = useState(true);
     const [isCheckingDocumentNumber, setIsCheckingDocumentNumber] = useState(false);
 
+    const getDefaultExpirationDate = () => {
+        const today = new Date();
+        const expirationDate = new Date(today);
+        expirationDate.setDate(today.getDate() + 5);
+        const day = String(expirationDate.getDate()).padStart(2, '0');
+        const month = String(expirationDate.getMonth() + 1).padStart(2, '0');
+        const year = expirationDate.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const [formData, setFormData] = useState({
         documentName: '',
         documentNumber: '',
@@ -56,8 +71,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         documentType: '',
         relatedDocuments: '',
         message: '',
-        expirationDate: '',
-        signingExpirationDate: '20/11/2025',
+        expirationDate: getDefaultExpirationDate(),
+        signingExpirationDate: getDefaultExpirationDate(),
         attachedFile: '',
         uploadToMinistry: 'Không',
         templateFile: '',
@@ -84,6 +99,16 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             }));
         }
     }, [templateIdFromState]);
+
+    // Set documentTemplate khi có copyFromContractId (dùng contractId như templateId để tái sử dụng flow)
+    useEffect(() => {
+        if (copyFromContractId && !formData.documentTemplate) {
+            setFormData(prev => ({
+                ...prev,
+                documentTemplate: copyFromContractId
+            }));
+        }
+    }, [copyFromContractId]);
 
     useEffect(() => {
         if (initialData && isEdit) {
@@ -217,6 +242,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     }, []);
 
     // Load template details + prefill when choose template in single-template mode
+    // Hoặc load contract details khi copy từ contract
     useEffect(() => {
         let cancelled = false;
 
@@ -226,25 +252,36 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 return;
             }
 
+            // Định nghĩa isCopyMode ở đầu hàm để có thể sử dụng trong toàn bộ scope
+            const templateId = formData.documentTemplate;
+            const isCopyMode = isCopy && copyFromContractId === templateId;
+
             try {
                 setIsLoadingTemplate(true);
 
-                const templateId = formData.documentTemplate;
-
+                // Nếu là copy mode, sử dụng contract API; nếu không, sử dụng template API
                 const [
                     templateRes,
                     participantsRes,
                     fieldsRes,
                     documentsRes
                 ] = await Promise.all([
-                    contractService.getTemplateContractById(templateId),
-                    contractService.getTemplateParticipantsByContract(templateId),
-                    contractService.getTemplateFieldsByContract(templateId),
-                    contractService.getTemplateDocumentsByContract(templateId)
+                    isCopyMode 
+                        ? contractService.getContractById(templateId)
+                        : contractService.getTemplateContractById(templateId),
+                    isCopyMode
+                        ? contractService.getParticipantsByContract(templateId)
+                        : contractService.getTemplateParticipantsByContract(templateId),
+                    isCopyMode
+                        ? contractService.getFieldsByContract(templateId)
+                        : contractService.getTemplateFieldsByContract(templateId),
+                    isCopyMode
+                        ? contractService.getDocumentsByContract(templateId)
+                        : contractService.getTemplateDocumentsByContract(templateId)
                 ]);
 
                 if (templateRes?.code !== 'SUCCESS' || !templateRes?.data) {
-                    throw new Error(templateRes?.message || 'Không thể tải thông tin mẫu');
+                    throw new Error(templateRes?.message || (isCopyMode ? 'Không thể tải thông tin hợp đồng' : 'Không thể tải thông tin mẫu'));
                 }
 
                 const template = templateRes.data;
@@ -252,17 +289,26 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 const templateFields = Array.isArray(fieldsRes?.data) ? fieldsRes.data : [];
                 const templateDocuments = Array.isArray(documentsRes?.data) ? documentsRes.data : [];
 
+                // Lấy document chính:
+                // - type = 1: File gốc (dùng để copy/tải xuống)
+                // - type = 2: File đã ký (dùng để view/hiển thị cho người dùng)
+                // Khi copy contract hoặc tạo từ template, cần lấy type = 1 để download và copy
                 const mainDoc =
                     templateDocuments.find(doc => doc.type === 1) ||
                     templateDocuments[0];
 
                 let templatePdfUrl = null;
                 let templatePageCount = mainDoc?.pageCount || template?.pageCount || 0;
-                let templateFileName = mainDoc?.fileName || template?.fileName || template?.templateName || 'template.pdf';
+                let templateFileName = mainDoc?.fileName || template?.fileName || template?.templateName || template?.name || (isCopyMode ? 'document.pdf' : 'template.pdf');
 
                 if (mainDoc?.id) {
                     try {
-                        const presignedRes = await contractService.getTemplateDocumentPresignedUrl(mainDoc.id);
+                        // Nếu là copy mode, sử dụng getPresignedUrl (contract document);
+                        // nếu không, sử dụng getTemplateDocumentPresignedUrl (template document)
+                        // Cả hai đều lấy document có type = 1 (file gốc) để copy/tải xuống
+                        const presignedRes = isCopyMode
+                            ? await contractService.getPresignedUrl(mainDoc.id)
+                            : await contractService.getTemplateDocumentPresignedUrl(mainDoc.id);
                         if (presignedRes?.code === 'SUCCESS') {
                             templatePdfUrl =
                                 typeof presignedRes.data === 'string'
@@ -270,13 +316,13 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                                     : presignedRes.data?.url || presignedRes.data?.message || presignedRes.url;
                         }
                     } catch (err) {
-                        console.warn('[Template] Không lấy được presigned URL, fallback path', err);
+                        console.warn(isCopyMode ? '[Copy]' : '[Template]', 'Không lấy được presigned URL, fallback path', err);
                         templatePdfUrl = mainDoc?.path || null;
                     }
                 }
 
                 if (!templatePdfUrl) {
-                    throw new Error('Không tìm thấy file PDF của mẫu');
+                    throw new Error(isCopyMode ? 'Không tìm thấy file PDF của hợp đồng' : 'Không tìm thấy file PDF của mẫu');
                 }
 
                 // Download PDF as File object
@@ -319,10 +365,12 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                     pdfPageCount: templatePageCount || 0,
                     hasSignature: false,
                     attachedFile: file.name,
-                    documentName: prev.documentName || template?.templateName || '',
-                    documentNumber: prev.documentNumber || template?.templateNo || '',
-                    signingExpirationDate: prev.signingExpirationDate || template?.signingExpireDefault || '',
-                    expirationDate: prev.expirationDate || template?.expireDefault || ''
+                    documentName: prev.documentName || template?.templateName || template?.name || '',
+                    // Khi copy, không copy documentNumber (để user nhập mới)
+                    documentNumber: isCopyMode ? prev.documentNumber : (prev.documentNumber || template?.templateNo || ''),
+                    signingExpirationDate: prev.signingExpirationDate || template?.signingExpireDefault || getDefaultExpirationDate(),
+                    expirationDate: prev.expirationDate || template?.expireDefault || getDefaultExpirationDate(),
+                    documentType: template?.typeId || prev.documentType
                 }));
 
                 // Prefill participants only if user has not filled
@@ -365,11 +413,17 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                                 else if (recipient.role === 4) newClerks.push(mapped);
                             } else {
                                 // Partner participants -> push into partners array
-                                let partner = newPartners.find(p => p.participantId === participant.id);
+                                // Khi copy, không copy participantId (tạo mới)
+                                const partnerKey = isCopyMode ? `partner-${pIndex}` : participant.id;
+                                let partner = newPartners.find(p => 
+                                    isCopyMode ? p.tempKey === partnerKey : p.participantId === participant.id
+                                );
                                 if (!partner) {
                                     partner = {
                                         id: Date.now() + pIndex,
-                                        participantId: participant.id,
+                                        // KHÔNG set participantId khi copy (tạo mới)
+                                        ...(isCopyMode ? {} : { participantId: participant.id }),
+                                        ...(isCopyMode ? { tempKey: partnerKey } : {}),
                                         type: participant.type || 2,
                                         name: participant.name || `Đối tác ${pIndex + 1}`,
                                         ordering: baseOrdering,
@@ -411,15 +465,16 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                         contractId: null,
                         documentId: null,
                         type: field.type || 1,
-                        recipientId: field.recipientId || null,
+                        // Khi copy, reset recipientId (không copy recipientId từ contract cũ)
+                        recipientId: isCopyMode ? null : (field.recipientId || null),
                         status: field.status ?? 0
                     }));
                     setFieldsData(mappedFields);
                 }
             } catch (err) {
-                console.error('[Template] Lỗi tải mẫu', err);
+                console.error(isCopyMode ? '[Copy]' : '[Template]', 'Lỗi tải', isCopyMode ? 'hợp đồng' : 'mẫu', err);
                 if (!cancelled) {
-                    showToast(err.message || 'Không thể tải mẫu. Vui lòng thử lại hoặc chọn file thủ công.', 'error');
+                    showToast(err.message || (isCopyMode ? 'Không thể tải hợp đồng để sao chép. Vui lòng thử lại.' : 'Không thể tải mẫu. Vui lòng thử lại hoặc chọn file thủ công.'), 'error');
                 }
             } finally {
                 if (!cancelled) {
@@ -435,7 +490,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         };
         // Loại bỏ fieldsData khỏi dependency để tránh infinite loop
         // fieldsData được check bên trong useEffect với điều kiện if (!fieldsData || fieldsData.length === 0)
-    }, [documentType, formData.documentTemplate, reviewers, signers, documentClerks]);
+    }, [documentType, formData.documentTemplate, reviewers, signers, documentClerks, isCopy, copyFromContractId]);
 
     // Load organization details and participants data when entering step 2
     useEffect(() => {

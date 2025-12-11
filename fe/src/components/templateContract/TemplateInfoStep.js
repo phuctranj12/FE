@@ -88,7 +88,6 @@ function TemplateInfoStep({
                                 value={formData.startDate}
                                 onChange={handleInputChange}
                             />
-                            <span className="calendar-icon">📅</span>
                         </div>
                     </div>
                 </div>
@@ -168,7 +167,6 @@ function TemplateInfoStep({
                                 value={formData.endDate}
                                 onChange={handleInputChange}
                             />
-                            <span className="calendar-icon">📅</span>
                         </div>
                     </div>
                 </div>

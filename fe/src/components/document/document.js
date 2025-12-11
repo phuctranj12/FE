@@ -191,35 +191,20 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
     const handleCopy = async (doc) => {
         if (!doc?.id) return;
 
-        // try {
-        //     const contractData = await documentService.getContractById(doc.id);
-        //     navigate('/main/contract/create', {
-        //         state: {
-        //             copyFrom: contractData?.data || contractData,
-        //             isCopy: true
-        //         }
-        //     });
-
-        //     setSuccessMessage("Đang chuẩn bị sao chép tài liệu...");
-        // } catch (error) {
-        //     setErrorMessage("Không thể sao chép tài liệu. Vui lòng thử lại.");
-        //     console.error(error);
-        // }
-        const statusMap = {
-            0: "draft",
-            10: "created",
-            20: "processing",
-            30: "signed",
-            40: "liquidated",
-            31: "rejected",
-            32: "cancel",
-            1: "about-expire",
-            2: "expire",
-            35: "scan",
-        };
-
-        const statusSlug = statusMap[doc.status] || "unknown";
-        navigate(`/main/contract/create/${statusSlug}/${doc.id}`);
+        try {
+            const contractId = doc.id; // hoặc doc.contractId tùy cấu trúc data
+            
+            // Navigate đến form với contractId để copy
+            navigate('/main/form-contract/add', {
+                state: { 
+                    copyFromContractId: contractId,
+                    isCopy: true 
+                }
+            });
+        } catch (error) {
+            console.error('Error copying contract:', error);
+            // Có thể thêm toast notification ở đây nếu cần
+        }
     };
 
     const handleDelete = async (docId) => {
