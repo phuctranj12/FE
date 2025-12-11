@@ -155,11 +155,15 @@ function ContractDetail() {
                     // Lấy thông tin document để hiển thị PDF
                     const documentsResponse = await contractService.getDocumentsByContract(contractId);
                     if (documentsResponse?.code === 'SUCCESS' && documentsResponse.data?.length > 0) {
-                        // Khi view/hiển thị cho người dùng xem, lấy document có type = 2 (file đã ký)
-                        // Nếu không có type = 2, fallback về type = 1 (file gốc)
-                        const document = documentsResponse.data.find(doc => doc.type === 2) 
-                            || documentsResponse.data.find(doc => doc.type === 1)
-                            || documentsResponse.data[0];
+                        const documents = documentsResponse.data;
+
+                        // Nếu hợp đồng đã bị từ chối (status = 31) thì ưu tiên lấy file type = 9 (file reject đã annotate)
+                        // Nếu không có, fallback sang type = 2 (đã ký), nếu không có nữa thì type = 1 (gốc), cuối cùng lấy phần tử đầu
+                        const document =
+                            (contract?.status === 31 && documents.find(doc => doc.type === 9)) ||
+                            documents.find(doc => doc.type === 2) ||
+                            documents.find(doc => doc.type === 1) ||
+                            documents[0];
                         
                         // Lấy presigned URL cho document
                         const urlResponse = await contractService.getPresignedUrl(document.id);
