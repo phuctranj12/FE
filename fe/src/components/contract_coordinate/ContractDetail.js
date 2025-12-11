@@ -131,7 +131,8 @@ function ContractDetail() {
                 // Lấy thông tin hợp đồng
                 const contractResponse = await contractService.getContractById(contractId);
                 if (contractResponse?.code === 'SUCCESS') {
-                    setContract(contractResponse.data);
+                    const contractData = contractResponse.data;
+                    setContract(contractData);
                     
                     // Lấy recipientId từ URL params hoặc từ contract data
                     const urlRecipientId = searchParams.get('recipientId');
@@ -157,10 +158,11 @@ function ContractDetail() {
                     if (documentsResponse?.code === 'SUCCESS' && documentsResponse.data?.length > 0) {
                         const documents = documentsResponse.data;
 
-                        // Nếu hợp đồng đã bị từ chối (status = 31) thì ưu tiên lấy file type = 9 (file reject đã annotate)
-                        // Nếu không có, fallback sang type = 2 (đã ký), nếu không có nữa thì type = 1 (gốc), cuối cùng lấy phần tử đầu
+                        // Dùng trạng thái từ contractData (vừa fetch) để chọn file đúng
+                        // Nếu hợp đồng bị từ chối (status = 31) ưu tiên type = 9 (annotated reject)
+                        // Fallback: type = 2 (đã ký) -> type = 1 (gốc) -> phần tử đầu
                         const document =
-                            (contract?.status === 31 && documents.find(doc => doc.type === 9)) ||
+                            (contractData?.status === 31 && documents.find(doc => doc.type === 9)) ||
                             documents.find(doc => doc.type === 2) ||
                             documents.find(doc => doc.type === 1) ||
                             documents[0];
