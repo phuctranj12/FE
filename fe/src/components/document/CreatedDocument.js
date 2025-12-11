@@ -6,6 +6,11 @@ import Button from "../common/Button";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import ActionMenu from "./ActionMenu";
 import SearchBar from "../common/SearchBar";
+import ViewFlowModal from "./ViewFlowModal";
+import ShareContractModal from "./ShareContractModal";
+import ExtendContractModal from "./ExtendContractModal";
+import UploadAttachmentModal from "./UploadAttachmentModal";
+import RelatedContractsModal from "./RelatedContractsModal";
 import createdDocumentService from "../../api/createdDocumentService";
 import customerService from "../../api/customerService";
 
@@ -38,6 +43,12 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [totalDocs, setTotalDocs] = useState(0);
+    const [selectedContract, setSelectedContract] = useState(null);
+    const [showViewFlow, setShowViewFlow] = useState(false);
+    const [showShare, setShowShare] = useState(false);
+    const [showExtend, setShowExtend] = useState(false);
+    const [showUploadAttachment, setShowUploadAttachment] = useState(false);
+    const [showRelatedContracts, setShowRelatedContracts] = useState(false);
     const [organizationId, setOrganizationId] = useState(null);
     const [currentUserEmail, setCurrentUserEmail] = useState(null);
     // Map lưu role và recipientId cho mỗi contract: { contractId: { role, recipientId } }
@@ -253,6 +264,54 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
         setAdvancedFilters(filters);
     };
 
+    const handleViewFlow = (doc) => {
+        if (!doc?.id) return;
+        setSelectedContract(doc);
+        setShowViewFlow(true);
+    };
+
+    const handleShare = (doc) => {
+        if (!doc?.id) return;
+        if (doc.status !== 30) {
+            window.alert("Chỉ có thể chia sẻ hợp đồng đã hoàn thành!");
+            return;
+        }
+        setSelectedContract(doc);
+        setShowShare(true);
+    };
+
+    const handleExtend = (doc) => {
+        if (!doc?.id) return;
+        setSelectedContract(doc);
+        setShowExtend(true);
+    };
+
+    const handleUploadAttachment = (doc) => {
+        if (!doc?.id) return;
+        setSelectedContract(doc);
+        setShowUploadAttachment(true);
+    };
+
+    const handleViewRelated = (doc) => {
+        if (!doc?.id) return;
+        setSelectedContract(doc);
+        setShowRelatedContracts(true);
+    };
+
+    const handleCopy = (doc) => {
+        if (!doc?.id) return;
+        navigate('/main/form-contract/add', {
+            state: {
+                copyFromContractId: doc.id,
+                isCopy: true
+            }
+        });
+    };
+
+    const handleDelete = () => {
+        window.alert('Không hỗ trợ xóa tài liệu đã nhận');
+    };
+
     // Hàm xử lý click button dựa trên role
     const handleRoleAction = (contractId, role, recipientId) => {
         if (!recipientId) {
@@ -458,10 +517,14 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                                                     </button>
                                                 ) : (
                                                     <ActionMenu
-                                                        onEdit={() => console.log("Sửa", doc.id)}
-                                                        onViewFlow={() => console.log("Xem luồng ký", doc.id)}
-                                                        onCopy={() => console.log("Sao chép", doc.id)}
-                                                        onDelete={() => console.log("Xóa tài liệu có id:", doc.id)}
+                                                        onEdit={() => navigate(`/main/c/detail/${doc.id}`)}
+                                                        onViewFlow={() => handleViewFlow(doc)}
+                                                        onCopy={() => handleCopy(doc)}
+                                                        onDelete={() => handleDelete(doc)}
+                                                        onShare={() => handleShare(doc)}
+                                                        onExtend={() => handleExtend(doc)}
+                                                        onUploadAttachment={() => handleUploadAttachment(doc)}
+                                                        onViewRelated={() => handleViewRelated(doc)}
                                                         doc={doc}
                                                     />
                                                 )}
@@ -499,6 +562,39 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
                     show={showAdvanced}
                     onClose={() => setShowAdvanced(false)}
                     onSearch={handleAdvancedSearch}
+                />
+
+                <ViewFlowModal
+                    show={showViewFlow}
+                    onClose={() => setShowViewFlow(false)}
+                    contractId={selectedContract?.id}
+                />
+
+                <ShareContractModal
+                    show={showShare}
+                    onClose={() => setShowShare(false)}
+                    contractId={selectedContract?.id}
+                    contractName={selectedContract?.name}
+                />
+
+                <ExtendContractModal
+                    show={showExtend}
+                    onClose={() => setShowExtend(false)}
+                    contractId={selectedContract?.id}
+                    currentExpireTime={selectedContract?.contractExpireTime}
+                />
+
+                <UploadAttachmentModal
+                    show={showUploadAttachment}
+                    onClose={() => setShowUploadAttachment(false)}
+                    contractId={selectedContract?.id}
+                    onUploadSuccess={fetchDocuments}
+                />
+
+                <RelatedContractsModal
+                    show={showRelatedContracts}
+                    onClose={() => setShowRelatedContracts(false)}
+                    contractId={selectedContract?.id}
                 />
             </div>
         </div>
