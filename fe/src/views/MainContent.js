@@ -93,7 +93,7 @@ function MainContent() {
                 </div>
             </div>
 
-            <Footer />
+            {/* <Footer /> */}
         </div>
     );
 }
