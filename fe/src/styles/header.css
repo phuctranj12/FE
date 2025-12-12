@@ -27,11 +27,36 @@
 }
 
 .logo {
-  height: 100%;
-  width: auto;           
-  max-width: 230px;      
-  object-fit: cover; 
-  padding: 0px 18px; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0px 18px;
+  height: 65px;
+  white-space: nowrap;
+}
+
+.logo-line1 {
+  display: flex;
+  align-items: center;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.logo-line2 {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0041C4;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.logo-e {
+  color: #e74c3c; /* màu đỏ */
+}
+
+.logo-contract {
+  color: #0041C4; /* màu xanh */
 }
 .divider {
   /* border-left: 2px solid black;
