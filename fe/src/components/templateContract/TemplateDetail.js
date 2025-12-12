@@ -445,7 +445,10 @@ function TemplateDetail({ mode = 'view' }) {
                         {mode === 'view' ? (
                             <>
                                 <button className="edit-btn" onClick={() => {
-                                    console.log('Edit template:', template);
+                                    if (template) {
+                                        const templateId = template.id || template.contractId || template_contract_id;
+                                        navigate(`/main/contract-template/edit/${templateId}`);
+                                    }
                                 }}>Chỉnh sửa</button>
                                 <button className="finish-btn" onClick={() => navigate('/main/contract-template')}>Đóng</button>
                             </>

@@ -151,8 +151,10 @@ function DocumentTemplates() {
     };
 
     const handleEdit = (template) => {
-        // Edit sẽ được xử lý trong TemplateDetail
-        navigate(`/main/contract-template/detail/${template.id}`);
+        const templateId = template.id || template.contractId;
+        if (templateId) {
+            navigate(`/main/contract-template/edit/${templateId}`);
+        }
     };
 
     const handleBatchCreate = (template) => {
