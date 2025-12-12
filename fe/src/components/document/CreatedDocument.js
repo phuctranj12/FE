@@ -422,7 +422,9 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
 
                                                 const isProcessed =
                                                     selectedStatus === "da-xu-ly" || doc.status === 2;
-                                                const queryParam = isProcessed ? '' : '?showAllFields=1';
+                                                // Nếu là hợp đồng được chia sẻ và đã hoàn thành thì không thêm showAllFields=1
+                                                const isSharedAndCompleted = selectedStatus === "duoc-chia-se" && doc.status === 30;
+                                                const queryParam = (isProcessed || isSharedAndCompleted) ? '' : '?showAllFields=1';
                                                 navigate(`/main/c/detail/${doc.id}${queryParam}`);
                                             }}
                                         >

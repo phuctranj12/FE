@@ -449,6 +449,27 @@ function ContractDetail() {
         return getStatusLabel(contract?.status);
     };
 
+    // Lấy class CSS dựa trên trạng thái
+    const getStatusClass = () => {
+        const status = contract?.status;
+        if (status === undefined && status !== 0) return 'status-unknown';
+        
+        const statusClassMap = {
+            0: 'status-draft',      // Nháp
+            10: 'status-created',   // Đã tạo
+            20: 'status-processing', // Đang xử lý
+            30: 'status-completed', // Hoàn thành
+            40: 'status-liquidated', // Thanh lý
+            31: 'status-rejected',  // Từ chối
+            32: 'status-cancelled', // Hủy bỏ
+            1: 'status-about-expire', // Sắp hết hạn
+            2: 'status-expired',    // Hết hạn
+            35: 'status-scan',      // Scan
+        };
+        
+        return statusClassMap[Number(status)] || 'status-unknown';
+    };
+
     const handleBackFromCoordinate = () => {
         if (coordinateStep > 1) {
             setCoordinateStep(coordinateStep - 1);
@@ -786,7 +807,7 @@ function ContractDetail() {
                 {/* Nút hành động */}
                 {type === 'detail' ? (
                     <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <button className="edit-btn" type="button" disabled>
+                        <button className={`edit-btn status-display ${getStatusClass()}`} type="button" disabled>
                             {getStatusButtonLabel()}
                         </button>
                         <button className="edit-btn" onClick={handleBack}>

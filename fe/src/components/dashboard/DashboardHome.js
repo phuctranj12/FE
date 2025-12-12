@@ -11,7 +11,7 @@ function DashboardHome() {
     const navigate = useNavigate();
 
     const handleDraftClick = () => {
-        window.location.hash = '#create-document';
+        navigate('/main/form-contract/add');
     };
 
     const getUserName = () => {

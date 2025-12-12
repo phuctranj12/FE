@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import contractService from '../../api/contractService';
+import customerService from '../../api/customerService';
 import '../../styles/signDialog.css';
 
 function SignDialog({ 
@@ -29,6 +30,40 @@ function SignDialog({
     // State cho validation
     const [errors, setErrors] = useState({});
 
+    // Helper: tách base64 thuần từ data URL (bỏ prefix data:image/...;base64,)
+    function extractBase64FromDataURL(dataURL) {
+        if (!dataURL) return null;
+        // Nếu đã là base64 thuần (không có prefix), trả về luôn
+        if (!dataURL.includes(',')) return dataURL;
+        // Tách phần base64 sau dấu phẩy
+        const base64Part = dataURL.split(',')[1];
+        return base64Part || null;
+    }
+
+    // Load ảnh từ tài khoản khi chọn option "account"
+    const loadAccountSignatureImage = async () => {
+        try {
+            const response = await customerService.getCustomerByToken();
+            if (response?.code === 'SUCCESS' && response?.data?.digitalSignatureImage) {
+                // Nếu ảnh từ tài khoản đã là base64 thuần, thêm prefix để preview
+                // Nếu là data URL, dùng luôn
+                const signatureImage = response.data.digitalSignatureImage;
+                if (signatureImage.includes(',')) {
+                    // Đã là data URL, dùng luôn
+                    setImageBase64(signatureImage);
+                } else {
+                    // Là base64 thuần, thêm prefix để preview
+                    setImageBase64(`data:image/png;base64,${signatureImage}`);
+                }
+            } else {
+                setImageBase64(null);
+            }
+        } catch (err) {
+            console.error('Error loading account signature image:', err);
+            setImageBase64(null);
+        }
+    };
+
     // Reset state khi mở / đóng dialog
     useEffect(() => {
         if (open) {
@@ -40,8 +75,19 @@ function SignDialog({
             setSelectedCertId('');
             setError(null);
             setErrors({});
+            // Load ảnh từ tài khoản khi mở dialog
+            loadAccountSignatureImage();
         }
     }, [open]);
+
+    // Load ảnh từ tài khoản khi chọn option "account"
+    useEffect(() => {
+        if (open && stampOption === 'account') {
+            loadAccountSignatureImage();
+        } else if (stampOption === 'none') {
+            setImageBase64(null);
+        }
+    }, [stampOption, open]);
 
     // Filter fields: chỉ lấy field type = 3 (DIGITAL_SIGN) và status = 0 (chưa ký) và thuộc về recipient này
     const availableFields = fields.filter(field => 
@@ -159,9 +205,12 @@ function SignDialog({
 
             // Ký tất cả các field hợp lệ cho người ký hiện tại
             for (const field of availableFields) {
+                // Tách base64 thuần từ data URL (bỏ prefix) trước khi gửi lên server
+                const base64Only = imageBase64 ? extractBase64FromDataURL(imageBase64) : null;
+                
                 const certData = {
                     certId: parseInt(selectedCertId, 10),
-                    imageBase64: imageBase64 || null,
+                    imageBase64: base64Only || null,
                     field: {
                         id: field.id,
                         page: field.page || 1,
@@ -282,6 +331,7 @@ function SignDialog({
                                             if (!file) return;
                                             const reader = new FileReader();
                                             reader.onload = () => {
+                                                // Lưu data URL để preview (có prefix)
                                                 setImageBase64(reader.result);
                                             };
                                             reader.readAsDataURL(file);
