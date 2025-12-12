@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../../styles/login.css';
 import authService from '../../api/authService';
-
+import imgLogin from '../assets/login3.png';
 function Register() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -103,7 +103,9 @@ function Register() {
 
                 <div className="overlay-container">
                     <div className="overlay">
-                        <div className="overlay-panel overlay-right"></div>
+                        <div className="overlay-panel overlay-right">
+                            <img src={imgLogin} alt="Register" style={{}} />
+                        </div>
                     </div>
                 </div>
             </div>
