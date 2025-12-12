@@ -98,13 +98,17 @@ function Header({ breadcrumb }) {
     return (
         <header className="header">
             <div className="header-left">
-                <img
-                    alt="Logo"
+                <div
                     className="logo"
-                    src="https://www.chemetal.com/wp-content/uploads/press-logo-contract.png"
                     onClick={() => navigate("/main/dashboard")}
                     style={{ cursor: "pointer" }}
-                />
+                >
+                    <div className="logo-line1">
+                        <span className="logo-e">e</span>
+                        <span className="logo-contract">Contract</span>
+                    </div>
+                    <div className="logo-line2">Hợp đồng điện tử</div>
+                </div>
                 <div className="divider">
                     {(breadcrumb || "Hệ thống quản lý hợp đồng điện tử")
                         .split(">")
