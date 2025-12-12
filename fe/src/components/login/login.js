@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../styles/login.css';
 import authService from '../../api/authService';
 import customerService from '../../api/customerService';
+import imgLogin from '../assets/login3.png';
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -102,7 +103,9 @@ function Login() {
                 </div>
                 <div className="overlay-container">
                     <div className="overlay">
-                        <div className="overlay-panel overlay-right"></div>
+                        <div className="overlay-panel overlay-right">
+                            <img src={imgLogin} alt="Login" style={{}} />
+                        </div>
                     </div>
                 </div>
             </div>
