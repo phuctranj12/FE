@@ -67,8 +67,10 @@
 .main-login-container button{
     position: relative;
     border-radius: 20px;
-    border:  1px solid #dd8339;
-    background-color: #dd8339;
+    /* border:  1px solid #dd8339;
+    background-color: #dd8339; */
+    background-color: rgb(11, 87, 208);
+    border: 1px solid rgb(11, 87, 208);
     color:#fff;
     font-size: 15px;
     font-weight: 700;
@@ -183,7 +185,8 @@
     transform: translate(-100%);
 }
 .main-login-container .overlay{
-background-image: url('https://toancanhbatdongsan.com.vn/uploads/images/2022/12/30/vinhomes-ocean-park-ha-noi-1672367090.jpg');
+/* background-image: url('https://toancanhbatdongsan.com.vn/uploads/images/2022/12/30/vinhomes-ocean-park-ha-noi-1672367090.jpg'); */
+/* background-image: url('https://img.freepik.com/psd-cao-cap/giay-hop-dong-voi-bieu-tuong-chu-ky-minh-hoa-vector-3d-rendering_743950-1512.jpg'); */
 background-repeat: no-repeat;
 background-size: cover;
 background-position: 0 0;
