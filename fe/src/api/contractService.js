@@ -600,6 +600,16 @@ const contractService = {
         }
     },
 
+    // 7.5.3. Cập nhật giá trị field
+    updateField: async (fieldId, fieldData) => {
+        try {
+            const response = await apiClient.put(`/contracts/fields/update/${fieldId}`, fieldData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // ========== RECIPIENT API ==========
 
     // 7.6.1. Lấy thông tin người xử lý theo ID
