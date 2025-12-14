@@ -20,6 +20,13 @@ function MainContent() {
         // Check URL-based routes first
         if (location.pathname.startsWith('/main/contract-template')) return "Tài liệu mẫu";
         if (location.pathname.startsWith('/main/contract-type')) return "Cấu hình > Loại tài liệu";
+        if (location.pathname.startsWith('/main/contract/create/draft')) return "Tài liệu đã tạo > Bản nháp";
+        if (location.pathname.startsWith('/main/contract/create/processing')) return "Tài liệu đã tạo > Đang xử lý";
+        if (location.pathname.startsWith('/main/contract/create/signed')) return "Tài liệu đã tạo > Hoàn thành";
+        if (location.pathname.startsWith('/main/contract/create/rejected')) return "Tài liệu đã tạo > Từ chối";
+        if (location.pathname.startsWith('/main/contract/create/cancel')) return "Tài liệu đã tạo > Huỷ bỏ";
+        if (location.pathname.startsWith('/main/contract/create/about-expire')) return "Tài liệu đã tạo > Sắp hết hạn";
+        if (location.pathname.startsWith('/main/contract/create/expire')) return "Tài liệu đã tạo > Hết hạn";
         if (location.pathname.startsWith('/main/org')) return "Quản lý người dùng > Danh sách tổ chức";
         if (location.pathname.startsWith('/main/user-detail')) return "Quản lý người dùng > Chi tiết người dùng";
         if (location.pathname.startsWith('/main/form-user/add')) return "Quản lý người dùng > Thêm người dùng";
@@ -56,7 +63,7 @@ function MainContent() {
             if (selectedStatus === "duoc-chia-se") return "Tài liệu đã nhận > Được chia sẻ";
             return "Tài liệu đã tạo ";
         }
-        return "Hệ thống quản lý hợp đồng điện tử";
+        return "Trang chủ";
     };
 
 
