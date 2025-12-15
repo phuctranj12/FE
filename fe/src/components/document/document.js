@@ -193,12 +193,12 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
 
         try {
             const contractId = doc.id; // hoặc doc.contractId tùy cấu trúc data
-            
+
             // Navigate đến form với contractId để copy
             navigate('/main/form-contract/add', {
-                state: { 
+                state: {
                     copyFromContractId: contractId,
-                    isCopy: true 
+                    isCopy: true
                 }
             });
         } catch (error) {
@@ -298,7 +298,8 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                         <table className="content-table">
                             <thead>
                                 <tr>
-                                    <th>Tên tài liệu</th>
+
+                                    <th style={{ textAlign: "center" }}>Tên tài liệu</th>
                                     <th>Mã hợp đồng</th>
                                     <th>Trạng thái</th>
                                     <th>Thời gian tạo</th>
