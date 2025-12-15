@@ -356,6 +356,9 @@ function DocumentSigners({
             <div className="signers-section">
                 <div className="section-header">
                     <h3>Người ký ({signers.length})</h3>
+                    <button className="add-btn" onClick={addSigner}>
+                        <span>+</span> Thêm người ký
+                    </button>
                 </div>
                 {signers.map((signer, index) => (
                     <div key={signer.id} className="signer-card">
@@ -371,14 +374,12 @@ function DocumentSigners({
                                 </div>
                                 <h4>Người ký {index + 1}</h4>
                             </div>
-                            {signers.length > 1 && (
-                                <button 
-                                    className="remove-btn"
-                                    onClick={() => removeSigner(signer.id)}
-                                >
-                                    ✕
-                                </button>
-                            )}
+                            <button 
+                                className="remove-btn"
+                                onClick={() => removeSigner(signer.id)}
+                            >
+                                ✕
+                            </button>
                         </div>
                         <div className="signer-form">
                             <div className="form-row">
@@ -510,9 +511,6 @@ function DocumentSigners({
                         </div>
                     </div>
                 ))}
-                <button className="add-btn" onClick={addSigner}>
-                    <span>+</span> Thêm người ký
-                </button>
             </div>
 
             {/* Document Clerks Section */}
@@ -975,6 +973,9 @@ function DocumentSigners({
                             <div className="signers-section" style={{ marginBottom: '20px' }}>
                                 <div className="section-header">
                                     <h4>Người ký ({partner.signers.length})</h4>
+                                    <button className="add-btn" onClick={() => addPartnerSigner(partner.id)}>
+                                        <span>+</span> Thêm người ký
+                                    </button>
                                 </div>
                                 {partner.signers.map((signer, index) => (
                                     <div key={signer.id} className="signer-card">
@@ -990,14 +991,12 @@ function DocumentSigners({
                                                 </div>
                                                 <h4>Người ký {index + 1}</h4>
                                             </div>
-                                            {partner.signers.length > 1 && (
-                                                <button 
-                                                    className="remove-btn"
-                                                    onClick={() => removePartnerSigner(partner.id, signer.id)}
-                                                >
-                                                    ✕
-                                                </button>
-                                            )}
+                                            <button 
+                                                className="remove-btn"
+                                                onClick={() => removePartnerSigner(partner.id, signer.id)}
+                                            >
+                                                ✕
+                                            </button>
                                         </div>
                                         <div className="signer-form">
                                             <div className="form-row">
@@ -1128,9 +1127,6 @@ function DocumentSigners({
                                         </div>
                                     </div>
                                 ))}
-                                <button className="add-btn" onClick={() => addPartnerSigner(partner.id)}>
-                                    <span>+</span> Thêm người ký
-                                </button>
                             </div>
 
                             {/* Clerks Section - Only for Organization */}

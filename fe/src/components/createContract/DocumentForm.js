@@ -1284,6 +1284,24 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
             // For organization type, validate all roles
             if (partner.type === 2) {
+                // Validate that partner has at least one person (coordinator, reviewer, signer, or clerk)
+                const totalPeople = 
+                    partner.coordinators.filter(c => c.fullName?.trim() && c.email?.trim()).length +
+                    partner.reviewers.filter(r => r.fullName?.trim() && r.email?.trim()).length +
+                    partner.signers.filter(s => {
+                        if (!s.fullName?.trim()) return false;
+                        if (s.loginByPhone) {
+                            return s.phone?.trim() && validatePhone(s.phone);
+                        } else {
+                            return s.email?.trim() && validateEmail(s.email);
+                        }
+                    }).length +
+                    partner.clerks.filter(c => c.fullName?.trim() && c.email?.trim()).length;
+                
+                if (totalPeople === 0) {
+                    errors.push(`Đối tác "${partner.name}" phải có ít nhất một người (điều phối, xem xét, ký, hoặc văn thư).`);
+                }
+
                 // Validate coordinators
                 const incompleteCoordinators = partner.coordinators.filter((coord) =>
                     coord.fullName !== undefined &&
@@ -1859,9 +1877,9 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
             showToast('✅ Tạo hợp đồng thành công! Hợp đồng đã được tạo với trạng thái "Đã tạo".', 'success', 5000);
 
-            // Redirect về dashboard sau 2 giây để user có thể thấy toast
+            // Redirect đến màn hình hợp đồng đã tạo sau 1.5 giây để user có thể thấy toast
             setTimeout(() => {
-                navigate('/main/dashboard');
+                navigate('/main/contract/create/processing');
             }, 1500);
 
         } catch (err) {
@@ -2008,14 +2026,92 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     };
 
     const renderStep4 = () => {
+        // Lấy danh sách người điều phối, người xem xét, người ký, văn thư chỉ từ tổ chức của user (type = 1)
+        const coordinators = [];
+        const myOrgReviewers = [];
+        const myOrgSigners = [];
+        const myOrgClerks = [];
+        // Lấy danh sách đối tác từ participantsData (participants có type = 2 hoặc 3, không phải type = 1)
+        const partnerParticipants = [];
+        
+        if (participantsData && participantsData.length > 0) {
+            participantsData.forEach(participant => {
+                // Chỉ lấy thông tin từ tổ chức của user (type = 1)
+                if (participant.type === 1) {
+                    if (participant.recipients && participant.recipients.length > 0) {
+                        participant.recipients.forEach(recipient => {
+                            const recipientData = {
+                                id: recipient.id,
+                                fullName: recipient.name || '',
+                                email: recipient.email || '',
+                                phone: recipient.phone || '',
+                                ordering: recipient.ordering || 1
+                            };
+                            
+                            if (recipient.role === 1) {
+                                coordinators.push(recipientData);
+                            } else if (recipient.role === 2) {
+                                myOrgReviewers.push(recipientData);
+                            } else if (recipient.role === 3) {
+                                myOrgSigners.push(recipientData);
+                            } else if (recipient.role === 4) {
+                                myOrgClerks.push(recipientData);
+                            }
+                        });
+                    }
+                }
+                
+                // Lấy đối tác (type = 2 hoặc 3, không phải type = 1 - tổ chức của tôi)
+                if (participant.type === 2 || participant.type === 3) {
+                    const partnerData = {
+                        id: participant.id,
+                        name: participant.name || '',
+                        type: participant.type,
+                        ordering: participant.ordering || 1,
+                        coordinators: [],
+                        reviewers: [],
+                        signers: [],
+                        clerks: []
+                    };
+                    
+                    // Phân loại recipients theo role
+                    if (participant.recipients && participant.recipients.length > 0) {
+                        participant.recipients.forEach(recipient => {
+                            const recipientData = {
+                                id: recipient.id,
+                                fullName: recipient.name || '',
+                                email: recipient.email || '',
+                                phone: recipient.phone || '',
+                                ordering: recipient.ordering || 1
+                            };
+                            
+                            if (recipient.role === 1) {
+                                partnerData.coordinators.push(recipientData);
+                            } else if (recipient.role === 2) {
+                                partnerData.reviewers.push(recipientData);
+                            } else if (recipient.role === 3) {
+                                partnerData.signers.push(recipientData);
+                            } else if (recipient.role === 4) {
+                                partnerData.clerks.push(recipientData);
+                            }
+                        });
+                    }
+                    
+                    partnerParticipants.push(partnerData);
+                }
+            });
+        }
+
         return (
             <DocumentConfirmation
                 documentType={documentType}
                 formData={formData}
                 setFormData={setFormData}
-                reviewers={reviewers}
-                signers={signers}
-                documentClerks={documentClerks}
+                reviewers={myOrgReviewers}
+                signers={myOrgSigners}
+                documentClerks={myOrgClerks}
+                coordinators={coordinators}
+                partnerParticipants={partnerParticipants}
                 contractId={contractId}
                 documentId={documentId}
                 fieldsData={fieldsData}

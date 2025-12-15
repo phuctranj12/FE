@@ -9,6 +9,8 @@ function DocumentConfirmation({
     reviewers,
     signers,
     documentClerks,
+    coordinators = [],
+    partnerParticipants = [],
     contractId,
     documentId,
     fieldsData = [],
@@ -239,12 +241,16 @@ function DocumentConfirmation({
                 <div className="summary-section">
                     <div className="summary-item">
                         <label className="summary-label">Tên tài liệu</label>
-                        <div className="summary-value">{formData.documentName || 'adsasd'}</div>
+                        <div className="date-input-container">
+                            <div className="summary-value-readonly">{formData.documentName || 'adsasd'}</div>
+                        </div>
                     </div>
                     
                     <div className="summary-item">
                         <label className="summary-label">Lời nhắn</label>
-                        <div className="summary-value">{formData.message || ''}</div>
+                        <div className="date-input-container">
+                            <div className="summary-value-readonly">{formData.message || ''}</div>
+                        </div>
                     </div>
                     
                     <div className="summary-item">
@@ -268,6 +274,30 @@ function DocumentConfirmation({
                             <span className="party-number">1</span>
                             <span className="party-name">{formData.organization || 'Trung tâm công nghệ thông tin MobiFone'}</span>
                         </div>
+                        {partnerParticipants.map((partner, index) => (
+                            <div key={partner.id} className="party-item">
+                                <span className="party-number">{index + 2}</span>
+                                <span className="party-name">{partner.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Coordinators */}
+                <div className="summary-section">
+                    <h4 className="section-title">Người điều phối</h4>
+                    <div className="people-list">
+                        {coordinators.length > 0 ? (
+                            coordinators.map((coordinator, index) => (
+                                <div key={coordinator.id} className="person-item">
+                                    <span className="person-number">{index + 1}</span>
+                                    <span className="person-name">{coordinator.fullName}</span>
+                                    <span className="person-email">({coordinator.email})</span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="empty-state">Chưa có người điều phối</div>
+                        )}
                     </div>
                 </div>
 
@@ -320,6 +350,77 @@ function DocumentConfirmation({
                         )}
                     </div>
                 </div>
+
+                {/* Partner Information */}
+                {partnerParticipants.map((partner, partnerIndex) => (
+                    <div key={partner.id} className="summary-section partner-section">
+                        <h4 className="section-title">{partner.name}</h4>
+                        
+                        {/* Partner Coordinators */}
+                        {partner.coordinators.length > 0 && (
+                            <div className="subsection">
+                                <h5 className="subsection-title">Người điều phối</h5>
+                                <div className="people-list">
+                                    {partner.coordinators.map((coordinator, index) => (
+                                        <div key={coordinator.id} className="person-item">
+                                            <span className="person-number">{index + 1}</span>
+                                            <span className="person-name">{coordinator.fullName}</span>
+                                            <span className="person-email">({coordinator.email})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Partner Reviewers */}
+                        {partner.reviewers.length > 0 && (
+                            <div className="subsection">
+                                <h5 className="subsection-title">Người xem xét</h5>
+                                <div className="people-list">
+                                    {partner.reviewers.map((reviewer, index) => (
+                                        <div key={reviewer.id} className="person-item">
+                                            <span className="person-number">{index + 1}</span>
+                                            <span className="person-name">{reviewer.fullName}</span>
+                                            <span className="person-email">({reviewer.email})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Partner Signers */}
+                        {partner.signers.length > 0 && (
+                            <div className="subsection">
+                                <h5 className="subsection-title">Người ký ({partner.signers.length})</h5>
+                                <div className="people-list">
+                                    {partner.signers.map((signer, index) => (
+                                        <div key={signer.id} className="person-item">
+                                            <span className="person-number">{index + 1}</span>
+                                            <span className="person-name">{signer.fullName}</span>
+                                            <span className="person-email">({signer.email})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Partner Clerks */}
+                        {partner.clerks.length > 0 && (
+                            <div className="subsection">
+                                <h5 className="subsection-title">Văn thư</h5>
+                                <div className="people-list">
+                                    {partner.clerks.map((clerk, index) => (
+                                        <div key={clerk.id} className="person-item">
+                                            <span className="person-number">{index + 1}</span>
+                                            <span className="person-name">{clerk.fullName}</span>
+                                            <span className="person-email">({clerk.email})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ))}
 
             </div>
 

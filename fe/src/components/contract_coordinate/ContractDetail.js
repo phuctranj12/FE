@@ -284,8 +284,25 @@ function ContractDetail() {
         console.log('Tìm ô thông tin');
         // Filter fields có type là TEXT (1), CONTRACT_NO (4), MONEY (5)
         const infoFields = fields.filter(field => field.type === 1 || field.type === 4 || field.type === 5);
+        
+        if (!infoFields || infoFields.length === 0) {
+            showToast('Không tìm thấy ô thông tin nào.', 'warning');
+            return;
+        }
+        
         setHighlightedFields(infoFields);
         setHighlightType('info');
+        
+        // Chuyển đến trang đầu tiên có field thông tin
+        if (infoFields.length > 0 && infoFields[0].page) {
+            setCurrentPage(infoFields[0].page);
+        }
+        
+        // Focus vào field đầu tiên
+        if (infoFields[0]) {
+            setFocusComponentId(`highlight-${infoFields[0].id}`);
+        }
+        
         console.log('Found info fields:', infoFields);
     };
 
@@ -364,7 +381,7 @@ function ContractDetail() {
                 setReviewDecision('');
                 setShowReviewDialog(false);
                 setTimeout(() => {
-                    navigate('/main/dashboard');
+                    navigate(`/main/c/detail/${contractId}`);
                 }, 1200);
             } else {
                 throw new Error(response?.message || 'Xác nhận xem xét thất bại');
@@ -385,8 +402,10 @@ function ContractDetail() {
     const handleRejectSuccess = () => {
         console.log('Contract rejected successfully');
         setReviewDecision('');
-        // Navigate back to dashboard or reload
-        navigate('/main/dashboard');
+        // Navigate đến trang chi tiết hợp đồng sau khi từ chối
+        setTimeout(() => {
+            navigate(`/main/c/detail/${contractId}`);
+        }, 500);
     };
 
     const handleSignClick = () => {
@@ -406,15 +425,63 @@ function ContractDetail() {
 
     const handleSignSuccess = async (signedData) => {
         console.log('Contract signed successfully:', signedData);
-        // Hiển thị dialog/thông báo ký thành công và điều hướng về dashboard
+        // Hiển thị dialog/thông báo ký thành công và điều hướng đến trang chi tiết
         showToast('Ký hợp đồng thành công!', 'success');
         setShowSignDialog(false);
         setTimeout(() => {
-            navigate('/main/dashboard');
+            navigate(`/main/c/detail/${contractId}`);
         }, 1200);
     };
 
-    const handleCoordinate = () => {
+    const handleCoordinate = async () => {
+        // Load existing signers từ participant data trước khi mở CoordinateAssigners
+        if (recipientId && contractId) {
+            try {
+                // Lấy thông tin participant của user hiện tại để xác định tổ chức
+                const participantResponse = await contractService.getParticipantByRecipientId(recipientId);
+                if (participantResponse?.code === 'SUCCESS') {
+                    const userParticipant = participantResponse.data;
+                    const userOrgName = userParticipant.name; // Tên tổ chức của user
+                    
+                    // Lấy tất cả participants của hợp đồng
+                    const allParticipantsResponse = await contractService.getAllParticipantsByContract(contractId);
+                    if (allParticipantsResponse?.code === 'SUCCESS') {
+                        const participantsData = allParticipantsResponse.data || [];
+                        
+                        // Tìm tất cả participants có cùng tên tổ chức với user
+                        const sameOrgParticipants = participantsData.filter(p => p.name === userOrgName);
+                        
+                        // Load tất cả signers (role = 3) từ các participants cùng tổ chức
+                        const existingSigners = [];
+                        sameOrgParticipants.forEach(participant => {
+                            if (participant.recipients) {
+                                participant.recipients
+                                    .filter(r => r.role === 3) // Chỉ lấy signers
+                                    .forEach((recipient, index) => {
+                                        existingSigners.push({
+                                            id: Date.now() + existingSigners.length + index, // Generate new ID for UI
+                                            recipientId: recipient.id, // Keep original ID for API
+                                            fullName: recipient.name || '',
+                                            email: recipient.email || '',
+                                            phone: recipient.phone || '',
+                                            card_id: recipient.cardId || recipient.card_id || '',
+                                            loginByPhone: recipient.loginByPhone || false,
+                                            signType: recipient.signType === 6 ? 'hsm' : 'hsm',
+                                            ordering: recipient.ordering || existingSigners.length + 1
+                                        });
+                                    });
+                            }
+                        });
+                        
+                        if (existingSigners.length > 0) {
+                            setSigners(existingSigners);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading existing signers:', err);
+            }
+        }
         setShowCoordinate(true);
         setCoordinateStep(1);
     };
@@ -808,7 +875,7 @@ function ContractDetail() {
                 {type === 'detail' ? (
                     <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button className={`edit-btn status-display ${getStatusClass()}`} type="button" disabled>
-                            {getStatusButtonLabel()}
+                            Trạng thái: {getStatusButtonLabel()}
                         </button>
                         <button className="edit-btn" onClick={handleBack}>
                             Đóng

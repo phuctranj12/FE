@@ -372,6 +372,11 @@ Document Content
     text-align: right;
     border-top: 1px solid #e0e0e0;
     background: white;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
 .finish-btn {

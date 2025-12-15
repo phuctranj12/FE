@@ -95,18 +95,18 @@
     z-index: 2;
 }
 
-.coordinate-step-line {
+.coordinate-step:not(:last-child)::after {
+    content: '';
     position: absolute;
     top: 15px;
-    left: 50%;
-    width: 100%;
+    left: 60%;
+    width: 80%;
     height: 2px;
     background: #e0e0e0;
     z-index: 1;
-    transform: translateX(-50%);
 }
 
-.coordinate-step-line.active {
+.coordinate-step.completed:not(:last-child)::after {
     background: #007bff;
 }
 
@@ -130,6 +130,11 @@
     color: white;
 }
 
+.coordinate-step-circle.completed {
+    background: #007bff;
+    color: white;
+}
+
 .coordinate-step-title {
     font-size: 12px;
     text-align: center;
@@ -139,6 +144,11 @@
 }
 
 .coordinate-step.active .coordinate-step-title {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.coordinate-step.completed .coordinate-step-title {
     color: #007bff;
     font-weight: 600;
 }
@@ -375,7 +385,7 @@
 
 .coordinate-party-header {
     padding: 10px 12px;
-    background: linear-gradient(90deg, #111827, #1f2937);
+    background: linear-gradient(90deg, #1c61f5, #98b7e2);
     color: #fff;
     display: flex;
     align-items: center;

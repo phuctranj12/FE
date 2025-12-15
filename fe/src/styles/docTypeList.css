@@ -91,7 +91,7 @@
 
 .edit-btn, .delete-btn {
     background: transparent;
-    border: none;
+    border: 2px solid #0B57D0;
     cursor: pointer;
     font-size: 18px;
     padding: 4px 8px;

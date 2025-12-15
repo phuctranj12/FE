@@ -115,9 +115,9 @@ function ViewFlowModal({ show, onClose, contractId }) {
                                             <div key={recipient.id} className="recipient-card">
                                                 <div className="recipient-header">
                                                     <span className="recipient-number">{index + 1}</span>
-                                                    <span className={`status-badge ${getStatusClass(recipient.status)}`}>
+                                                    {/* <span className={`status-badge ${getStatusClass(recipient.status)}`}>
                                                         {getStatusLabel(recipient.status)}
-                                                    </span>
+                                                    </span> */}
                                                 </div>
                                                 <div className="recipient-body">
                                                     <p><strong>Tên:</strong> {recipient.name}</p>
