@@ -117,7 +117,7 @@ function ServerCertificateList() {
                     style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center",
+                        alignItems: "stretch",
                         gap: "10px",
                         width: "100%",
                         marginBottom: "15px",
@@ -134,7 +134,7 @@ function ServerCertificateList() {
 
                     {/* Chủ thể */}
                     <div
-                        style={{ display: "flex", flexDirection: "column", width: "35%" }}
+                        style={{ display: "flex", width: "35%" }}
                     >
                         <SearchBar
                             placeholder="Tìm theo chủ thể..."
@@ -150,7 +150,8 @@ function ServerCertificateList() {
                             onChange={(e) => setStatusFilter(e.target.value)}
                             className="filter-select"
                             style={{
-                                padding: "10px 14px",
+                                margin: "0 10px 20px 10px",
+                                padding: "10px 10px",
                                 borderRadius: "8px",
                                 border: "1px solid #ccc",
                                 fontSize: "14px",
@@ -228,7 +229,7 @@ function ServerCertificateList() {
                                                         handleOpenUpdate(c.id);
                                                     }}
                                                 >
-                                                    Cập nhật
+                                                    ✏️
                                                 </div>
                                             </td>
                                         </tr>
