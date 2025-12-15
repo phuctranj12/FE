@@ -3,6 +3,22 @@ import reportService from "../../api/reportService";
 import { toast } from "react-toastify";
 import "../../styles/report.css";
 
+
+
+const mockData = {
+    totalDraff: null,
+    totalCreated: null,
+    totalProcessing: 18,
+    totalSigned: 40,
+    totalReject: 6,
+    totalCancel: 9,
+    totalLiquidation: null,
+    totalExpires: 7,
+    totalAboutExpire: 11,
+    totalWaiting: null,
+    total: null
+};
+
 const STATUS_MAP = {
     totalDraff: "Bản nháp",
     totalCreated: "Đã tạo",
@@ -24,6 +40,8 @@ function ReportNumberByStatus() {
 
     const organizationId = JSON.parse(localStorage.getItem('user'))?.organizationId || 1;
 
+
+
     useEffect(() => {
         fetchReportNumberByStatus();
     }, []);
@@ -42,6 +60,7 @@ function ReportNumberByStatus() {
                 toDate
             );
             setData(response || {});
+            // setData(mockData || {});
         } catch (error) {
             toast.error("Lỗi khi tải báo cáo số lượng theo trạng thái!");
         } finally {
@@ -59,7 +78,15 @@ function ReportNumberByStatus() {
         setData({});
     };
 
-    const totalCount = Object.values(data).reduce((sum, val) => sum + (val || 0), 0);
+    const filteredEntries = Object.entries(data).filter(
+        ([_, value]) => value !== null
+    );
+
+    const totalCount = filteredEntries.reduce(
+        (sum, [, value]) => sum + value,
+        0
+    );
+
 
     return (
         <div className="report-container">
@@ -111,7 +138,7 @@ function ReportNumberByStatus() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {Object.entries(data).map(([key, value], index) => (
+                                        {filteredEntries.map(([key, value], index) => (
                                             <tr key={index}>
                                                 <td>{index + 1}</td>
                                                 <td>
@@ -119,8 +146,8 @@ function ReportNumberByStatus() {
                                                         {STATUS_MAP[key] || key}
                                                     </span>
                                                 </td>
-                                                <td className="number-cell">{value || 0}</td>
-                                                <td className="number-cell">
+                                                <td >{value || 0}</td>
+                                                <td >
                                                     {totalCount > 0
                                                         ? ((value || 0) / totalCount * 100).toFixed(2)
                                                         : 0}
@@ -141,7 +168,7 @@ function ReportNumberByStatus() {
                                 <div className="chart-section">
                                     <h3>Biểu đồ trực quan</h3>
                                     <div className="bar-chart-report">
-                                        {Object.entries(data).map(([key, value], index) => (
+                                        {filteredEntries.map(([key, value], index) => (
                                             <div key={index} className="bar-item">
                                                 <div className="bar-label">{STATUS_MAP[key] || key}</div>
                                                 <div className="bar-wrapper">
