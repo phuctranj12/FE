@@ -666,6 +666,116 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
         );
     };
 
+    // Partner coordinator functions
+    const addPartnerCoordinator = (partnerId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    const newCoordinator = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        card_id: '',
+                        ordering: partner.coordinators.length + 1
+                    };
+                    return {
+                        ...partner,
+                        coordinators: [...partner.coordinators, newCoordinator]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerCoordinator = (partnerId, coordinatorId, field, value) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        coordinators: partner.coordinators.map(coordinator =>
+                            coordinator.id === coordinatorId
+                                ? { ...coordinator, [field]: value }
+                                : coordinator
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerCoordinator = (partnerId, coordinatorId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        coordinators: partner.coordinators.filter(c => c.id !== coordinatorId)
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    // Partner reviewer functions
+    const addPartnerReviewer = (partnerId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    const newReviewer = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        card_id: '',
+                        ordering: partner.reviewers.length + 1
+                    };
+                    return {
+                        ...partner,
+                        reviewers: [...partner.reviewers, newReviewer]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerReviewer = (partnerId, reviewerId, field, value) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        reviewers: partner.reviewers.map(reviewer =>
+                            reviewer.id === reviewerId
+                                ? { ...reviewer, [field]: value }
+                                : reviewer
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerReviewer = (partnerId, reviewerId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        reviewers: partner.reviewers.filter(r => r.id !== reviewerId)
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
     const addPartnerSigner = (partnerId) => {
         setPartners(prev =>
             prev.map(partner => {
@@ -716,6 +826,61 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                         signers: partner.signers.filter(
                             s => s.id !== signerId
                         )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    // Partner clerk functions
+    const addPartnerClerk = (partnerId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    const newClerk = {
+                        id: Date.now(),
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        card_id: '',
+                        ordering: partner.clerks.length + 1
+                    };
+                    return {
+                        ...partner,
+                        clerks: [...partner.clerks, newClerk]
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const updatePartnerClerk = (partnerId, clerkId, field, value) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        clerks: partner.clerks.map(clerk =>
+                            clerk.id === clerkId
+                                ? { ...clerk, [field]: value }
+                                : clerk
+                        )
+                    };
+                }
+                return partner;
+            })
+        );
+    };
+
+    const removePartnerClerk = (partnerId, clerkId) => {
+        setPartners(prev =>
+            prev.map(partner => {
+                if (partner.id === partnerId) {
+                    return {
+                        ...partner,
+                        clerks: partner.clerks.filter(c => c.id !== clerkId)
                     };
                 }
                 return partner;
@@ -1475,9 +1640,18 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                 addPartner={addPartner}
                 removePartner={removePartner}
                 updatePartner={updatePartner}
+                addPartnerCoordinator={addPartnerCoordinator}
+                updatePartnerCoordinator={updatePartnerCoordinator}
+                removePartnerCoordinator={removePartnerCoordinator}
+                addPartnerReviewer={addPartnerReviewer}
+                updatePartnerReviewer={updatePartnerReviewer}
+                removePartnerReviewer={removePartnerReviewer}
                 addPartnerSigner={addPartnerSigner}
                 updatePartnerSigner={updatePartnerSigner}
                 removePartnerSigner={removePartnerSigner}
+                addPartnerClerk={addPartnerClerk}
+                updatePartnerClerk={updatePartnerClerk}
+                removePartnerClerk={removePartnerClerk}
             />
         );
     };
