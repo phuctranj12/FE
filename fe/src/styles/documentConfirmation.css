@@ -72,6 +72,40 @@
     margin-bottom: 15px;
 }
 
+/* Partner Section */
+.partner-section {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 6px;
+    margin-top: 20px;
+    border: 1px solid #e0e0e0;
+}
+
+.partner-section .section-title {
+    color: #0B57D0;
+    font-size: 18px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #0B57D0;
+}
+
+.subsection {
+    margin-bottom: 20px;
+    padding-left: 15px;
+}
+
+.subsection:last-child {
+    margin-bottom: 0;
+}
+
+.subsection-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 12px;
+    margin-top: 15px;
+}
+
 .summary-item {
     display: flex;
     flex-direction: column;

@@ -374,14 +374,12 @@ function DocumentSigners({
                                 </div>
                                 <h4>Người ký {index + 1}</h4>
                             </div>
-                            {signers.length > 1 && (
-                                <button 
-                                    className="remove-btn"
-                                    onClick={() => removeSigner(signer.id)}
-                                >
-                                    ✕
-                                </button>
-                            )}
+                            <button 
+                                className="remove-btn"
+                                onClick={() => removeSigner(signer.id)}
+                            >
+                                ✕
+                            </button>
                         </div>
                         <div className="signer-form">
                             <div className="form-row">
@@ -993,14 +991,12 @@ function DocumentSigners({
                                                 </div>
                                                 <h4>Người ký {index + 1}</h4>
                                             </div>
-                                            {partner.signers.length > 1 && (
-                                                <button 
-                                                    className="remove-btn"
-                                                    onClick={() => removePartnerSigner(partner.id, signer.id)}
-                                                >
-                                                    ✕
-                                                </button>
-                                            )}
+                                            <button 
+                                                className="remove-btn"
+                                                onClick={() => removePartnerSigner(partner.id, signer.id)}
+                                            >
+                                                ✕
+                                            </button>
                                         </div>
                                         <div className="signer-form">
                                             <div className="form-row">
