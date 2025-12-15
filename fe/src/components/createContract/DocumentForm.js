@@ -2026,26 +2026,39 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     };
 
     const renderStep4 = () => {
-        // Lấy danh sách người điều phối từ participantsData (recipients có role = 1)
+        // Lấy danh sách người điều phối, người xem xét, người ký, văn thư chỉ từ tổ chức của user (type = 1)
         const coordinators = [];
+        const myOrgReviewers = [];
+        const myOrgSigners = [];
+        const myOrgClerks = [];
         // Lấy danh sách đối tác từ participantsData (participants có type = 2 hoặc 3, không phải type = 1)
         const partnerParticipants = [];
         
         if (participantsData && participantsData.length > 0) {
             participantsData.forEach(participant => {
-                // Lấy người điều phối (role = 1) từ tất cả participants
-                if (participant.recipients && participant.recipients.length > 0) {
-                    participant.recipients.forEach(recipient => {
-                        if (recipient.role === 1) {
-                            coordinators.push({
+                // Chỉ lấy thông tin từ tổ chức của user (type = 1)
+                if (participant.type === 1) {
+                    if (participant.recipients && participant.recipients.length > 0) {
+                        participant.recipients.forEach(recipient => {
+                            const recipientData = {
                                 id: recipient.id,
                                 fullName: recipient.name || '',
                                 email: recipient.email || '',
                                 phone: recipient.phone || '',
                                 ordering: recipient.ordering || 1
-                            });
-                        }
-                    });
+                            };
+                            
+                            if (recipient.role === 1) {
+                                coordinators.push(recipientData);
+                            } else if (recipient.role === 2) {
+                                myOrgReviewers.push(recipientData);
+                            } else if (recipient.role === 3) {
+                                myOrgSigners.push(recipientData);
+                            } else if (recipient.role === 4) {
+                                myOrgClerks.push(recipientData);
+                            }
+                        });
+                    }
                 }
                 
                 // Lấy đối tác (type = 2 hoặc 3, không phải type = 1 - tổ chức của tôi)
@@ -2094,9 +2107,9 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 documentType={documentType}
                 formData={formData}
                 setFormData={setFormData}
-                reviewers={reviewers}
-                signers={signers}
-                documentClerks={documentClerks}
+                reviewers={myOrgReviewers}
+                signers={myOrgSigners}
+                documentClerks={myOrgClerks}
                 coordinators={coordinators}
                 partnerParticipants={partnerParticipants}
                 contractId={contractId}
