@@ -9,6 +9,7 @@ function DocumentConfirmation({
     reviewers,
     signers,
     documentClerks,
+    coordinators = [],
     contractId,
     documentId,
     fieldsData = [],
@@ -239,12 +240,16 @@ function DocumentConfirmation({
                 <div className="summary-section">
                     <div className="summary-item">
                         <label className="summary-label">Tên tài liệu</label>
-                        <div className="summary-value">{formData.documentName || 'adsasd'}</div>
+                        <div className="date-input-container">
+                            <div className="summary-value-readonly">{formData.documentName || 'adsasd'}</div>
+                        </div>
                     </div>
                     
                     <div className="summary-item">
                         <label className="summary-label">Lời nhắn</label>
-                        <div className="summary-value">{formData.message || ''}</div>
+                        <div className="date-input-container">
+                            <div className="summary-value-readonly">{formData.message || ''}</div>
+                        </div>
                     </div>
                     
                     <div className="summary-item">
@@ -268,6 +273,24 @@ function DocumentConfirmation({
                             <span className="party-number">1</span>
                             <span className="party-name">{formData.organization || 'Trung tâm công nghệ thông tin MobiFone'}</span>
                         </div>
+                    </div>
+                </div>
+
+                {/* Coordinators */}
+                <div className="summary-section">
+                    <h4 className="section-title">Người điều phối</h4>
+                    <div className="people-list">
+                        {coordinators.length > 0 ? (
+                            coordinators.map((coordinator, index) => (
+                                <div key={coordinator.id} className="person-item">
+                                    <span className="person-number">{index + 1}</span>
+                                    <span className="person-name">{coordinator.fullName}</span>
+                                    <span className="person-email">({coordinator.email})</span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="empty-state">Chưa có người điều phối</div>
+                        )}
                     </div>
                 </div>
 

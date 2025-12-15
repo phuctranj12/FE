@@ -136,7 +136,7 @@
     font-weight: 500;
     cursor: not-allowed;
     min-width: 150px;
-    max-width: 300px;
+    width: 100%;
 }
 
 .date-input-readonly:focus {
@@ -147,6 +147,21 @@
 .date-input-readonly::-webkit-calendar-picker-indicator {
     cursor: not-allowed;
     opacity: 0.4;
+}
+
+/* Summary Value Readonly - Same style as date input */
+.summary-value-readonly {
+    padding: 12px 16px;
+    border: 1px solid #b3d9ff;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #e8f2ff;
+    color: #0B57D0;
+    font-weight: 500;
+    min-height: 20px;
+    min-width: 150px;
+    max-width: 100%;
+    word-wrap: break-word;
 }
 
 /* Footer */

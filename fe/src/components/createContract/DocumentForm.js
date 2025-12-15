@@ -1859,9 +1859,9 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
             showToast('✅ Tạo hợp đồng thành công! Hợp đồng đã được tạo với trạng thái "Đã tạo".', 'success', 5000);
 
-            // Redirect về dashboard sau 2 giây để user có thể thấy toast
+            // Redirect đến màn hình hợp đồng đã tạo sau 1.5 giây để user có thể thấy toast
             setTimeout(() => {
-                navigate('/main/dashboard');
+                navigate('/main/contract/create/processing');
             }, 1500);
 
         } catch (err) {
@@ -2008,6 +2008,26 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     };
 
     const renderStep4 = () => {
+        // Lấy danh sách người điều phối từ participantsData (recipients có role = 1)
+        const coordinators = [];
+        if (participantsData && participantsData.length > 0) {
+            participantsData.forEach(participant => {
+                if (participant.recipients && participant.recipients.length > 0) {
+                    participant.recipients.forEach(recipient => {
+                        if (recipient.role === 1) {
+                            coordinators.push({
+                                id: recipient.id,
+                                fullName: recipient.name || '',
+                                email: recipient.email || '',
+                                phone: recipient.phone || '',
+                                ordering: recipient.ordering || 1
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
         return (
             <DocumentConfirmation
                 documentType={documentType}
@@ -2016,6 +2036,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 reviewers={reviewers}
                 signers={signers}
                 documentClerks={documentClerks}
+                coordinators={coordinators}
                 contractId={contractId}
                 documentId={documentId}
                 fieldsData={fieldsData}

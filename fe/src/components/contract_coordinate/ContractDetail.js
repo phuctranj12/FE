@@ -364,7 +364,7 @@ function ContractDetail() {
                 setReviewDecision('');
                 setShowReviewDialog(false);
                 setTimeout(() => {
-                    navigate('/main/dashboard');
+                    navigate(`/main/c/detail/${contractId}`);
                 }, 1200);
             } else {
                 throw new Error(response?.message || 'Xác nhận xem xét thất bại');
@@ -385,8 +385,10 @@ function ContractDetail() {
     const handleRejectSuccess = () => {
         console.log('Contract rejected successfully');
         setReviewDecision('');
-        // Navigate back to dashboard or reload
-        navigate('/main/dashboard');
+        // Navigate đến trang chi tiết hợp đồng sau khi từ chối
+        setTimeout(() => {
+            navigate(`/main/c/detail/${contractId}`);
+        }, 500);
     };
 
     const handleSignClick = () => {
@@ -406,11 +408,11 @@ function ContractDetail() {
 
     const handleSignSuccess = async (signedData) => {
         console.log('Contract signed successfully:', signedData);
-        // Hiển thị dialog/thông báo ký thành công và điều hướng về dashboard
+        // Hiển thị dialog/thông báo ký thành công và điều hướng đến trang chi tiết
         showToast('Ký hợp đồng thành công!', 'success');
         setShowSignDialog(false);
         setTimeout(() => {
-            navigate('/main/dashboard');
+            navigate(`/main/c/detail/${contractId}`);
         }, 1200);
     };
 
@@ -808,7 +810,7 @@ function ContractDetail() {
                 {type === 'detail' ? (
                     <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button className={`edit-btn status-display ${getStatusClass()}`} type="button" disabled>
-                            {getStatusButtonLabel()}
+                            Trạng thái: {getStatusButtonLabel()}
                         </button>
                         <button className="edit-btn" onClick={handleBack}>
                             Đóng

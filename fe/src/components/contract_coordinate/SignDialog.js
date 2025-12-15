@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import contractService from '../../api/contractService';
-import customerService from '../../api/customerService';
 import '../../styles/signDialog.css';
 
 function SignDialog({ 
@@ -12,6 +12,7 @@ function SignDialog({
     recipient,
     onSigned 
 }) {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -19,7 +20,7 @@ function SignDialog({
     const [step, setStep] = useState(1);
 
     // State cho lựa chọn ảnh đóng dấu
-    const [stampOption, setStampOption] = useState('account'); // 'none' | 'upload' | 'account'
+    const [stampOption, setStampOption] = useState('none'); // 'none' | 'upload'
     const [imageBase64, setImageBase64] = useState(null);
     const [acceptTerms, setAcceptTerms] = useState(false);
 
@@ -43,43 +44,17 @@ function SignDialog({
         return base64Part || null;
     }
 
-    // Load ảnh từ tài khoản khi chọn option "account"
-    const loadAccountSignatureImage = async () => {
-        try {
-            const response = await customerService.getCustomerByToken();
-            if (response?.code === 'SUCCESS' && response?.data?.digitalSignatureImage) {
-                // Nếu ảnh từ tài khoản đã là base64 thuần, thêm prefix để preview
-                // Nếu là data URL, dùng luôn
-                const signatureImage = response.data.digitalSignatureImage;
-                if (signatureImage.includes(',')) {
-                    // Đã là data URL, dùng luôn
-                    setImageBase64(signatureImage);
-                } else {
-                    // Là base64 thuần, thêm prefix để preview
-                    setImageBase64(`data:image/png;base64,${signatureImage}`);
-                }
-            } else {
-                setImageBase64(null);
-            }
-        } catch (err) {
-            console.error('Error loading account signature image:', err);
-            setImageBase64(null);
-        }
-    };
-
     // Reset state khi mở / đóng dialog
     useEffect(() => {
         if (open) {
             setStep(1);
-            setStampOption('account');
+            setStampOption('none');
             setImageBase64(null);
             setAcceptTerms(false);
             setCertificates([]);
             setSelectedCertId('');
             setError(null);
             setErrors({});
-            // Load ảnh từ tài khoản khi mở dialog
-            loadAccountSignatureImage();
             
             // Khởi tạo giá trị cho text fields và contract number fields
             const textFields = fields.filter(field => 
@@ -94,14 +69,12 @@ function SignDialog({
         }
     }, [open, fields, recipientId]);
 
-    // Load ảnh từ tài khoản khi chọn option "account"
+    // Reset ảnh khi chọn option "none"
     useEffect(() => {
-        if (open && stampOption === 'account') {
-            loadAccountSignatureImage();
-        } else if (stampOption === 'none') {
+        if (stampOption === 'none') {
             setImageBase64(null);
         }
-    }, [stampOption, open]);
+    }, [stampOption]);
 
     // Filter fields: chỉ lấy field type = 3 (DIGITAL_SIGN) và status = 0 (chưa ký) và thuộc về recipient này
     const availableFields = fields.filter(field => 
@@ -217,19 +190,6 @@ function SignDialog({
         setErrors(newErrors);
         if (Object.keys(newErrors).length > 0) return;
 
-        // Kiểm tra khớp MST/CCCD giữa chứng thư và người ký
-        const selectedCert = certificates.find(c => c.id?.toString() === selectedCertId);
-        const signerCardId = (recipient?.cardId || '').trim();
-        const { taxCode, cccd } = extractIdsFromCert(selectedCert?.certInformation);
-
-        if (selectedCert && signerCardId) {
-            const matched = (taxCode && signerCardId === taxCode) || (cccd && signerCardId === cccd);
-            if (!matched) {
-                window.alert('MST/CMT/CCCD của Chứng thư số không trùng khớp với thông tin MST/CMT/CCCD người tạo đã khai báo.');
-                return;
-            }
-        }
-
         try {
             setLoading(true);
             setError(null);
@@ -329,6 +289,10 @@ function SignDialog({
                 onSigned({ success: true });
             }
             handleClose();
+            // Navigate đến trang chi tiết hợp đồng sau khi ký thành công
+            setTimeout(() => {
+                navigate(`/main/c/detail/${contractId}`);
+            }, 500);
         } catch (err) {
             console.error('Error signing contract:', err);
             const errorMessage = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi ký hợp đồng';
@@ -392,17 +356,6 @@ function SignDialog({
                                             disabled={loading}
                                         />
                                         <span>Tải ảnh lên</span>
-                                    </label>
-                                    <label className="sign-dialog-radio-option">
-                                        <input
-                                            type="radio"
-                                            name="stampOption"
-                                            value="account"
-                                            checked={stampOption === 'account'}
-                                            onChange={() => setStampOption('account')}
-                                            disabled={loading}
-                                        />
-                                        <span>Ảnh từ tài khoản</span>
                                     </label>
                                 </div>
                             </div>
