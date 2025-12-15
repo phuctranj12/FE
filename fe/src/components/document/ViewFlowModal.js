@@ -100,7 +100,7 @@ function ViewFlowModal({ show, onClose, contractId }) {
                             {/* Lý do hủy (nếu có) */}
                             {flowData.reasonCancel && (
                                 <div className="cancel-reason">
-                                    <h4>Lý do hủy bỏ</h4>
+                                    <h4>{flowData.contractStatus === 31 ? "Lý do từ chối" : "Lý do hủy bỏ"}</h4>
                                     <p>{flowData.reasonCancel}</p>
                                     <p><strong>Ngày hủy:</strong> {formatDate(flowData.cancelDate)}</p>
                                 </div>
