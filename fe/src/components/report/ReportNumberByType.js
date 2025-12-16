@@ -87,6 +87,7 @@ function ReportNumberByType() {
     // ];
 
 
+
     return (
         <div className="report-container">
             <h2>Báo cáo số lượng theo loại tài liệu</h2>

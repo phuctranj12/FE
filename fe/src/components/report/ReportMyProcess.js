@@ -101,6 +101,25 @@ function ReportMyProcess() {
             return "N/A";
         }
     };
+    const getProcessorName = (item) => {
+        if (!item?.participants || item.participants.length === 0) {
+            return "N/A";
+        }
+
+        for (const participant of item.participants) {
+            if (!participant?.recipients) continue;
+
+            const processor = participant.recipients.find(
+                (r) => r.role === 3
+            );
+
+            if (processor) {
+                return processor.name || "N/A";
+            }
+        }
+
+        return "N/A";
+    };
 
     return (
         <div className="report-container">
@@ -184,7 +203,7 @@ function ReportMyProcess() {
                                                 </span>
                                             </td>
                                             <td>{getSender(item)}</td>
-                                            <td>{user?.fullName || user?.username || "N/A"}</td>
+                                            <td>{getProcessorName(item)}</td>
                                         </tr>
                                     ))
                                 ) : (
