@@ -81,6 +81,26 @@ function ReportDetail() {
         const found = STATUS_OPTIONS.find(opt => opt.value === statusValue);
         return found ? found.label : "N/A";
     };
+    const getProcessorName = (item) => {
+        if (!item?.participants || item.participants.length === 0) {
+            return "N/A";
+        }
+
+        for (const participant of item.participants) {
+            if (!participant?.recipients) continue;
+
+            const processor = participant.recipients.find(
+                (r) => r.role === 3
+            );
+
+            if (processor) {
+                return processor.name || "N/A";
+            }
+        }
+
+        return "N/A";
+    };
+
 
     return (
         <div className="report-container">
@@ -170,6 +190,7 @@ function ReportDetail() {
                                     <th>Ngày hoàn thành</th>
                                     <th>Trạng thái</th>
                                     <th>Người tạo</th>
+                                    <th>Người xử lý</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -187,6 +208,8 @@ function ReportDetail() {
                                                 </span>
                                             </td>
                                             <td>{item.customer || "N/A"}</td>
+                                            <td>{getProcessorName(item)}</td>
+
                                         </tr>
                                     ))
                                 ) : (

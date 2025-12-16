@@ -223,7 +223,7 @@ function ServerCertificateList() {
                                                     onDelete={() => console.log("Xóa:", c.id)}
                                                 /> */}
                                                 <div
-                                                    style={{ color: "blue", cursor: "pointer" }}
+                                                    style={{ color: "blue", cursor: "pointer", textAlign: "center" }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();         // Không mở modal Details
                                                         handleOpenUpdate(c.id);
