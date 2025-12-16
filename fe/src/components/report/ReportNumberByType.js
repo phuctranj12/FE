@@ -40,6 +40,7 @@ function ReportNumberByType() {
             );
 
             setData(response || []);
+            // setData(mockData);
         } catch (error) {
             toast.error("Lỗi khi tải báo cáo số lượng theo loại tài liệu!");
         } finally {
@@ -62,6 +63,29 @@ function ReportNumberByType() {
         data.reduce((sum, item) => sum + (item.count || 0), 0);
 
     const total = getTotalCount();
+    // const mockData = [
+    //     {
+    //         typeName: "Hợp đồng lao động",
+    //         typeCode: "HDLD",
+    //         count: 12,
+    //     },
+    //     {
+    //         typeName: "Hợp đồng mua bán",
+    //         typeCode: "HDMB",
+    //         count: 8,
+    //     },
+    //     {
+    //         typeName: "Biên bản nghiệm thu",
+    //         typeCode: "BBNT",
+    //         count: 5,
+    //     },
+    //     {
+    //         typeName: "Phụ lục hợp đồng",
+    //         typeCode: "PLHD",
+    //         count: 0,
+    //     },
+    // ];
+
 
     return (
         <div className="report-container">
@@ -154,9 +178,7 @@ function ReportNumberByType() {
                                     <div className="bar-chart-report">
                                         {data.map((item, index) => {
                                             const percent =
-                                                total > 0
-                                                    ? (item.count / total) * 100
-                                                    : 0;
+                                                total > 0 ? (item.count / total) * 100 : 0;
 
                                             return (
                                                 <div key={index} className="bar-item">
@@ -165,23 +187,23 @@ function ReportNumberByType() {
                                                     </div>
 
                                                     <div className="bar-wrapper">
-                                                        <div
-                                                            className="bar bar-type"
-                                                            style={{
-                                                                width: `${percent}%`,
-                                                                minWidth:
-                                                                    item.count > 0 ? "30px" : "0px",
-                                                                backgroundColor: `hsl(${index * 60
-                                                                    }, 70%, 60%)`,
-                                                            }}
-                                                        >
-                                                            {item.count}
-                                                        </div>
+                                                        {item.count > 0 && (
+                                                            <div
+                                                                className="bar bar-type"
+                                                                style={{
+                                                                    width: `${percent}%`,
+                                                                    backgroundColor: `hsl(${index * 60}, 70%, 60%)`,
+                                                                }}
+                                                            >
+                                                                {item.count}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
+
                                 </div>
                             </>
                         ) : (
