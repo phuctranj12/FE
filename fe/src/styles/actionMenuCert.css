@@ -1,0 +1,158 @@
+.cert-action-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.cert-dots-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px 10px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.cert-dots-btn:hover {
+    color: #0B57D0;
+    background-color: rgba(11, 87, 208, 0.08);
+}
+
+.cert-dots-btn:active {
+    transform: scale(0.95);
+}
+
+.cert-action-dropdown {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    min-width: 220px;
+    padding: 8px 0;
+    animation: certMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes certMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Menu items */
+.cert-menu-item {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cert-menu-item:hover {
+    /* background-color: rgba(11, 87, 208, 0.08); */
+}
+
+.cert-menu-item:active {
+    /* background-color: rgba(11, 87, 208, 0.12); */
+}
+
+.cert-menu-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+}
+
+.cert-menu-item span {
+    flex: 1;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.cert-menu-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 8px 0;
+}
+
+.cert-menu-item-delete {
+    color: #d32f2f;
+}
+
+.cert-menu-item-delete:hover {
+    background-color: rgba(211, 47, 47, 0.08);
+}
+
+.cert-menu-item-delete:active {
+    background-color: rgba(211, 47, 47, 0.12);
+}
+
+@media (max-width: 768px) {
+    .cert-action-dropdown {
+        min-width: 200px;
+        font-size: 13px;
+    }
+
+    .cert-menu-item {
+        padding: 12px 14px;
+    }
+
+    .cert-menu-icon {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .cert-action-dropdown {
+        background: #2d2d2d;
+        border-color: #404040;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .cert-menu-item {
+        color: #e0e0e0;
+    }
+
+    .cert-menu-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .cert-menu-divider {
+        background-color: #404040;
+    }
+
+    .cert-dots-btn {
+        color: #b0b0b0;
+    }
+
+    .cert-dots-btn:hover {
+        color: #4a9eff;
+        background-color: rgba(74, 158, 255, 0.15);
+    }
+}
+
+.cert-dots-btn:focus-visible,
+.cert-menu-item:focus-visible {
+    outline: 2px solid #0B57D0;
+    outline-offset: 2px;
+}
+
+@media print {
+    .cert-action-menu {
+        display: none;
+    }
+}

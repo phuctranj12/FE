@@ -226,21 +226,16 @@ function ServerCertificateList() {
                                             <td>{formatDate(c.keystoreDateStart)}</td>
                                             <td>{formatDate(c.keystoreDateEnd)}</td>
                                             <td>{statusText}</td>
-                                            <td>
-                                                {/* <CertificateActionMenu
+                                            <td onClick={(e) => e.stopPropagation()}>
+                                                {/* ✅ Truyền ID và callbacks */}
+                                                <CertificateActionMenu
+                                                    certificateId={c.id}  // ✅ Chỉ truyền ID
+                                                    certificateName={c.keyStoreFileName}  // Để hiển thị tên khi xóa
                                                     onViewDetails={() => handleOpenDetails(c.id)}
                                                     onAssignUsers={() => handleOpenAssign(c.id)}
-                                                    onDelete={() => console.log("Xóa:", c.id)}
-                                                /> */}
-                                                <div
-                                                    style={{ color: "blue", cursor: "pointer", textAlign: "center" }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();         // Không mở modal Details
-                                                        handleOpenUpdate(c.id);
-                                                    }}
-                                                >
-                                                    ✏️
-                                                </div>
+                                                    onDelete={(id) => console.log("Xóa:", id)}  // TODO: Implement delete
+                                                    onUpdate={loadCertificates}
+                                                />
                                             </td>
                                         </tr>
                                     );

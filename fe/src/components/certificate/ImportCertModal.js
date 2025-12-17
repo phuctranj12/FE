@@ -110,9 +110,7 @@ function ImportCertModal({ open, onClose, onImported }) {
     };
 
     return (
-        <div className="modal-overlay"
-            onChangeCapture={(e) => e.stopPropagation()}
-            onInputCapture={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
             <div className="modal-box">
                 <h3>Import chứng thư số</h3>
 

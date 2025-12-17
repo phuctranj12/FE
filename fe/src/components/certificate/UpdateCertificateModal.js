@@ -1,178 +1,226 @@
 import React, { useEffect, useState } from "react";
 import certificateService from "../../api/serverCertificateService";
 import "../../styles/updateCert.css";
+import Notiflix from "notiflix";
 
-function CertificateUpdateModal({ open, certificateId, onClose, onUpdated }) {
+function UpdateCertificateModal({ open, certificateId, onClose, onUpdated }) {
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        organization: "",
-        emails: [],
-        phones: [],
-        status: true,
-        keystoreSerialNumber: "",
-        keystoreFileName: "",
-        keystoreName: "",
-        keystoreDateStart: "",
-        keystoreDateEnd: "",
-        subject: "",
-        unit: "",
-        city: "",
-        state: "",
-        country: "",
-    });
+    const [certInfo, setCertInfo] = useState(null);
+    const [emailsText, setEmailsText] = useState("");
+    const [status, setStatus] = useState(1);
 
     useEffect(() => {
         if (!open || !certificateId) return;
-        setLoading(true);
 
-        certificateService
-            .findCertById(certificateId)
-            .then((res) => {
-                if (!res) return;
-                const info = res.certInformation || "";
+        const fetchCertDetails = async () => {
+            setLoading(true);
+            try {
+                const data = await certificateService.findCertById(certificateId);
+                console.log("📥 Dữ liệu cert nhận được:", data);
 
-                const getField = (regex) => (info.match(regex) ? info.match(regex)[1] : "");
+                setCertInfo(data);
+                const emails = data.email ? [data.email] : [];
+                setEmailsText(emails.join(", "));
+                setStatus(data.status || 1);
 
-                setFormData({
-                    organization: getField(/O=([^,]+)/) || "",
-                    emails: res.email ? [res.email] : [],
-                    phones: res.phone ? [res.phone] : [],
-                    status: res.status === 1,
-                    keystoreSerialNumber: res.keystoreSerialNumber || "",
-                    keystoreFileName: res.keyStoreFileName || "",
-                    keystoreName: res.keystoreName || "",
-                    keystoreDateStart: res.keystoreDateStart || "",
-                    keystoreDateEnd: res.keystoreDateEnd || "",
-                    subject: getField(/CN=([^,]+)/) || "",
-                    unit: getField(/OU=([^,]+)/) || "",
-                    city: getField(/L=([^,]+)/) || "",
-                    state: getField(/ST=([^,]+)/) || "",
-                    country: getField(/C=([^,]+)/) || "",
-                });
-            })
-            .catch((e) => {
-                console.error(e);
-                alert("Lỗi lấy dữ liệu chứng thư");
-            })
-            .finally(() => setLoading(false));
+            } catch (error) {
+                console.error("❌ Lỗi lấy thông tin cert:", error);
+                Notiflix.Notify.failure("Không thể tải thông tin chứng thư!");
+                onClose();
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCertDetails();
     }, [open, certificateId]);
 
     if (!open) return null;
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
     const handleSubmit = async () => {
+        if (!certificateId) {
+            Notiflix.Notify.warning("Không tìm thấy ID chứng thư!");
+            return;
+        }
+
+        // Parse emails
+        const emails = emailsText
+            .split(/[\s,;]+/)
+            .map(e => e.trim())
+            .filter(Boolean);
+
+        setLoading(true);
         try {
             await certificateService.updateUserFromCert({
-                certificateId,
-                status: formData.status ? 1 : 0,
-                emails: formData.emails
+                certificateId: certificateId,
+                status: status,
+                emails: emails
             });
+
+            Notiflix.Notify.success("Cập nhật chứng thư thành công!");
+
+            // Reset form
+            setEmailsText("");
+            setStatus(1);
+            setCertInfo(null);
+
             if (onUpdated) onUpdated();
             onClose();
+
         } catch (err) {
-            console.error("❌ Lỗi cập nhật chứng thư:", err);
-            alert("Cập nhật thất bại, kiểm tra console");
+            console.error("Lỗi cập nhật:", err);
+            const errorMsg = err?.response?.data?.message || err?.message || "Cập nhật thất bại!";
+            Notiflix.Notify.failure(errorMsg);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const getCertField = (regex) => {
+        if (!certInfo?.certInformation) return "";
+        const match = certInfo.certInformation.match(regex);
+        return match ? match[1] : "";
     };
 
     return (
         <div className="update-modal-backdrop" onClick={onClose}>
             <div className="update-modal-container" onClick={(e) => e.stopPropagation()}>
-                <h2>Chỉnh sửa chứng thư</h2>
+                <h2>Cập nhật chứng thư số</h2>
+
                 {loading ? (
-                    <p>Đang tải dữ liệu...</p>
-                ) : (
-                    <div className="update-modal-form">
-                        <label>
-                            Tổ chức:
-                            <input type="text" name="organization" value={formData.organization} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Email:
-                            <input
-                                type="text"
-                                name="emails"
-                                value={formData.emails.join(", ")}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, emails: e.target.value.split(",").map(em => em.trim()) })
-                                }
-                            />
-                        </label>
-                        <label>
-                            Điện thoại:
-                            <input
-                                type="text"
-                                name="phones"
-                                value={formData.phones.join(", ")}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, phones: e.target.value.split(",").map(p => p.trim()) })
-                                }
-                            />
-                        </label>
-                        <label>
-                            Trạng thái:
-                            <select
-                                name="status"
-                                value={formData.status ? 1 : 0}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value === "1" })}
-                            >
-                                <option value={1}>Hoạt động</option>
-                                <option value={0}>Không hoạt động</option>
-                            </select>
-                        </label>
-                        <label>
-                            Ký hiệu:
-                            <input type="text" name="keystoreSerialNumber" value={formData.keystoreSerialNumber} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Tên file:
-                            <input type="text" name="keystoreName" value={formData.keystoreName} onChange={handleChange} />
-                        </label>
-                        <label>
-                            File chứng thư:
-                            <input type="text" name="keystoreFileName" value={formData.keystoreFileName} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Chủ thể:
-                            <input type="text" name="subject" value={formData.subject} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Đơn vị:
-                            <input type="text" name="unit" value={formData.unit} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Thành phố:
-                            <input type="text" name="city" value={formData.city} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Tỉnh/Bang:
-                            <input type="text" name="state" value={formData.state} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Quốc gia:
-                            <input type="text" name="country" value={formData.country} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Ngày bắt đầu:
-                            <input type="datetime-local" name="keystoreDateStart" value={formData.keystoreDateStart} onChange={handleChange} />
-                        </label>
-                        <label>
-                            Ngày hết hạn:
-                            <input type="datetime-local" name="keystoreDateEnd" value={formData.keystoreDateEnd} onChange={handleChange} />
-                        </label>
+                    <div style={{ padding: "20px", textAlign: "center" }}>
+                        <p>Đang tải dữ liệu...</p>
                     </div>
+                ) : certInfo ? (
+                    <>
+                        <div className="info-section" style={{
+                            background: "#f5f5f5",
+                            padding: "15px",
+                            borderRadius: "8px",
+                            marginBottom: "20px"
+                        }}>
+                            <h4 style={{ marginTop: 0 }}>Thông tin chứng thư</h4>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "14px" }}>
+                                <div>
+                                    <strong>Ký hiệu:</strong>
+                                    <p>{certInfo.keystoreSerialNumber}</p>
+                                </div>
+                                <div>
+                                    <strong>Tên file:</strong>
+                                    <p>{certInfo.keyStoreFileName}</p>
+                                </div>
+                                <div>
+                                    <strong>Chủ thể (CN):</strong>
+                                    <p>{getCertField(/CN=([^,]+)/)}</p>
+                                </div>
+                                <div>
+                                    <strong>Tổ chức (O):</strong>
+                                    <p>{getCertField(/O=([^,]+)/)}</p>
+                                </div>
+                                <div>
+                                    <strong>MST:</strong>
+                                    <p>{getCertField(/UID=MST:([^,]+)/)}</p>
+                                </div>
+                                <div>
+                                    <strong>CCCD:</strong>
+                                    <p>{getCertField(/UID=CCCD:([^,]+)/)}</p>
+                                </div>
+                                <div>
+                                    <strong>Ngày bắt đầu:</strong>
+                                    <p>{certInfo.keystoreDateStart ? new Date(certInfo.keystoreDateStart).toLocaleString("vi-VN") : "N/A"}</p>
+                                </div>
+                                <div>
+                                    <strong>Ngày hết hạn:</strong>
+                                    <p>{certInfo.keystoreDateEnd ? new Date(certInfo.keystoreDateEnd).toLocaleString("vi-VN") : "N/A"}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="update-modal-form">
+                            {/* <h4>Thông tin có thể chỉnh sửa</h4> */}
+
+                            <label>
+                                <strong>Email người dùng:</strong>
+                                <small style={{ display: "block", color: "#666", marginBottom: "5px" }}>
+                                    Phân tách nhiều email bằng dấu phẩy
+                                </small>
+                                <textarea
+                                    value={emailsText}
+                                    onChange={(e) => setEmailsText(e.target.value)}
+                                    placeholder="email1@example.com, email2@example.com"
+                                    rows={3}
+                                    style={{
+                                        width: "100%",
+                                        padding: "10px",
+                                        borderRadius: "4px",
+                                        border: "1px solid #ccc",
+                                        fontSize: "14px"
+                                    }}
+                                />
+                            </label>
+
+                            <label>
+                                <strong>Trạng thái:</strong>
+                                <select
+                                    value={status}
+                                    onChange={(e) => setStatus(Number(e.target.value))}
+                                    style={{
+                                        width: "100%",
+                                        padding: "10px",
+                                        borderRadius: "4px",
+                                        border: "1px solid #ccc",
+                                        fontSize: "14px",
+                                        marginTop: "5px"
+                                    }}
+                                >
+                                    <option value={1}>Hoạt động</option>
+                                    <option value={0}>Không hoạt động</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div className="update-modal-footer" style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: "10px",
+                            marginTop: "20px"
+                        }}>
+                            <button
+                                onClick={onClose}
+                                disabled={loading}
+                                style={{
+                                    padding: "10px 20px",
+                                    borderRadius: "4px",
+                                    border: "1px solid #ccc",
+                                    background: "white",
+                                    color: "#000",
+                                    cursor: "pointer"
+                                }}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={loading}
+                                style={{
+                                    padding: "10px 20px",
+                                    borderRadius: "4px",
+                                    border: "none",
+                                    background: "#0B57D0",
+                                    color: "white",
+                                    cursor: "pointer"
+                                }}
+                            >
+                                {loading ? "Đang lưu..." : "Lưu thay đổi"}
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <p>Không tìm thấy thông tin chứng thư</p>
                 )}
-                <div className="update-modal-footer">
-                    <button onClick={handleSubmit}>Lưu</button>
-                    <button onClick={onClose}>Hủy</button>
-                </div>
             </div>
         </div>
     );
 }
 
-export default CertificateUpdateModal;
+export default UpdateCertificateModal;
