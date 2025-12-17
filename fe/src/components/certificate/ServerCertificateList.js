@@ -28,7 +28,12 @@ function ServerCertificateList() {
     const [openUpdate, setOpenUpdate] = useState(false);
     const [selectedCertificate, setSelectedCertificate] = useState(null);
 
-
+    useEffect(() => {
+        if (subjectSearch) {
+            console.log("🔴 subjectSearch changed to:", subjectSearch);
+            console.trace();
+        }
+    }, [subjectSearch]);
     // Load list cert
     const loadCertificates = async () => {
         try {

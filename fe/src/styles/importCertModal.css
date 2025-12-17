@@ -67,21 +67,21 @@
 }
 
 /* Input, textarea, select */
-.input-group {
+.modal-input-group {
   margin-bottom: 15px;
   display: flex;
   flex-direction: column;
 }
 
-.input-group label {
+.modal-input-group label {
   font-weight: 500;
   margin-bottom: 6px;
   color: #333;
 }
 
-.input-group input,
-.input-group textarea,
-.input-group select {
+.modal-input-group input,
+.modal-input-group textarea,
+.modal-input-group select {
   padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid #ccc;
@@ -90,14 +90,14 @@
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.input-group input:focus,
-.input-group textarea:focus,
-.input-group select:focus {
+.modal-input-group input:focus,
+.modal-input-group textarea:focus,
+.modal-input-group select:focus {
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
 }
 
-.input-group textarea {
+.modal-input-group textarea {
   resize: vertical;
   min-height: 60px;
 }

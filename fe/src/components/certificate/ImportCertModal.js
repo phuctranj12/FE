@@ -110,7 +110,9 @@ function ImportCertModal({ open, onClose, onImported }) {
     };
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-overlay"
+            onChangeCapture={(e) => e.stopPropagation()}
+            onInputCapture={(e) => e.stopPropagation()}>
             <div className="modal-box">
                 <h3>Import chứng thư số</h3>
 
@@ -136,7 +138,7 @@ function ImportCertModal({ open, onClose, onImported }) {
                     />
                 </div>
 
-                <div className="input-group">
+                <div className="modal-input-group">
                     <label>Password chứng thư: *</label>
                     <input
                         type="password"
@@ -146,7 +148,7 @@ function ImportCertModal({ open, onClose, onImported }) {
                     />
                 </div>
 
-                <div className="input-group">
+                <div className="modal-input-group">
                     <label>Emails (phân tách bằng dấu phẩy):</label>
                     <textarea
                         value={emailsText}
@@ -156,7 +158,7 @@ function ImportCertModal({ open, onClose, onImported }) {
                     />
                 </div>
 
-                <div className="input-group">
+                <div className="modal-input-group">
                     <label>Trạng thái:</label>
                     <select value={status} onChange={(e) => setStatus(Number(e.target.value))}>
                         <option value={1}>Hoạt động</option>
