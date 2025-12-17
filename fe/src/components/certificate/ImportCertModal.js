@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import certificateService from "../../api/serverCertificateService";
 import "../../styles/importCertModal.css";
-
+import Notiflix from "notiflix";
 function ImportCertModal({ open, onClose, onImported }) {
     const [file, setFile] = useState(null);
     const [emailsText, setEmailsText] = useState("");
@@ -17,7 +17,7 @@ function ImportCertModal({ open, onClose, onImported }) {
         if (selectedFile) {
             // Kiểm tra đuôi file
             if (!selectedFile.name.endsWith('.p12')) {
-                alert('Vui lòng chọn file có đuôi .p12');
+                Notiflix.Notify.warning("Vui lòng chọn file .p12 để import!");
                 return;
             }
             setFile(selectedFile);
@@ -29,7 +29,7 @@ function ImportCertModal({ open, onClose, onImported }) {
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const droppedFile = e.dataTransfer.files[0];
             if (!droppedFile.name.endsWith('.p12')) {
-                alert('Vui lòng chọn file có đuôi .p12');
+                Notiflix.Notify.warning('Vui lòng chọn file có đuôi .p12');
                 return;
             }
             setFile(droppedFile);
@@ -42,11 +42,11 @@ function ImportCertModal({ open, onClose, onImported }) {
     const handleImport = async () => {
         // Validation
         if (!file) {
-            alert("Vui lòng chọn file .p12 để import!");
+            Notiflix.Notify.warning("Vui lòng chọn file .p12 để import!");
             return;
         }
         if (!password) {
-            alert("Vui lòng nhập password chứng thư!");
+            Notiflix.Notify.warning("Vui lòng nhập password chứng thư!");
             return;
         }
 
@@ -86,7 +86,7 @@ function ImportCertModal({ open, onClose, onImported }) {
             // Gọi API
             await certificateService.importCert(formData);
 
-            alert("Import chứng thư thành công!");
+            Notiflix.Notify.success("Import chứng thư thành công!");
 
             // Reset form
             setFile(null);
@@ -98,9 +98,12 @@ function ImportCertModal({ open, onClose, onImported }) {
             onClose();
 
         } catch (error) {
-            console.error(" Lỗi import:", error);
-            const errorMsg = error?.message || error?.msg || "Import thất bại!";
-            alert(errorMsg);
+            console.error("Lỗi import:", error);
+            const errorMsg =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Import thất bại!";
+            Notiflix.Notify.failure(errorMsg);
         } finally {
             setLoading(false);
         }

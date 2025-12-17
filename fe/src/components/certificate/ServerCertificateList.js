@@ -48,6 +48,11 @@ function ServerCertificateList() {
 
     // Filtering
     useEffect(() => {
+        console.log("🔍 Filtering triggered");
+        console.log("allCertificates:", allCertificates.length);
+        console.log("signSearch:", signSearch);
+        console.log("subjectSearch:", subjectSearch);
+        console.log("statusFilter:", statusFilter);
         let filteredData = [...allCertificates];
 
         if (signSearch.trim()) {

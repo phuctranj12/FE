@@ -30,6 +30,7 @@ import ReportNumberByStatus from './components/report/ReportNumberByStatus';
 import ReportNumberByType from './components/report/ReportNumberByType';
 import ReportMyProcess from './components/report/ReportMyProcess';
 import UserInforDetail from './components/user/UserInforDetail';
+
 function App() {
   return (
     <Routes>
@@ -68,6 +69,7 @@ function App() {
         <Route path="user/information" element={<UserInforDetail />} />
       </Route>
     </Routes>
+
   );
 }
 
