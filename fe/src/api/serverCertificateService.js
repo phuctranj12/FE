@@ -70,16 +70,21 @@ const certificateService = {
         }
     },
 
-    // 5️⃣ Xóa chứng thư số
-    deleteCertificate: async (certificateId) => {
+    // 5 Xóa chứng thư số - sử dụng API remove-user-from-cert
+    deleteCertificate: async (certificateId, customerIds = []) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await apiClient.delete(`/certificates/delete/${certificateId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+            // Sử dụng endpoint remove-user-from-cert với certificateId và customerIds
+            const params = { certificateId };
+            // Chỉ thêm customerIds vào params nếu có giá trị
+            if (customerIds && customerIds.length > 0) {
+                params.customerIds = customerIds;
+            }
+            const response = await apiClient.delete('/contracts/certs/remove-user-from-cert', {
+                params,
+                paramsSerializer: (p) => qs.stringify(p, { arrayFormat: 'repeat' }),
             });
-            return response.data;
+            return response.data?.data || response.data || response;
         } catch (error) {
             console.error('❌ Lỗi khi xóa chứng thư số:', error);
             throw error.response?.data || error;
@@ -183,7 +188,7 @@ const certificateService = {
     findCertById: async (certificateId) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await apiClient.get("contracts/certs/find-cert-by-id", {
+            const res = await apiClient.get("/contracts/certs/find-cert-by-id", {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { certificateId }
             });

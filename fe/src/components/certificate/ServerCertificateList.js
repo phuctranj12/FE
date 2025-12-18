@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import "../../styles/document.css";
 import "../../styles/table.css";
 import SearchBar from "../common/SearchBar";
 import Button from "../common/Button";
 import certificateService from "../../api/serverCertificateService";
+import customerService from "../../api/customerService";
 import CertificateActionMenu from "./CertificateActionMenu";
 // Modals
 import CertificateDetailsModal from "./CertificateDetailsModal";
@@ -115,6 +117,67 @@ function ServerCertificateList() {
 
     const handleOpenImport = () => {
         setOpenImport(true);
+    };
+
+    // Handle delete certificate
+    const handleDeleteCert = async (certificateId) => {
+        if (!certificateId) {
+            toast.error('Không tìm thấy ID chứng thư số cần xóa');
+            return;
+        }
+
+        try {
+            // Lấy email của user hiện tại
+            const userResponse = await customerService.getCustomerByToken();
+            const currentUserEmail = userResponse?.data?.email;
+            
+            if (!currentUserEmail) {
+                toast.error('Không tìm thấy email của user hiện tại');
+                return;
+            }
+
+            // Lấy thông tin cert để lấy danh sách customers
+            const certInfo = await certificateService.findCertById(certificateId);
+            
+            if (!certInfo?.customers || !Array.isArray(certInfo.customers)) {
+                toast.error('Không tìm thấy danh sách users trong chứng thư số');
+                return;
+            }
+
+            // Tìm customer có email trùng với user hiện tại
+            const matchedCustomer = certInfo.customers.find(
+                customer => customer.email === currentUserEmail
+            );
+
+            if (!matchedCustomer || !matchedCustomer.id) {
+                toast.error('Bạn không có quyền sử dụng chứng thư số này');
+                return;
+            }
+
+            // Lấy id của customer trùng email
+            const customerIds = [matchedCustomer.id];
+            
+            // Gọi API xóa user hiện tại khỏi cert
+            await certificateService.deleteCertificate(certificateId, customerIds);
+            toast.success('Xóa chứng thư số thành công!');
+            
+            // Reload certificate list after successful deletion
+            await loadCertificates();
+        } catch (error) {
+            console.error('❌ Lỗi khi xóa chứng thư số:', error);
+            
+            // Extract error message from different error formats
+            let errorMessage = 'Không thể xóa chứng thư số. Vui lòng thử lại.';
+            
+            if (error.response?.data) {
+                const errorData = error.response.data;
+                errorMessage = errorData.message || errorData.error || errorData.data || errorMessage;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
+        }
     };
 
     return (
@@ -233,7 +296,7 @@ function ServerCertificateList() {
                                                     certificateName={c.keyStoreFileName}  // Để hiển thị tên khi xóa
                                                     onViewDetails={() => handleOpenDetails(c.id)}
                                                     onAssignUsers={() => handleOpenAssign(c.id)}
-                                                    onDelete={(id) => console.log("Xóa:", id)}  // TODO: Implement delete
+                                                    onDelete={handleDeleteCert}
                                                     onUpdate={loadCertificates}
                                                 />
                                             </td>

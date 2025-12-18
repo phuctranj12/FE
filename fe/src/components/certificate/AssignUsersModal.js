@@ -1,5 +1,6 @@
 // src/components/certificate/AssignUsersModal.jsx
 import React, { useState } from "react";
+import Notiflix from "notiflix";
 import serverCertificateService from "../../api/serverCertificateService";
 import "../../styles/assignUsersModal.css";
 
@@ -21,12 +22,13 @@ function AssignUsersModal({ open, certificateId, onClose, onAssigned }) {
                 status,
                 emails
             });
-            alert("Cập nhật user thành công");
+            Notiflix.Notify.success("Cập nhật user thành công");
             onAssigned && onAssigned();
             onClose();
         } catch (e) {
             console.error(e);
-            alert("Lỗi cập nhật user");
+            const errorMessage = e?.response?.data?.message || e?.message || "Lỗi cập nhật user";
+            Notiflix.Notify.failure(errorMessage);
         } finally {
             setLoading(false);
         }
