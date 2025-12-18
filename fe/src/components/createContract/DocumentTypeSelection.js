@@ -10,6 +10,7 @@ function DocumentTypeSelection({
     handleBatchFileUpload,
     documentTypes = [],
     relatedContracts = [],
+    documentTemplates = [],
     loading = false,
     handleDocumentNumberBlur = () => {},
     isCheckingDocumentNumber = false,
@@ -80,13 +81,22 @@ function DocumentTypeSelection({
                     <div className="left-column">
                         <div className="form-group">
                             <label>Tên mẫu tài liệu <span style={{ color: 'red' }}>*</span></label>
-                            <input
-                                type="text"
-                                name="documentTemplate"
-                                value={formData.documentTemplate}
-                                onChange={handleInputChange}
-                                placeholder="Chọn mẫu tài liệu"
-                            />
+                            <div className="dropdown-container">
+                                <select
+                                    name="documentTemplate"
+                                    value={formData.documentTemplate || ''}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                >
+                                    <option value="">-- Chọn mẫu tài liệu --</option>
+                                    {documentTemplates.map((template) => (
+                                        <option key={template.id} value={template.id}>
+                                            {template.name || template.code || `Template ${template.id}`}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="dropdown-icon">▼</span>
+                            </div>
                         </div>
                         <div className="template-link">
                             <span>Bạn chưa có file mẫu?</span>
@@ -185,13 +195,22 @@ function DocumentTypeSelection({
                     <div className="left-column">
                         <div className="form-group">
                             <label>Mẫu tài liệu <span style={{ color: 'red' }}>*</span></label>
-                            <input
-                                type="text"
-                                name="documentTemplate"
-                                value={formData.documentTemplate}
-                                onChange={handleInputChange}
-                                placeholder="Chọn tài liệu"
-                            />
+                            <div className="dropdown-container">
+                                <select
+                                    name="documentTemplate"
+                                    value={formData.documentTemplate || ''}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                >
+                                    <option value="">-- Chọn tài liệu mẫu --</option>
+                                    {documentTemplates.map((template) => (
+                                        <option key={template.id} value={template.id}>
+                                            {template.name || template.code || `Template ${template.id}`}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="dropdown-icon">▼</span>
+                            </div>
                         </div>
                         <div className="form-group">
                             <label>Số tài liệu <span style={{ color: 'red' }}>*</span></label>

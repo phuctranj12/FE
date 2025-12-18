@@ -27,6 +27,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const [organizationId, setOrganizationId] = useState(null);
     const [documentTypes, setDocumentTypes] = useState([]);
     const [relatedContracts, setRelatedContracts] = useState([]);
+    const [documentTemplates, setDocumentTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -223,6 +224,18 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
                     if (refsResponse.code === 'SUCCESS' && refsResponse.data) {
                         setRelatedContracts(refsResponse.data.content || []);
+                    }
+
+                    // 4. Gọi API lấy danh sách tài liệu mẫu
+                    const templatesResponse = await contractService.getMyTemplateContracts({
+                        page: 0,
+                        size: 100
+                    });
+
+                    if (templatesResponse.code === 'SUCCESS' && templatesResponse.data) {
+                        const payload = templatesResponse.data?.data || templatesResponse.data || {};
+                        const templatesList = payload.content || payload.items || payload || [];
+                        setDocumentTemplates(templatesList);
                     }
                 } else {
                     throw new Error(userResponse.message || 'Không thể lấy thông tin người dùng');
@@ -1929,6 +1942,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 handleBatchFileUpload={handleBatchFileUpload}
                 documentTypes={documentTypes}
                 relatedContracts={relatedContracts}
+                documentTemplates={documentTemplates}
                 loading={loading}
                 handleDocumentNumberBlur={handleDocumentNumberBlur}
                 isCheckingDocumentNumber={isCheckingDocumentNumber}

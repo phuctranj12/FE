@@ -640,15 +640,12 @@ function CoordinateAssigners({
 
             // Chuẩn hóa danh sách recipients cho participant hiện tại: gửi toàn bộ tuyến xử lý mong muốn,
             // không gửi id cũ để tránh stale, và ép participantId khớp với path param.
-            // KHÔNG gửi người điều phối (role 1) trong body, chỉ gửi roles 2/3/4.
             const normalizedRecipients = (recipientsForCoordinate || [])
                 .filter(r =>
                     r &&
-                    Number(r.role) !== 1 && // bỏ coordinator khỏi body
                     ((r.participantId == null) || Number(r.participantId) === Number(currentParticipantId))
                 )
                 .map((r, idx) => ({
-                    ...(r.id ? { id: r.id } : {}),
                     name: r.fullName || r.name || '',
                     email: r.email || '',
                     phone: r.phone || '',
@@ -656,19 +653,28 @@ function CoordinateAssigners({
                     ordering: r.ordering || idx + 1,
                     status: typeof r.status === 'number' ? r.status : 0,
                     signType: r.signType === 'hsm' ? 6 : (r.signType || 6),
-                    username: r.username || null,
-                    password: r.password || null,
-                    cardId: r.cardId || r.card_id || '',
-                    delegateTo: r.delegateTo || null,
-                    signStart: r.signStart || null,
-                    signEnd: r.signEnd || null,
-                    fields: r.fields || [],
                     participantId: currentParticipantId
                 }))
                 .filter(r => r.role && (r.name || r.email || r.phone));
 
-            // Body chỉ gồm recipients (role 2/3/4), không kèm coordinator
-            const recipientsData = normalizedRecipients;
+            // Ghép coordinator (role 1) nếu có, cũng không gửi id
+            const coordinatorPayload = coordinator
+                ? {
+                    name: coordinator.name || '',
+                    email: coordinator.email || '',
+                    phone: coordinator.phone || '',
+                    role: 1,
+                    ordering: coordinator.ordering || 1,
+                    status: typeof coordinator.status === 'number' ? coordinator.status : 1,
+                    signType: coordinator.signType === 'hsm' ? 6 : (coordinator.signType || 6),
+                    participantId: currentParticipantId
+                }
+                : null;
+
+            // Nếu không cần giữ coordinator trong tuyến sau điều phối, có thể bỏ coordinatorPayload ra.
+            const recipientsData = coordinatorPayload
+                ? [coordinatorPayload, ...normalizedRecipients]
+                : normalizedRecipients;
 
             // Gọi API điều phối
             const response = await contractService.coordinate(
