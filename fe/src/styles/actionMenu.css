@@ -86,3 +86,10 @@
 .action-dropdown .delete-btn:hover {
   background-color: #ffebee;
 }
+.action-dropdown svg {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  flex-shrink: 0;
+}

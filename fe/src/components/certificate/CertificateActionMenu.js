@@ -23,7 +23,7 @@ function CertificateActionMenu({ certificateId, certificateName, onViewDetails, 
             const rect = triggerRef.current.getBoundingClientRect();
             setPosition({
                 top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX
+                left: rect.left + window.scrollX - 60
             });
         }
     }, [open]);
@@ -112,7 +112,7 @@ function CertificateActionMenu({ certificateId, certificateName, onViewDetails, 
                         ref={menuRef}
                         className="cert-action-dropdown"
                         style={{
-                            position: "absolute",
+                            position: "fixed",
                             top: (position?.top ?? 0) + "px",
                             left: (position?.left ?? 0) + "px",
                             zIndex: 9999

@@ -259,10 +259,10 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
             <div className="table-container">
                 <div>
                     <h2>
-                        Danh sách tài liệu{" "}
+                        {/* Danh sách tài liệu{" "}
                         {selectedStatus !== "all" && selectedStatus !== undefined
                             ? `(${getStatusLabel(Number(selectedStatus))})`
-                            : ""}
+                            : ""} */}
                     </h2>
                 </div>
                 <div className="ContractFilterHeader">

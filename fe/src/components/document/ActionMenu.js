@@ -31,7 +31,7 @@ function ActionMenu({
             const rect = triggerRef.current.getBoundingClientRect();
             setPosition({
                 top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX
+                left: rect.left + window.scrollX - 60
             });
         }
     }, [open]);
@@ -68,13 +68,14 @@ function ActionMenu({
     };
 
 
+    // ===== ICONS (ĐỒNG BỘ VỚI CertificateActionMenu) =====
 
     const ICON_FLOW = (
         <svg className="action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
             viewBox="0 0 24 24" fill="none" stroke="#0B57D0" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
             <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a7.5 7.5 0 0 1-14.8 0M4.6 9a7.5 7.5 0 0 1 14.8 0"></path>
         </svg>
     );
 
@@ -91,19 +92,54 @@ function ActionMenu({
         <svg className="action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
             viewBox="0 0 24 24" fill="none" stroke="#0B57D0" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
     );
 
-    const ICON_EDIT = ICON_FLOW;
-    const ICON_UPLOAD = ICON_FLOW;
-    const ICON_SHARE = ICON_FLOW;
-    const ICON_EXTEND = ICON_FLOW;
+    const ICON_EDIT = (
+        <svg className="action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="#0B57D0" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+    );
+
+    const ICON_UPLOAD = (
+        <svg className="action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="#0B57D0" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+    );
+
+    const ICON_SHARE = (
+        <svg className="action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="#0B57D0" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line>
+            <line x1="15.4" y1="6.5" x2="8.6" y2="10.5"></line>
+        </svg>
+    );
+
+    const ICON_EXTEND = (
+        <svg className="action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="#0B57D0" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1 2.13-9"></path>
+        </svg>
+    );
 
     const ICON_DELETE = (
         <svg className="action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-            viewBox="0 0 24 24" fill="none" stroke="#0B57D0" strokeWidth="2"
+            viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
@@ -111,6 +147,14 @@ function ActionMenu({
             <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
     );
+
+
+    // const ICON_EDIT = ICON_FLOW;
+    // const ICON_UPLOAD = ICON_FLOW;
+    // const ICON_SHARE = ICON_FLOW;
+    // const ICON_EXTEND = ICON_FLOW;
+
+
 
     const getMenuActions = () => {
         const status = doc?.status;
