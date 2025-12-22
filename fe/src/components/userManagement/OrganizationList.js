@@ -287,13 +287,7 @@ const OrganizationList = () => {
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '0 0 auto' }}>
                     <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Tìm kiếm" onClick={handleSearch} />
                     <Button outlineColor="#0B57D0" backgroundColor="#0B57D0" text="Thêm mới" onClick={() => setShowAddPanel(true)} />
-                    <Button outlineColor="#0B57D0" backgroundColor="transparent" text="Import file" icon={<span style={{fontWeight:700}}>☁️</span>} />
                 </div>
-            </div>
-
-            <div className="template-link template-right">
-                <span>Bạn chưa có file mẫu? </span>
-                <a href="#!" className="template-download">Tải file mẫu</a>
             </div>
 
             {loading && (

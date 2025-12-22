@@ -5,6 +5,7 @@ import PDFViewer from '../document/PDFViewer';
 import CoordinateAssigners from './CoordinateAssigners';
 import RejectReviewDialog from './RejectReviewDialog';
 import SignDialog from './SignDialog';
+import AuthorizeDialog from './AuthorizeDialog';
 import ViewFlowModal from '../document/ViewFlowModal';
 import contractService from '../../api/contractService';
 
@@ -45,6 +46,7 @@ function ContractDetail() {
     const [showReviewDialog, setShowReviewDialog] = useState(false);
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [showSignDialog, setShowSignDialog] = useState(false);
+    const [showAuthorizeDialog, setShowAuthorizeDialog] = useState(false);
     const [documentMeta, setDocumentMeta] = useState(null);
     const [recipient, setRecipient] = useState(null);
     const [currentSignFieldIndex, setCurrentSignFieldIndex] = useState(0);
@@ -238,9 +240,35 @@ function ContractDetail() {
 
     // Handler cho các nút action
     const handleDelegate = () => {
-        console.log('Ủy quyền/Chuyển tiếp');
-        // TODO: Implement delegate logic - có thể mở modal chọn người nhận ủy quyền
-        showToast('Chức năng ủy quyền đang được phát triển', 'warning');
+        if (!recipientId) {
+            showToast('Không tìm thấy thông tin người xử lý', 'warning');
+            return;
+        }
+
+        // Kiểm tra role của recipient
+        if (!recipient) {
+            showToast('Đang tải thông tin người xử lý...', 'warning');
+            return;
+        }
+
+        const recipientRole = recipient.role;
+        
+        // Chỉ cho phép ủy quyền nếu là coordinator (role = 1) hoặc signer (role = 3)
+        if (recipientRole !== 1 && recipientRole !== 3) {
+            showToast('Chỉ người điều phối và người ký mới có thể ủy quyền', 'warning');
+            return;
+        }
+
+        setShowAuthorizeDialog(true);
+    };
+
+    const handleAuthorizeSuccess = (data) => {
+        console.log('Ủy quyền thành công:', data);
+        showToast('Ủy quyền thành công!', 'success');
+        // Navigate về màn detail sau khi ủy quyền thành công
+        setTimeout(() => {
+            navigate(`/main/c/detail/${contractId}`);
+        }, 1200);
     };
 
     const handleReject = () => {
@@ -616,9 +644,9 @@ function ContractDetail() {
         console.log('Điều phối thành công:', data);
         showToast('Điều phối thành công!', 'success');
         setShowCoordinate(false);
-        // Điều phối xong quay về dashboard
+        // Điều phối xong navigate về màn detail
         setTimeout(() => {
-            navigate('/main/dashboard');
+            navigate(`/main/c/detail/${contractId}`);
         }, 800);
     };
 
@@ -1012,6 +1040,15 @@ function ContractDetail() {
                 recipient={recipient}
                 fields={fields}
                 onSigned={handleSignSuccess}
+            />
+
+            {/* Authorize Dialog */}
+            <AuthorizeDialog
+                open={showAuthorizeDialog}
+                onClose={() => setShowAuthorizeDialog(false)}
+                recipientId={recipientId}
+                recipientRole={recipient?.role}
+                onAuthorizeSuccess={handleAuthorizeSuccess}
             />
 
             {/* Signing Flow Dialog (Luồng ký) */}

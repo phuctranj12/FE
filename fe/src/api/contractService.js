@@ -692,6 +692,16 @@ const contractService = {
         }
     },
 
+    // 7.10.7. Ủy quyền hợp đồng
+    authorize: async (recipientId, authorizeData) => {
+        try {
+            const response = await apiClient.post(`/contracts/processes/authorize/${recipientId}`, authorizeData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     // ========== SHARE API ==========
 
     // 7.7.1. Tạo chia sẻ hợp đồng
