@@ -24,12 +24,16 @@ function TemplateContractItem({
         templateId,
         partyA,
         partyB,
-        contractNo
+        contractNo,
+        participants
     } = contract;
 
     // Format the data for display
     const displayName = templateId || name || `MẪU${id}`;
-    const displayPartyA = organization_name || partyA;
+    // Lấy name của participant đầu tiên, nếu không có thì fallback về cách cũ
+    const displayPartyA = (participants && participants.length > 0 && participants[0]?.name) 
+        ? participants[0].name 
+        : (organization_name || partyA);
     const displayPartyB = customer_name || partyB;
     const displayCode = contractNo || `Contract No. ${id}`;
     const displayDate = (contractExpireTime ? new Date(contractExpireTime).toLocaleDateString('vi-VN') : '');

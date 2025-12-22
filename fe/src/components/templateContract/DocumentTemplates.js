@@ -100,9 +100,10 @@ function DocumentTemplates() {
 
     const itemsPerPage = pageSize;
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-    const currentTemplates = templates.slice(startIndex, endIndex);
+    // Backend đã phân trang, nên templates đã là dữ liệu của trang hiện tại
+    // startIndex / endIndex chỉ dùng để hiển thị thông tin, không dùng để slice thêm lần nữa
+    const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = totalItems === 0 ? 0 : Math.min(currentPage * itemsPerPage, totalItems);
 
     // Debounced search cho text input
     const debouncedSearch = useCallback(
@@ -429,11 +430,12 @@ function DocumentTemplates() {
             showToast("Xóa mẫu tài liệu thành công", 'success');
             setShowDeleteConfirm(false);
             setTemplateToDelete(null);
-            // Refresh lại danh sách
-            setRefreshTrigger(prev => prev + 1);
             // Nếu trang hiện tại không còn item nào, quay về trang trước
-            if (currentTemplates.length === 1 && currentPage > 1) {
+            if (templates.length === 1 && currentPage > 1) {
                 setCurrentPage(prev => prev - 1);
+            } else {
+                // Refresh lại danh sách
+                setRefreshTrigger(prev => prev + 1);
             }
         } catch (error) {
             console.error("Lỗi khi xóa mẫu tài liệu:", error);
@@ -572,7 +574,7 @@ function DocumentTemplates() {
                         <div className="no-templates">Không có mẫu tài liệu nào</div>
                     )}
                     {!loading && !error && templates.length > 0 && (
-                        currentTemplates.map((template) => (
+                        templates.map((template) => (
                             <TemplateContractItem
                                 key={template.id}
                                 contract={template}
@@ -597,7 +599,7 @@ function DocumentTemplates() {
                 totalPages={totalPages}
                 totalItems={totalItems}
                 itemsPerPage={itemsPerPage}
-                startIndex={totalItems === 0 ? 0 : startIndex + 1}
+                startIndex={startIndex}
                 endIndex={endIndex}
                 onPageChange={handlePageChange}
             />
