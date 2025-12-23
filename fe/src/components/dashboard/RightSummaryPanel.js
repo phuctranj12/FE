@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import createdDocumentService from '../../api/createdDocumentService';
 import '../../styles/dashboardLayout.css';
-
+import OrganizationService from '../../api/OrganizationService';
 const DocItem = ({
     title,
     party = 'Trung tâm công nghệ thông tin eContract',
@@ -39,6 +39,7 @@ const RightSummaryPanel = () => {
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [organizationMap, setOrganizationMap] = useState({});
 
     useEffect(() => {
         fetchWaitProcessingContracts();
@@ -60,7 +61,9 @@ const RightSummaryPanel = () => {
 
             // Kiểm tra response structure
             if (response?.data?.code === 'SUCCESS' && response?.data?.data?.content) {
-                setDocuments(response.data.data.content);
+                const docs = response.data.data.content;
+                setDocuments(docs);
+                loadOrganizations(docs);
             } else if (response?.code === 'SUCCESS' && response?.data?.content) {
                 setDocuments(response.data.content);
             } else if (Array.isArray(response?.data)) {
@@ -109,6 +112,38 @@ const RightSummaryPanel = () => {
         if (contract?.signType === 'REMOTE') return 'Ký số từ xa';
         return 'Ký số bằng HSM'; // Default
     };
+    const loadOrganizations = async (docs) => {
+        const ids = [...new Set(
+            docs
+                .map(d => d.organizationId)
+                .filter(Boolean)
+        )];
+
+        const newMap = {};
+
+        await Promise.all(
+            ids.map(async (id) => {
+                try {
+                    const res = await OrganizationService.getById(id);
+                    if (res?.data?.code === 'SUCCESS') {
+                        newMap[id] = res.data.data.name;
+                    }
+                } catch (e) {
+                    console.warn(`Không load được organization ${id}`);
+                }
+            })
+        );
+
+        setOrganizationMap(prev => ({ ...prev, ...newMap }));
+    };
+    const getOrganizationDisplay = (doc) => {
+        if (!doc?.organizationId) return 'Chưa có tổ chức';
+        return organizationMap[doc.organizationId] || `ID: ${doc.organizationId}`;
+    };
+
+
+
+
 
     return (
         <div className="right-summary-panel">
@@ -141,9 +176,9 @@ const RightSummaryPanel = () => {
                             <DocItem
                                 key={doc.id || index}
                                 title={doc.name || doc.title || 'Tài liệu không có tên'}
-                                party={doc.partyA || doc.organization || 'Trung tâm công nghệ thông tin eContract'}
+                                party={getOrganizationDisplay(doc)}
                                 // tag={getSignTag(doc)}
-                                date={formatDate(doc.createdDate || doc.createDate || doc.date)}
+                                date={formatDate(doc.createdAt)}
                             />
                         ))}
                     </div>
