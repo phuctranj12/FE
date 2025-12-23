@@ -109,6 +109,11 @@ const RightSummaryPanel = () => {
         if (contract?.signType === 'REMOTE') return 'Ký số từ xa';
         return 'Ký số bằng HSM'; // Default
     };
+    const getOrganizationName = (doc) => {
+        return doc?.participants?.[0]?.name
+            || 'Trung tâm công nghệ thông tin eContract';
+    };
+
 
     return (
         <div className="right-summary-panel">
@@ -141,7 +146,7 @@ const RightSummaryPanel = () => {
                             <DocItem
                                 key={doc.id || index}
                                 title={doc.name || doc.title || 'Tài liệu không có tên'}
-                                party={doc.partyA || doc.organization || 'Trung tâm công nghệ thông tin eContract'}
+                                party={getOrganizationName(doc)}
                                 // tag={getSignTag(doc)}
                                 date={formatDate(doc.createdDate || doc.createDate || doc.date)}
                             />
