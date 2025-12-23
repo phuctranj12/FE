@@ -288,11 +288,8 @@ function SignDialog({
             if (onSigned) {
                 onSigned({ success: true });
             }
+            // Đóng dialog, điều hướng sẽ do màn cha (ContractDetail) xử lý qua onSigned
             handleClose();
-            // Navigate đến trang chi tiết hợp đồng sau khi ký thành công
-            setTimeout(() => {
-                navigate(`/main/c/detail/${contractId}`);
-            }, 500);
         } catch (err) {
             console.error('Error signing contract:', err);
             const errorMessage = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi ký hợp đồng';

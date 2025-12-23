@@ -457,7 +457,8 @@ function ContractDetail() {
         showToast('Ký hợp đồng thành công!', 'success');
         setShowSignDialog(false);
         setTimeout(() => {
-            navigate(`/main/c/detail/${contractId}`);
+            // Sau khi ký xong, quay về màn chi tiết; nếu muốn ẩn các ô field có thể dùng showAllFields=0
+            navigate(`/main/c/detail/${contractId}?showAllFields=0`);
         }, 1200);
     };
 

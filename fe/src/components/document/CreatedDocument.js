@@ -327,7 +327,9 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
         } else if (role === 3) {
             routeType = 'sign'; // Ký
         } else if (role === 4) {
-            routeType = 'detail'; // Văn thư - mở chi tiết
+            // Văn thư: dùng chung luồng ký (SignDialog) nhưng text button hiển thị là "Đóng dấu"
+            // => Điều hướng vào type = 'sign' để hiển thị đầy đủ nút Xác nhận & dialog ký
+            routeType = 'sign';
         } else {
             // Nếu role không xác định, mở chi tiết
             navigate(`/main/c/detail/${contractId}?recipientId=${recipientId}`);
@@ -347,7 +349,7 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
             case 3:
                 return 'Ký';
             case 4:
-                return 'Văn thư';
+                return 'Đóng dấu';
             default:
                 return 'Xem chi tiết';
         }
