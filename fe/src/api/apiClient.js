@@ -32,22 +32,18 @@ apiClient.interceptors.request.use(
     (config) => {
         // Only add token if endpoint is not public
         if (!isPublicEndpoint(config.url)) {
-            let token = sessionStorage.getItem('token'); 
-            if(token === null){
+            let token = sessionStorage.getItem('token');
+            if (token === null) {
                 token = localStorage.getItem('token');
             }
-            if(token === null){
-                window.location.href = '/login';
-            }
+            // KHÔNG redirect ở đây nếu chưa có token, chỉ đơn giản là không gắn Authorization
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 // Response interceptor - Handle errors globally
@@ -59,9 +55,15 @@ apiClient.interceptors.response.use(
         // Handle common errors
         if (error.response) {
             switch (error.response.status) {
-                case 401:
-                    // Unauthorized - redirect to login (only if not a public endpoint)
-                    if (!isPublicEndpoint(error.config.url)) {
+                case 401: {
+                    // Unauthorized - với một số endpoint "phụ" (vd: notifications) thì không nên auto logout toàn hệ thống
+                    const url = error.config?.url || '';
+                    const isNotificationApi = url.includes('notifications/');
+
+                    // Chỉ redirect về /login nếu:
+                    // - Không phải endpoint public
+                    // - Không phải notification API (tránh vừa vào dashboard đã bị đá ra chỉ vì lỗi thông báo)
+                    if (!isPublicEndpoint(url) && !isNotificationApi) {
                         localStorage.removeItem('token');
                         sessionStorage.removeItem('token');
                         localStorage.removeItem('user');
@@ -69,6 +71,7 @@ apiClient.interceptors.response.use(
                         window.location.href = '/login';
                     }
                     break;
+                }
                 case 403:
                     // Forbidden
                     console.error('Access denied');

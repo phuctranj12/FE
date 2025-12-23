@@ -32,6 +32,11 @@ function Header({ breadcrumb }) {
 
     // Fetch notifications từ API
     const fetchNotifications = async (page = 0) => {
+        // Nếu chưa có token thì không gọi API để tránh interceptor redirect về /login
+        const token =
+            sessionStorage.getItem("token") || localStorage.getItem("token");
+        if (!token) return;
+
         try {
             setLoading(true);
             const response = await notificationService.getAllNotice(page, 10);
@@ -51,6 +56,11 @@ function Header({ breadcrumb }) {
 
     // Load notifications khi component mount
     useEffect(() => {
+        // Chỉ fetch khi đã có token
+        const token =
+            sessionStorage.getItem("token") || localStorage.getItem("token");
+        if (!token) return;
+
         fetchNotifications();
     }, []);
 

@@ -1981,9 +1981,190 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         }
     };
 
-    const handleSaveDraft = () => {
-        console.log('Saving draft:', formData);
-        // Implement save draft functionality
+    const handleSaveDraft = async () => {
+        try {
+            setLoading(true);
+
+            // 1. Đảm bảo đã có hợp đồng (contract) + tài liệu (document) ở bước 1
+            let currentContractId = contractId;
+            let currentDocumentId = documentId;
+
+            const buildContractData = () => ({
+                name: formData.documentName?.trim() || '',
+                contractNo: formData.documentNumber?.trim() || '',
+                signTime: convertToISODate(formData.signingExpirationDate),
+                note: formData.message?.trim() || '',
+                contractRefs: formData.relatedDocuments
+                    ? [{ refId: parseInt(formData.relatedDocuments) }]
+                    : [],
+                typeId: formData.documentType ? parseInt(formData.documentType) : null,
+                isTemplate: false,
+                templateContractId: null,
+                contractExpireTime: formData.expirationDate
+                    ? convertToISODate(formData.expirationDate)
+                    : null
+            });
+
+            // 1.1. Nếu chưa có contractId -> tạo mới (mặc định status = DRAFT trên backend)
+            if (!currentContractId) {
+                const contractData = buildContractData();
+
+                const contractResponse = await contractService.createContract(contractData);
+                if (contractResponse.code !== 'SUCCESS' || !contractResponse.data?.id) {
+                    throw new Error(contractResponse.message || 'Không thể tạo hợp đồng nháp');
+                }
+
+                currentContractId = contractResponse.data.id;
+                setContractId(currentContractId);
+            } else {
+                // 1.2. Nếu đã có contractId -> cập nhật thông tin cơ bản
+                const contractData = buildContractData();
+                try {
+                    await contractService.updateContract(currentContractId, contractData);
+                } catch (e) {
+                    // Không chặn flow nháp nếu update lỗi, chỉ log
+                    console.warn('Không thể cập nhật thông tin hợp đồng khi lưu nháp:', e);
+                }
+            }
+
+            // 1.3. Đảm bảo đã có document gốc (type = 1)
+            if (!currentDocumentId && formData.pdfFile) {
+                const uploadResponse = await contractService.uploadDocument(formData.pdfFile);
+                if (uploadResponse.code !== 'SUCCESS' || !uploadResponse.data) {
+                    throw new Error(uploadResponse.message || 'Không thể upload file PDF khi lưu nháp');
+                }
+
+                const { path: uploadedPath, fileName: uploadedFileName } = uploadResponse.data;
+                const documentData = {
+                    name: formData.documentName?.trim() || uploadedFileName,
+                    type: 1,
+                    contractId: currentContractId,
+                    fileName: uploadedFileName,
+                    path: uploadedPath,
+                    status: 1
+                };
+
+                const documentResponse = await contractService.createDocument(documentData);
+                if (documentResponse.code !== 'SUCCESS' || !documentResponse.data?.id) {
+                    throw new Error(documentResponse.message || 'Không thể lưu thông tin tài liệu khi lưu nháp');
+                }
+
+                currentDocumentId = documentResponse.data.id;
+                setDocumentId(currentDocumentId);
+            }
+
+            // 1.4. Lưu file đính kèm (nếu có) – không bắt buộc
+            if (formData.attachedFiles && formData.attachedFiles.length > 0) {
+                for (const file of formData.attachedFiles) {
+                    try {
+                        const attachUploadResponse = await contractService.uploadDocument(file);
+                        if (attachUploadResponse.code === 'SUCCESS' && attachUploadResponse.data) {
+                            const attachDocData = {
+                                name: file.name,
+                                type: 3,
+                                contractId: currentContractId,
+                                fileName: attachUploadResponse.data.fileName,
+                                path: attachUploadResponse.data.path,
+                                status: 1
+                            };
+
+                            await contractService.createDocument(attachDocData);
+                        }
+                    } catch (err) {
+                        console.warn('Lỗi upload file đính kèm khi lưu nháp:', file.name, err);
+                    }
+                }
+            }
+
+            // 2. Nếu đang ở bước >= 2 và không phải batch -> lưu người xử lý (participants)
+            if (currentStep >= 2 && documentType !== 'batch') {
+                const participantsPayload = buildParticipantsPayload();
+                if (participantsPayload && participantsPayload.length > 0) {
+                    try {
+                        const participantResponse = await contractService.createParticipant(
+                            currentContractId,
+                            participantsPayload
+                        );
+                        if (participantResponse.code === 'SUCCESS') {
+                            setParticipantsData(participantResponse.data || []);
+                        }
+                    } catch (err) {
+                        console.warn('Không thể lưu người xử lý khi lưu nháp:', err);
+                    }
+                }
+            }
+
+            // 3. Nếu đang ở bước >= 3 -> lưu fields
+            if (currentStep >= 3 && fieldsData && fieldsData.length > 0 && currentContractId && currentDocumentId) {
+                try {
+                    const toCreate = [];
+                    const toUpdate = [];
+
+                    fieldsData.forEach(field => {
+                        const payload = {
+                            name: field.name,
+                            font: field.font || 'Times New Roman',
+                            fontSize: field.fontSize || 11,
+                            boxX: field.boxX ?? field.x ?? 0,
+                            boxY: field.boxY ?? field.y ?? 0,
+                            page: field.page ? field.page.toString() : '1',
+                            ordering: field.ordering ?? 0,
+                            boxW: field.boxW ?? field.width ?? 0,
+                            boxH: (field.boxH ?? field.height ?? '30').toString(),
+                            contractId: currentContractId,
+                            documentId: field.documentId || currentDocumentId,
+                            type: field.type || 1,
+                            recipientId: field.recipientId || null,
+                            status: field.status ?? 0
+                        };
+
+                        if (field.id) {
+                            toUpdate.push({ id: field.id, payload });
+                        } else {
+                            toCreate.push(payload);
+                        }
+                    });
+
+                    if (toCreate.length > 0) {
+                        await contractService.createField(toCreate);
+                    }
+
+                    for (const item of toUpdate) {
+                        try {
+                            await contractService.updateField(item.id, item.payload);
+                        } catch (err) {
+                            console.warn('Không thể cập nhật field khi lưu nháp:', item.id, err);
+                        }
+                    }
+
+                    // Sau khi lưu, load lại fields từ backend để đồng bộ id vào state,
+                    // tránh bị tạo trùng khi bấm Lưu nháp nhiều lần trong cùng session.
+                    try {
+                        const fieldsRes = await contractService.getFieldsByContract(currentContractId);
+                        if (fieldsRes.code === 'SUCCESS' && Array.isArray(fieldsRes.data)) {
+                            const mapped = fieldsRes.data.map(f =>
+                                normalizeFieldFromApi(f, currentDocumentId)
+                            );
+                            setFieldsData(mapped);
+                        }
+                    } catch (err) {
+                        console.warn('Không thể đồng bộ lại fields sau khi lưu nháp:', err);
+                    }
+                } catch (err) {
+                    console.warn('Không thể lưu fields khi lưu nháp:', err);
+                }
+            }
+
+            showToast('✅ Lưu nháp thành công.', 'success', 4000);
+
+            // Điều hướng về danh sách bản nháp
+            navigate('/main/contract/create/draft');
+        } catch (err) {
+            console.error('Error when saving draft:', err);
+            showToast(err.message || 'Không thể lưu nháp. Vui lòng thử lại.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleComplete = async () => {
