@@ -113,6 +113,11 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
     useEffect(() => {
         if (initialData && isEdit) {
+            // Lưu contractId để dùng cho các bước tiếp theo
+            if (initialData.id || initialData.contractId) {
+                setContractId(initialData.id || initialData.contractId);
+            }
+
             // Map thông tin cơ bản
             setFormData(prev => ({
                 ...prev,
@@ -131,9 +136,10 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             const newClerks = [];
 
             participants.forEach(participant => {
-                participant.recipients.forEach(recipient => {
+                (participant.recipients || []).forEach(recipient => {
                     const data = {
                         id: recipient.id,
+                        recipientId: recipient.id,
                         fullName: recipient.name || '',
                         email: recipient.email || '',
                         phone: recipient.phone || '',
@@ -183,6 +189,25 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         const mime = res.headers['content-type'] || 'application/pdf';
         return new File([res.data], fileName, { type: mime });
     };
+
+    const normalizeFieldFromApi = (field, fallbackDocumentId = null) => ({
+        id: field.id,
+        name: field.name || field.label || '',
+        font: field.font || 'Times New Roman',
+        fontSize: field.fontSize || 11,
+        boxX: field.boxX ?? field.x ?? 0,
+        boxY: field.boxY ?? field.y ?? 0,
+        page: field.page ? field.page.toString() : '1',
+        ordering: field.ordering ?? 0,
+        boxW: field.boxW ?? field.w ?? field.width ?? 100,
+        boxH: (field.boxH ?? field.h ?? field.height ?? '30').toString(),
+        contractId: field.contractId || contractId,
+        documentId: field.documentId || fallbackDocumentId || documentId,
+        type: field.type || 1,
+        recipientId: field.recipientId || field.recipient?.id || null,
+        status: field.status ?? 0,
+        value: field.value || ''
+    });
 
     // Fetch initial data when component mounts
     useEffect(() => {
@@ -253,6 +278,96 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
         fetchInitialData();
     }, []);
+
+    // Load dữ liệu hợp đồng để chỉnh sửa (contract đã tạo)
+    useEffect(() => {
+        if (!isEdit || !initialData) return;
+
+        const cid = initialData.id || initialData.contractId;
+        if (!cid) return;
+
+        const loadContractForEdit = async () => {
+            try {
+                setLoading(true);
+
+                const [documentsRes, participantsRes, fieldsRes] = await Promise.all([
+                    contractService.getDocumentsByContract(cid),
+                    contractService.getParticipantsByContract(cid),
+                    contractService.getFieldsByContract(cid)
+                ]);
+
+                const documents = Array.isArray(documentsRes?.data) ? documentsRes.data : [];
+                const participants = Array.isArray(participantsRes?.data) ? participantsRes.data : [];
+                const fields = Array.isArray(fieldsRes?.data) ? fieldsRes.data : [];
+
+                const mainDoc = documents.find(doc => doc.type === 1) || documents[0];
+                if (mainDoc?.id) {
+                    setDocumentId(mainDoc.id);
+                }
+
+                // Prefill participants data for step 2/3
+                setParticipantsData(participants);
+
+                if (fields.length > 0) {
+                    const mappedFields = fields.map(f => normalizeFieldFromApi(f, mainDoc?.id));
+                    setFieldsData(mappedFields);
+                }
+
+                // Download PDF hiện tại nếu có
+                if (mainDoc?.id) {
+                    let pdfUrl = null;
+                    try {
+                        const presignedRes = await contractService.getPresignedUrl(mainDoc.id);
+                        if (presignedRes?.code === 'SUCCESS') {
+                            pdfUrl =
+                                typeof presignedRes.data === 'string'
+                                    ? presignedRes.data
+                                    : presignedRes.data?.url || presignedRes.data?.message || presignedRes.url;
+                        }
+                    } catch (err) {
+                        console.warn('[Edit] Không lấy được presigned URL của hợp đồng', err);
+                    }
+
+                    if (pdfUrl) {
+                        const fileName = mainDoc.fileName || mainDoc.name || 'document.pdf';
+                        const file = await downloadTemplatePdf(pdfUrl, fileName);
+                        let pageCount = mainDoc.pageCount || formData.pdfPageCount || 0;
+
+                        try {
+                            const pageSizeResponse = await contractService.getPageSize(file);
+                            if (pageSizeResponse?.code === 'SUCCESS') {
+                                pageCount = pageSizeResponse?.data?.numberOfPages || pageCount;
+                            }
+                        } catch (err) {
+                            console.warn('[Edit] Không lấy được pageSize khi tải hợp đồng', err);
+                        }
+
+                        setFormData(prev => ({
+                            ...prev,
+                            pdfFile: file,
+                            pdfFileName: file.name,
+                            pdfPageCount: pageCount || 0,
+                            hasSignature: false,
+                            attachedFile: file.name,
+                            documentTemplate: prev.documentTemplate || initialData.templateContractId || '',
+                            documentType: prev.documentType || initialData.typeId || ''
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading contract for edit:', err);
+                const message =
+                    err?.response?.data?.message ||
+                    err?.message ||
+                    'Không thể tải dữ liệu hợp đồng để chỉnh sửa.';
+                showToast(message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadContractForEdit();
+    }, [isEdit, initialData]);
 
     // Load template details + prefill when choose template in single-template mode
     // Hoặc load contract details khi copy từ contract
@@ -1579,7 +1694,9 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         }
 
         if (!formData.pdfFile && documentType !== 'batch') {
-            errors.push('Vui lòng tải lên file PDF');
+            if (!isEdit || (isEdit && !documentId)) {
+                errors.push('Vui lòng tải lên file PDF');
+            }
         }
 
         if ((documentType === 'single-template' || documentType === 'batch')) {
@@ -1641,8 +1758,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             try {
                 setLoading(true);
 
-                // API 7: Tạo hợp đồng
-                console.log('Creating contract...');
+                // API 7: Tạo/Cập nhật hợp đồng
+                console.log(isEdit ? 'Updating contract...' : 'Creating contract...');
                 const contractData = {
                     name: formData.documentName.trim(),
                     contractNo: formData.documentNumber?.trim() || '',
@@ -1659,47 +1776,61 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                         : null
                 };
 
-                const contractResponse = await contractService.createContract(contractData);
+                let currentContractId = contractId;
+                let currentDocumentId = documentId;
 
-                if (contractResponse.code !== 'SUCCESS' || !contractResponse.data?.id) {
-                    throw new Error(contractResponse.message || 'Không thể tạo hợp đồng');
+                if (isEdit && currentContractId) {
+                    const updateRes = await contractService.updateContract(currentContractId, contractData);
+                    if (updateRes.code !== 'SUCCESS') {
+                        throw new Error(updateRes.message || 'Không thể cập nhật hợp đồng');
+                    }
+                } else {
+                    const contractResponse = await contractService.createContract(contractData);
+
+                    if (contractResponse.code !== 'SUCCESS' || !contractResponse.data?.id) {
+                        throw new Error(contractResponse.message || 'Không thể tạo hợp đồng');
+                    }
+
+                    currentContractId = contractResponse.data.id;
+                    setContractId(currentContractId);
+                    console.log('Contract created with ID:', currentContractId);
                 }
 
-                const newContractId = contractResponse.data.id;
-                setContractId(newContractId);
-                console.log('Contract created with ID:', newContractId);
+                // API 8: Upload file PDF lên MinIO khi có file mới hoặc khi tạo mới
+                if (formData.pdfFile) {
+                    console.log('Uploading PDF to MinIO...');
+                    const uploadResponse = await contractService.uploadDocument(formData.pdfFile);
 
-                // API 8: Upload file PDF lên MinIO
-                console.log('Uploading PDF to MinIO...');
-                const uploadResponse = await contractService.uploadDocument(formData.pdfFile);
+                    if (uploadResponse.code !== 'SUCCESS' || !uploadResponse.data) {
+                        throw new Error(uploadResponse.message || 'Không thể upload file PDF');
+                    }
 
-                if (uploadResponse.code !== 'SUCCESS' || !uploadResponse.data) {
-                    throw new Error(uploadResponse.message || 'Không thể upload file PDF');
+                    const { path: uploadedPath, fileName: uploadedFileName } = uploadResponse.data;
+                    console.log('PDF uploaded:', uploadedPath);
+
+                    // API 9: Lưu thông tin tài liệu vào DB (type = 1: file gốc)
+                    console.log('Creating document record...');
+                    const documentData = {
+                        name: formData.documentName.trim(),
+                        type: 1, // File gốc
+                        contractId: currentContractId,
+                        fileName: uploadedFileName,
+                        path: uploadedPath,
+                        status: 1 // Active
+                    };
+
+                    const documentResponse = await contractService.createDocument(documentData);
+
+                    if (documentResponse.code !== 'SUCCESS' || !documentResponse.data?.id) {
+                        throw new Error(documentResponse.message || 'Không thể lưu thông tin tài liệu');
+                    }
+
+                    currentDocumentId = documentResponse.data.id;
+                    setDocumentId(currentDocumentId);
+                    console.log('Document created with ID:', currentDocumentId);
+                } else if (!currentDocumentId) {
+                    throw new Error('Không tìm thấy tài liệu hợp đồng. Vui lòng tải file PDF.');
                 }
-
-                const { path: uploadedPath, fileName: uploadedFileName } = uploadResponse.data;
-                console.log('PDF uploaded:', uploadedPath);
-
-                // API 9: Lưu thông tin tài liệu vào DB (type = 1: file gốc)
-                console.log('Creating document record...');
-                const documentData = {
-                    name: formData.documentName.trim(),
-                    type: 1, // File gốc
-                    contractId: newContractId,
-                    fileName: uploadedFileName,
-                    path: uploadedPath,
-                    status: 1 // Active
-                };
-
-                const documentResponse = await contractService.createDocument(documentData);
-
-                if (documentResponse.code !== 'SUCCESS' || !documentResponse.data?.id) {
-                    throw new Error(documentResponse.message || 'Không thể lưu thông tin tài liệu');
-                }
-
-                const newDocumentId = documentResponse.data.id;
-                setDocumentId(newDocumentId);
-                console.log('Document created with ID:', newDocumentId);
 
                 // Upload file đính kèm nếu có (type = 3)
                 if (formData.attachedFiles && formData.attachedFiles.length > 0) {
@@ -1715,7 +1846,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                                 const attachDocData = {
                                     name: file.name,
                                     type: 3, // File đính kèm
-                                    contractId: newContractId,
+                                    contractId: currentContractId,
                                     fileName: attachUploadResponse.data.fileName,
                                     path: attachUploadResponse.data.path,
                                     status: 1
@@ -1731,7 +1862,14 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                     }
                 }
 
-                showToast('Tạo hợp đồng thành công! Contract ID: ' + newContractId, 'success', 3000);
+                setContractId(currentContractId);
+                showToast(
+                    isEdit
+                        ? 'Cập nhật hợp đồng thành công!'
+                        : 'Tạo hợp đồng thành công! Contract ID: ' + currentContractId,
+                    'success',
+                    3000
+                );
 
                 // Move to next step
                 setCurrentStep(currentStep + 1);
@@ -1866,17 +2004,77 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         try {
             setLoading(true);
 
-            // 4.1. Tạo Fields
-            // Loại bỏ id khỏi payload khi tạo mới (id chỉ dùng khi edit)
-            const fieldsPayload = fieldsData.map(({ id, ...field }) => field);
-            console.log('[Step 4] Creating fields...', fieldsPayload);
-            const fieldsResponse = await contractService.createField(fieldsPayload);
+            // 4.1. Tạo/Cập nhật Fields
+            if (!isEdit) {
+                const fieldsPayload = fieldsData.map(field => ({
+                    name: field.name,
+                    font: field.font || 'Times New Roman',
+                    fontSize: field.fontSize || 11,
+                    boxX: field.boxX ?? field.x ?? 0,
+                    boxY: field.boxY ?? field.y ?? 0,
+                    page: field.page ? field.page.toString() : '1',
+                    ordering: field.ordering ?? 0,
+                    boxW: field.boxW ?? field.width ?? 0,
+                    boxH: (field.boxH ?? field.height ?? '30').toString(),
+                    contractId,
+                    documentId: field.documentId || documentId,
+                    type: field.type || 1,
+                    recipientId: field.recipientId || null,
+                    status: field.status ?? 0
+                }));
 
-            if (fieldsResponse.code !== 'SUCCESS') {
-                throw new Error(fieldsResponse.message || 'Không thể tạo fields');
+                console.log('[Step 4] Creating fields...', fieldsPayload);
+                const fieldsResponse = await contractService.createField(fieldsPayload);
+
+                if (fieldsResponse.code !== 'SUCCESS') {
+                    throw new Error(fieldsResponse.message || 'Không thể tạo fields');
+                }
+
+                console.log('[Step 4] Fields created:', fieldsResponse.data);
+            } else {
+                const toCreate = [];
+                const toUpdate = [];
+
+                fieldsData.forEach(field => {
+                    const payload = {
+                        name: field.name,
+                        font: field.font || 'Times New Roman',
+                        fontSize: field.fontSize || 11,
+                        boxX: field.boxX ?? field.x ?? 0,
+                        boxY: field.boxY ?? field.y ?? 0,
+                        page: field.page ? field.page.toString() : '1',
+                        ordering: field.ordering ?? 0,
+                        boxW: field.boxW ?? field.width ?? 0,
+                        boxH: (field.boxH ?? field.height ?? '30').toString(),
+                        contractId,
+                        documentId: field.documentId || documentId,
+                        type: field.type || 1,
+                        recipientId: field.recipientId || null,
+                        status: field.status ?? 0
+                    };
+
+                    if (field.id) {
+                        toUpdate.push({ id: field.id, payload });
+                    } else {
+                        toCreate.push(payload);
+                    }
+                });
+
+                if (toCreate.length > 0) {
+                    console.log('[Step 4] Creating new fields (edit mode)...', toCreate);
+                    const createRes = await contractService.createField(toCreate);
+                    if (createRes.code !== 'SUCCESS') {
+                        throw new Error(createRes.message || 'Không thể tạo field mới');
+                    }
+                }
+
+                for (const item of toUpdate) {
+                    const updateRes = await contractService.updateField(item.id, item.payload);
+                    if (updateRes.code !== 'SUCCESS') {
+                        throw new Error(updateRes.message || 'Không thể cập nhật field');
+                    }
+                }
             }
-
-            console.log('[Step 4] Fields created:', fieldsResponse.data);
 
             // 4.2. Thay đổi trạng thái hợp đồng sang CREATED (status = 10)
             console.log('[Step 4] Changing contract status to CREATED (10)...');
