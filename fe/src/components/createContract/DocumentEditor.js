@@ -124,7 +124,6 @@ function DocumentEditor({
     // Map component types sang field types theo CreateContractFlow.md
     const getFieldType = (componentId) => {
         const typeMap = {
-            'document-number': 4,  // CONTRACT_NO
             'text': 1,             // TEXT
             'image-signature': 2,  // IMAGE_SIGN
             'digital-signature': 3 // DIGITAL_SIGN
@@ -167,13 +166,6 @@ function DocumentEditor({
 
     // Dữ liệu mẫu cho các thành phần có thể kéo thả
     const availableComponents = [
-        {
-            id: 'document-number',
-            name: 'SỐ TÀI LIỆU',
-            icon: '📄',
-            type: 'field',
-            autoCreate: true // Tự động tạo khi click
-        },
         {
             id: 'text',
             name: 'TEXT',
@@ -258,14 +250,12 @@ function DocumentEditor({
     // };
 
     const handleComponentSelect = (component) => {
-        // Nếu component có autoCreate (Số tài liệu hoặc Text), tự động tạo component ở giữa màn hình
+        // Nếu component có autoCreate (Text), tự động tạo component ở giữa màn hình
         if (component.autoCreate) {
             // Tính toán vị trí giữa màn hình (giả sử PDF viewer có width ~800px, height ~600px)
             // Vị trí giữa: x = 400 - width/2, y = 300 - height/2
             const ordering = documentComponents.length + 1;
-            const centeredProperties = createCenteredProperties({
-                fieldName: component.id === 'document-number' ? 'Số tài liệu' : ''
-            });
+            const centeredProperties = createCenteredProperties();
             
             const newComponent = {
                 id: Date.now(),
@@ -275,7 +265,7 @@ function DocumentEditor({
                 properties: {
                     ...centeredProperties,
                     ordering: ordering,
-                    fieldName: component.id === 'document-number' ? 'Số tài liệu' : ''
+                    fieldName: ''
                 }
             };
             
@@ -484,8 +474,7 @@ function DocumentEditor({
             const loadedComponents = fieldsData.map((field, index) => {
                 // Map field type về component type
                 let componentType = 'text';
-                if (field.type === 4) componentType = 'document-number';
-                else if (field.type === 2) componentType = 'image-signature';
+                if (field.type === 2) componentType = 'image-signature';
                 else if (field.type === 3) componentType = 'digital-signature';
                 
                 // Scale coordinates from normalized (scale=1.0) to currentScale
@@ -1243,54 +1232,6 @@ function DocumentEditor({
                         
                         {selectedComponent ? (
                             <div className="properties-form">
-                                {/* Properties cho SỐ TÀI LIỆU */}
-                                {selectedComponent.id === 'document-number' && (
-                                    <>
-                                        <div className="property-group">
-                                            <label className="property-label">
-                                                NGƯỜI NHẬP: <span className="required">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="property-input"
-                                                list={`recipient-suggestions-doc-${selectedComponent.id}`}
-                                                value={recipientSearchValue || getRecipientNameById(componentProperties.signer)}
-                                                onChange={(e) => handleRecipientSearchChange(e.target.value)}
-                                                onBlur={() => {
-                                                    // Nếu không tìm thấy recipient, reset về giá trị hiện tại
-                                                    if (!recipientSearchValue || !recipientsList.find(r => r.name === recipientSearchValue)) {
-                                                        setRecipientSearchValue(getRecipientNameById(componentProperties.signer));
-                                                    }
-                                                }}
-                                                placeholder="Nhập tên để tìm kiếm..."
-                                            />
-                                            <datalist id={`recipient-suggestions-doc-${selectedComponent.id}`}>
-                                                {nameSuggestions.map((suggestion, idx) => (
-                                                    <option key={idx} value={suggestion} onClick={() => handleSuggestionSelect(suggestion)} />
-                                                ))}
-                                            </datalist>
-                                            {signerRecipients.length > 0 && (
-                                                <select 
-                                                    className="property-input"
-                                                    style={{ marginTop: '8px' }}
-                                                    value={componentProperties.signer}
-                                                    onChange={(e) => {
-                                                        handlePropertyChange('signer', e.target.value);
-                                                        setRecipientSearchValue(getRecipientNameById(e.target.value));
-                                                    }}
-                                                >
-                                                    <option value="">Hoặc chọn từ danh sách</option>
-                                                    {signerRecipients.map(recipient => (
-                                                        <option key={recipient.id} value={recipient.id}>
-                                                            {recipient.name} ({recipient.roleName})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-
                                 {/* Properties cho TEXT */}
                                 {selectedComponent.id === 'text' && (
                                     <>
