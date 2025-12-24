@@ -178,16 +178,6 @@ function DocumentSigners({
                         />
                         <span>Tài liệu đơn lẻ theo mẫu</span>
                     </label>
-                    <label className="radio-option">
-                        <input
-                            type="radio"
-                            name="documentType"
-                            value="batch"
-                            checked={documentType === 'batch'}
-                            readOnly
-                        />
-                        <span>Tài liệu theo lô</span>
-                    </label>
                 </div>
                 <div className="workflow-checkbox">
                     <label className="checkbox-option">

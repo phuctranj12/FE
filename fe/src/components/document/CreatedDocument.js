@@ -229,7 +229,6 @@ function CreatedDocument({ selectedStatus, onDocumentClick }) {
             1: "Tài liệu gốc",
             2: "Tài liệu khách hàng",
             3: "Tài liệu đính kèm",
-            4: "Tài liệu hợp đồng theo lô",
             5: "Tài liệu hoàn thành được nén lại",
             6: "Tài liệu backup hợp đồng",
             7: "Tài liệu ảnh eKYC",

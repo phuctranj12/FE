@@ -13,7 +13,6 @@ function TemplateInfoStep({
         { value: "1", label: "Tài liệu gốc" },
         { value: "2", label: "Tài liệu khách hàng" },
         { value: "3", label: "Tài liệu đính kèm" },
-        { value: "4", label: "Tài liệu hợp đồng theo lô" }
     ];
 
     return (

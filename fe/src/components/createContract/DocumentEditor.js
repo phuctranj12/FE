@@ -1030,16 +1030,6 @@ function DocumentEditor({
                             />
                             Tài liệu đơn lẻ theo mẫu
                         </label>
-                        <label className="radio-option">
-                            <input 
-                                type="radio" 
-                                name="documentType" 
-                                value="batch"
-                                checked={documentType === 'batch'}
-                                readOnly
-                            />
-                            Tài liệu theo lô
-                        </label>
                     </div>
                     
                     <div className="pagination-controls">

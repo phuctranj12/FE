@@ -19,8 +19,6 @@ function DocumentConfirmation({
     onComplete, 
     onSaveDraft 
 }) {
-    const [currentBatchDoc, setCurrentBatchDoc] = useState(1);
-    const totalBatchDocs = 1; // Mock data
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(15);
     const [zoom, setZoom] = useState(100);
@@ -61,140 +59,11 @@ function DocumentConfirmation({
                 return 'Tài liệu đơn lẻ không theo mẫu';
             case 'single-template':
                 return 'Tài liệu đơn lẻ theo mẫu';
-            case 'batch':
-                return 'Tài liệu theo lô';
             default:
                 return 'Tài liệu đơn lẻ không theo mẫu';
         }
     };
 
-    // Render batch document UI
-    if (documentType === 'batch') {
-        return (
-            <div className="batch-confirmation-container">
-                <div className="batch-sidebar">
-                    <div className="batch-doc-navigation">
-                        <h3>SỐ TÀI LIỆU THEO LÔ</h3>
-                        <div className="batch-nav-controls">
-                            <button 
-                                onClick={() => setCurrentBatchDoc(prev => Math.max(1, prev - 1))}
-                                disabled={currentBatchDoc === 1}
-                            >
-                                ‹
-                            </button>
-                            <input 
-                                type="number" 
-                                value={currentBatchDoc} 
-                                readOnly
-                                style={{ width: '50px', textAlign: 'center' }}
-                            />
-                            <span> / {totalBatchDocs}</span>
-                            <button 
-                                onClick={() => setCurrentBatchDoc(prev => Math.min(totalBatchDocs, prev + 1))}
-                                disabled={currentBatchDoc === totalBatchDocs}
-                            >
-                                ›
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="batch-signers-info">
-                        <h3>THÔNG TIN CÁC BÊN KÝ</h3>
-                        
-                        <div className="signer-group">
-                            <h4>TỔ CHỨC CỦA TÔI</h4>
-                            <div className="signer-list">
-                                {signers.filter(s => s.role === 'my-org').map((signer, idx) => (
-                                    <div key={signer.id} className="signer-item">
-                                        <div className="signer-label">Người ký:</div>
-                                        <div className="signer-name">{signer.fullName || 'Nguyễn Quang Minh'}</div>
-                                        <div className="signer-email">({signer.email || 'minhseven2002@gmail.com'})</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="signer-group">
-                            <h4>NGƯỜI ĐƯỢC CC</h4>
-                            <div className="signer-list">
-                                {reviewers.length > 0 ? reviewers.map((reviewer, idx) => (
-                                    <div key={reviewer.id} className="signer-item">
-                                        <div className="signer-label">Người ký:</div>
-                                        <div className="signer-name">{reviewer.fullName}</div>
-                                        <div className="signer-email">({reviewer.email})</div>
-                                    </div>
-                                )) : (
-                                    <div className="empty-signer">Chưa có người được CC</div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="signer-group">
-                            <h4>Đối tác 1</h4>
-                            <div className="signer-list">
-                                {signers.filter(s => s.role !== 'my-org').map((signer, idx) => (
-                                    <div key={signer.id} className="signer-item">
-                                        <div className="signer-label">Người ký:</div>
-                                        <div className="signer-name">{signer.fullName || 'Người ký 1'}</div>
-                                        <div className="signer-email">({signer.email || 'minh@gmail.com'})</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="batch-actions">
-                        <button className="back-btn" onClick={onBack} disabled={loading}>
-                            Quay lại
-                        </button>
-                        <div className="right-actions">
-                            <button className="save-draft-btn" onClick={onSaveDraft} disabled={loading}>
-                                Lưu nháp
-                            </button>
-                            <button 
-                                className="complete-btn" 
-                                onClick={onComplete}
-                                disabled={loading || !contractId || !documentId || !fieldsData || fieldsData.length === 0}
-                            >
-                                {loading ? 'Đang xử lý...' : 'Hoàn thành'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="batch-pdf-viewer">
-                    <div className="pdf-controls">
-                        <div className="pagination-controls">
-                            <button onClick={() => handlePageChange(1)} disabled={currentPage === 1}>««</button>
-                            <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>«</button>
-                            <span>{currentPage} / {totalPages}</span>
-                            <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>»</button>
-                            <button onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages}>»»</button>
-                        </div>
-                        <div className="zoom-controls">
-                            <select value={zoom} onChange={(e) => handleZoomChange(Number(e.target.value))}>
-                                <option value={50}>50%</option>
-                                <option value={75}>75%</option>
-                                <option value={100}>100%</option>
-                                <option value={125}>125%</option>
-                                <option value={150}>150%</option>
-                                <option value={200}>200%</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className="pdf-viewer-wrapper">
-                        <PDFViewer 
-                            document={{}}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            zoom={zoom}
-                            onPageChange={handlePageChange}
-                        />
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="step-content">
@@ -220,16 +89,6 @@ function DocumentConfirmation({
                             readOnly
                         />
                         <span>Tài liệu đơn lẻ theo mẫu</span>
-                    </label>
-                    <label className="radio-option">
-                        <input
-                            type="radio"
-                            name="documentType"
-                            value="batch"
-                            checked={documentType === 'batch'}
-                            readOnly
-                        />
-                        <span>Tài liệu theo lô</span>
                     </label>
                 </div>
             </div>

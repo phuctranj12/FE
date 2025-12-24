@@ -77,7 +77,6 @@ function AdvancedSearchModal({ show, onClose, onSearch }) {
                                         <option value="1">Tài liệu gốc</option>
                                         <option value="2">Tài liệu khách hàng</option>
                                         <option value="3">Tài liệu đính kèm</option>
-                                        <option value="4">Tài liệu hợp đồng theo lô</option>
                                         <option value="5">Tài liệu hoàn thành được nén lại</option>
                                         <option value="6">Tài liệu backup hợp đồng</option>
                                         <option value="7">Tài liệu ảnh eKYC</option>

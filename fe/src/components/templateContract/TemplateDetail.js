@@ -56,8 +56,6 @@ function TemplateDetail({ mode = 'view' }) {
                 return 'Tài liệu khách hàng';
             case '3':
                 return 'Tài liệu đính kèm';
-            case '4':
-                return 'Tài liệu hợp đồng theo lô';
             default:
                 return 'Chưa xác định';
         }

@@ -77,7 +77,6 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         attachedFile: '',
         uploadToMinistry: 'Không',
         templateFile: '',
-        batchFile: '',
         organization: '',
         organizationOrdering: 1,
         printWorkflow: false,
@@ -749,12 +748,6 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
 
     // Điều chỉnh số bước dựa trên loại tài liệu
     const getSteps = () => {
-        if (documentType === 'batch') {
-            return [
-                { id: 1, title: 'THÔNG TIN TÀI LIỆU', active: currentStep === 1 },
-                { id: 2, title: 'XÁC NHẬN VÀ HOÀN TẤT', active: currentStep === 2 }
-            ];
-        }
         return [
             { id: 1, title: 'THÔNG TIN TÀI LIỆU', active: currentStep === 1 },
             { id: 2, title: 'XÁC ĐỊNH NGƯỜI KÝ', active: currentStep === 2 },
@@ -764,7 +757,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     };
 
     const steps = getSteps();
-    const maxStep = documentType === 'batch' ? 2 : 4;
+    const maxStep = 4;
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -937,15 +930,6 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
         }
     };
 
-    const handleBatchFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setFormData(prev => ({
-                ...prev,
-                batchFile: file.name
-            }));
-        }
-    };
 
     // Handle attached files upload (type = 3)
     const handleAttachedFilesUpload = (e) => {
@@ -1689,26 +1673,22 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             errors.push('Ngày hết hạn ký là bắt buộc');
         }
 
-        if (documentType !== 'batch' && !formData.expirationDate) {
+        if (!formData.expirationDate) {
             errors.push('Ngày hết hiệu lực tài liệu là bắt buộc');
         }
 
-        if (!formData.pdfFile && documentType !== 'batch') {
+        if (!formData.pdfFile) {
             if (!isEdit || (isEdit && !documentId)) {
                 errors.push('Vui lòng tải lên file PDF');
             }
         }
 
-        if ((documentType === 'single-template' || documentType === 'batch')) {
+        if (documentType === 'single-template') {
             const templateValue = formData.documentTemplate;
             const templateStr = templateValue ? String(templateValue).trim() : '';
             if (!templateStr) {
                 errors.push('Vui lòng chọn mẫu tài liệu');
             }
-        }
-
-        if (documentType === 'batch' && !formData.batchFile) {
-            errors.push('Vui lòng tải lên file tài liệu theo lô');
         }
 
         // Kiểm tra số tài liệu bắt buộc
@@ -1880,7 +1860,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             } finally {
                 setLoading(false);
             }
-        } else if (currentStep === 2 && documentType !== 'batch') {
+        } else if (currentStep === 2) {
             if (!validateStep2()) {
                 return;
             }
@@ -2076,8 +2056,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 }
             }
 
-            // 2. Nếu đang ở bước >= 2 và không phải batch -> lưu người xử lý (participants)
-            if (currentStep >= 2 && documentType !== 'batch') {
+            // 2. Nếu đang ở bước >= 2 -> lưu người xử lý (participants)
+            if (currentStep >= 2) {
                 const participantsPayload = buildParticipantsPayload();
                 if (participantsPayload && participantsPayload.length > 0) {
                     try {
@@ -2283,19 +2263,6 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     };
 
     const renderStepContent = () => {
-        // Nếu là batch document, chỉ có 2 bước
-        if (documentType === 'batch') {
-            switch (currentStep) {
-                case 1:
-                    return renderStep1();
-                case 2:
-                    return renderStep4(); // Confirmation step
-                default:
-                    return renderStep1();
-            }
-        }
-
-        // Normal flow với 4 bước
         switch (currentStep) {
             case 1:
                 return renderStep1();
@@ -2318,7 +2285,6 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 formData={formData}
                 handleInputChange={handleInputChange}
                 handleFileUpload={handleFileUpload}
-                handleBatchFileUpload={handleBatchFileUpload}
                 documentTypes={documentTypes}
                 relatedContracts={relatedContracts}
                 documentTemplates={documentTemplates}
@@ -2509,7 +2475,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 documentId={documentId}
                 fieldsData={fieldsData}
                 loading={loading}
-                onBack={() => setCurrentStep(documentType === 'batch' ? 1 : 3)}
+                onBack={() => setCurrentStep(3)}
                 onComplete={handleComplete}
                 onSaveDraft={handleSaveDraft}
             />

@@ -7,7 +7,6 @@ function DocumentTypeSelection({
     formData, 
     handleInputChange, 
     handleFileUpload, 
-    handleBatchFileUpload,
     documentTypes = [],
     relatedContracts = [],
     documentTemplates = [],
@@ -38,119 +37,6 @@ function DocumentTypeSelection({
         handleInputChange({ target: { name, value: formatted } });
     };
 
-    // Batch document type
-    if (documentType === 'batch') {
-        return (
-            <div className="step-content">
-                <div className="document-type-section">
-                    <div className="radio-group">
-                        <label className="radio-option">
-                            <input
-                                type="radio"
-                                name="documentType"
-                                value="single-no-template"
-                                checked={documentType === 'single-no-template'}
-                                onChange={(e) => setDocumentType(e.target.value)}
-                            />
-                            <span>Tài liệu đơn lẻ không theo mẫu</span>
-                        </label>
-                        <label className="radio-option">
-                            <input
-                                type="radio"
-                                name="documentType"
-                                value="single-template"
-                                checked={documentType === 'single-template'}
-                                onChange={(e) => setDocumentType(e.target.value)}
-                            />
-                            <span>Tài liệu đơn lẻ theo mẫu</span>
-                        </label>
-                        <label className="radio-option">
-                            <input
-                                type="radio"
-                                name="documentType"
-                                value="batch"
-                                checked={documentType === 'batch'}
-                                onChange={(e) => setDocumentType(e.target.value)}
-                            />
-                            <span>Tài liệu theo lô</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div className="form-content">
-                    <div className="left-column">
-                        <div className="form-group">
-                            <label>Tên mẫu tài liệu <span style={{ color: 'red' }}>*</span></label>
-                            <div className="dropdown-container">
-                                <select
-                                    name="documentTemplate"
-                                    value={formData.documentTemplate || ''}
-                                    onChange={handleInputChange}
-                                    disabled={loading}
-                                >
-                                    <option value="">-- Chọn mẫu tài liệu --</option>
-                                    {documentTemplates.map((template) => (
-                                        <option key={template.id} value={template.id}>
-                                            {template.name || template.code || `Template ${template.id}`}
-                                        </option>
-                                    ))}
-                                </select>
-                                <span className="dropdown-icon">▼</span>
-                            </div>
-                        </div>
-                        <div className="template-link">
-                            <span>Bạn chưa có file mẫu?</span>
-                            <a href="#" className="download-link">Tải file mẫu</a>
-                        </div>
-                    </div>
-
-                    <div className="right-column">
-                        <div className="form-group">
-                            <label>Đẩy file tài liệu lên Bộ Công thương</label>
-                            <div className="dropdown-container">
-                                <select
-                                    name="uploadToMinistry"
-                                    value={formData.uploadToMinistry}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="Không">Không</option>
-                                    <option value="Có">Có</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div 
-                    className="file-upload-area" 
-                    onClick={() => {
-                        const input = document.getElementById('file-upload-batch');
-                        if (input) input.click();
-                    }}
-                >
-                    <div className="upload-icon">📊</div>
-                    <div className="upload-text">
-                        Kéo thả hoặc tải lên file tài liệu <span className="highlight">Tại đây</span>
-                    </div>
-                    <div className="upload-support">Hỗ trợ file XLS, XLSX</div>
-                    <input
-                        type="file"
-                        accept=".xls,.xlsx"
-                        onChange={handleBatchFileUpload}
-                        style={{ display: 'none' }}
-                        id="file-upload-batch"
-                    />
-                    <label 
-                        htmlFor="file-upload-batch" 
-                        className="file-upload-label"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {formData.batchFile || 'Chọn file'}
-                    </label>
-                </div>
-            </div>
-        );
-    }
 
     // Single template document type
     if (documentType === 'single-template') {
@@ -177,16 +63,6 @@ function DocumentTypeSelection({
                                 onChange={(e) => setDocumentType(e.target.value)}
                             />
                             <span>Tài liệu đơn lẻ theo mẫu</span>
-                        </label>
-                        <label className="radio-option">
-                            <input
-                                type="radio"
-                                name="documentType"
-                                value="batch"
-                                checked={documentType === 'batch'}
-                                onChange={(e) => setDocumentType(e.target.value)}
-                            />
-                            <span>Tài liệu theo lô</span>
                         </label>
                     </div>
                 </div>
@@ -345,16 +221,6 @@ function DocumentTypeSelection({
                             onChange={(e) => setDocumentType(e.target.value)}
                         />
                         <span>Tài liệu đơn lẻ theo mẫu</span>
-                    </label>
-                    <label className="radio-option">
-                        <input
-                            type="radio"
-                            name="documentType"
-                            value="batch"
-                            checked={documentType === 'batch'}
-                            onChange={(e) => setDocumentType(e.target.value)}
-                        />
-                        <span>Tài liệu theo lô</span>
                     </label>
                 </div>
             </div>
