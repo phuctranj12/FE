@@ -92,10 +92,19 @@ const certificateService = {
     },
 
     // 6️⃣ Tìm kiếm + phân trang server-side -> /find-cert
-    findCerts: async ({ subject = "", serial_number = "", status = 1, size = 10, page = 0 }) => {
+    findCerts: async ({ subject = "", serial_number = "", status = 1, size = 100, page = 0 }) => {
         try {
+            const token = localStorage.getItem('token');
             const params = { subject, serial_number, status, size, page };
-            const res = await apiClient.get("/certs/find-cert", { params });
+
+            const res = await apiClient.get("/contracts/certs/find-cert", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                },
+                params
+            });
+
             return res.data?.data || res.data;
         } catch (error) {
             console.error('❌ Lỗi khi tìm kiếm chứng thư số:', error);

@@ -39,9 +39,18 @@ function ServerCertificateList() {
     // Load list cert
     const loadCertificates = async () => {
         try {
-            const data = await certificateService.getAllCertificates();
+            // const data = await certificateService.getAllCertificates();
+            // const data = await certificateService.findCerts();
+            const data = await certificateService.findCerts({
+                subject: "",
+                serial_number: "",
+                status: 1, // hoặc để trống nếu muốn lấy tất cả
+                size: 100, // số lượng records muốn lấy
+                page: 0
+            });
             console.log("Danh sách chứng thư số tải về:", data);
-            const arr = data.certificates || [];
+            // const arr = data.certificates || [];
+            const arr = data.content || data.certificates || data || [];
             setAllCertificates(arr);
             setFiltered(arr);
         } catch (error) {
@@ -130,7 +139,7 @@ function ServerCertificateList() {
             // Lấy email của user hiện tại
             const userResponse = await customerService.getCustomerByToken();
             const currentUserEmail = userResponse?.data?.email;
-            
+
             if (!currentUserEmail) {
                 toast.error('Không tìm thấy email của user hiện tại');
                 return;
@@ -138,7 +147,7 @@ function ServerCertificateList() {
 
             // Lấy thông tin cert để lấy danh sách customers
             const certInfo = await certificateService.findCertById(certificateId);
-            
+
             if (!certInfo?.customers || !Array.isArray(certInfo.customers)) {
                 toast.error('Không tìm thấy danh sách users trong chứng thư số');
                 return;
@@ -156,26 +165,26 @@ function ServerCertificateList() {
 
             // Lấy id của customer trùng email
             const customerIds = [matchedCustomer.id];
-            
+
             // Gọi API xóa user hiện tại khỏi cert
             await certificateService.deleteCertificate(certificateId, customerIds);
             toast.success('Xóa chứng thư số thành công!');
-            
+
             // Reload certificate list after successful deletion
             await loadCertificates();
         } catch (error) {
             console.error('❌ Lỗi khi xóa chứng thư số:', error);
-            
+
             // Extract error message from different error formats
             let errorMessage = 'Không thể xóa chứng thư số. Vui lòng thử lại.';
-            
+
             if (error.response?.data) {
                 const errorData = error.response.data;
                 errorMessage = errorData.message || errorData.error || errorData.data || errorMessage;
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            
+
             toast.error(errorMessage);
         }
     };
