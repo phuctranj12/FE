@@ -206,15 +206,22 @@ function SignDialog({
             setLoading(true);
             setError(null);
 
-            // Cập nhật giá trị cho text fields và contract number fields trước khi ký
-            // Tạo mảng fields mới với giá trị đã được cập nhật, format theo yêu cầu của API
-            const updatedFields = fields.map(field => {
-                // Nếu là text field hoặc contract number field được assign cho recipient này
-                if ((field.type === 1 || field.type === 4) && field.recipientId === recipientId) {
-                    const fieldValue = textFieldValues[field.id] || '';
-                    // Chuyển text sang base64 trước khi cập nhật
-                    const encodedValue = encodeToBase64(fieldValue.trim());
-                    return {
+            // Tạo danh sách tất cả các fields cần xử lý (text fields + signature fields)
+            // Sắp xếp theo thứ tự: text fields trước (type 1, 4), sau đó signature fields (type 3)
+            const fieldsToProcess = [];
+
+            // 1. Thêm text fields và contract number fields (type 1, 4) trước
+            // Sắp xếp text fields theo ordering để đảm bảo thứ tự đúng
+            const sortedTextFields = [...textFields].sort((a, b) => (a.ordering || 0) - (b.ordering || 0));
+            sortedTextFields.forEach(field => {
+                const fieldValue = textFieldValues[field.id] || '';
+                // Chuyển text sang base64 trước khi cập nhật
+                const encodedValue = encodeToBase64(fieldValue.trim());
+                
+                fieldsToProcess.push({
+                    field: field,
+                    type: 'text',
+                    payload: {
                         id: field.id, // Giữ id để backend biết đây là update
                         name: field.name || '',
                         type: field.type,
@@ -231,69 +238,73 @@ function SignDialog({
                         documentId: field.documentId,
                         recipientId: field.recipientId,
                         ordering: field.ordering || 1
-                    };
-                }
-                // Giữ nguyên các field khác, format lại để đảm bảo đúng format API
-                return {
-                    id: field.id,
-                    name: field.name || '',
-                    type: field.type,
-                    value: field.value || '',
-                    font: field.font || 'Times New Roman',
-                    fontSize: field.fontSize || 13,
-                    page: typeof field.page === 'string' ? parseInt(field.page) || 1 : (field.page || 1),
-                    boxX: field.boxX || 0,
-                    boxY: field.boxY || 0,
-                    boxW: field.boxW || 100,
-                    boxH: typeof field.boxH === 'string' ? field.boxH : (field.boxH || 30).toString(),
-                    status: field.status || 0,
-                    contractId: contractId,
-                    documentId: field.documentId,
-                    recipientId: field.recipientId,
-                    ordering: field.ordering || 1
-                };
+                    }
+                });
             });
 
-            // Gọi createField với tất cả fields (bao gồm cả fields đã được cập nhật)
-            // Backend sẽ xử lý update nếu field có id
-            try {
-                await contractService.createField(updatedFields);
-            } catch (err) {
-                console.error('Error updating fields:', err);
-                // Không throw error, chỉ log để không chặn quá trình ký
-                // Nếu backend yêu cầu bắt buộc phải update thành công, có thể uncomment dòng dưới
-                // throw new Error('Cập nhật thông tin fields thất bại. Vui lòng thử lại.');
-            }
+            // 2. Thêm signature fields (type 3) sau
+            // Sắp xếp signature fields theo ordering để đảm bảo thứ tự đúng
+            const sortedSignatureFields = [...availableFields].sort((a, b) => (a.ordering || 0) - (b.ordering || 0));
+            sortedSignatureFields.forEach(field => {
+                fieldsToProcess.push({
+                    field: field,
+                    type: 'signature'
+                });
+            });
 
-            // Ký tất cả các field hợp lệ cho người ký hiện tại
-            for (const field of availableFields) {
-                // Tách base64 thuần từ data URL (bỏ prefix) trước khi gửi lên server
-                const base64Only = imageBase64 ? extractBase64FromDataURL(imageBase64) : null;
-                
-                const certData = {
-                    certId: parseInt(selectedCertId, 10),
-                    imageBase64: base64Only || null,
-                    field: {
-                        id: field.id,
-                        page: field.page || 1,
-                        boxX: field.boxX || 0,
-                        boxY: field.boxY || 0,
-                        boxW: field.boxW || 100,
-                        boxH: field.boxH || 30
-                    },
-                    width: null,
-                    height: null,
-                    isTimestamp: "false",
-                    type: 3
-                };
+            // 3. Gọi API cho từng field riêng biệt theo thứ tự
+            for (const item of fieldsToProcess) {
+                if (item.type === 'text') {
+                    // Gọi API cập nhật text field
+                    try {
+                        if (item.payload.id) {
+                            // Field có id -> dùng updateField
+                            const updateRes = await contractService.updateField(item.payload.id, item.payload);
+                            if (updateRes?.code !== 'SUCCESS') {
+                                throw new Error(updateRes?.message || 'Cập nhật text field thất bại');
+                            }
+                        } else {
+                            // Field không có id -> dùng createField với mảng 1 phần tử
+                            const createRes = await contractService.createField([item.payload]);
+                            if (createRes?.code !== 'SUCCESS') {
+                                throw new Error(createRes?.message || 'Tạo text field thất bại');
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error updating text field:', err);
+                        throw new Error(err.message || 'Cập nhật text field thất bại. Vui lòng thử lại.');
+                    }
+                } else if (item.type === 'signature') {
+                    // Gọi API ký signature field
+                    const field = item.field;
+                    // Tách base64 thuần từ data URL (bỏ prefix) trước khi gửi lên server
+                    const base64Only = imageBase64 ? extractBase64FromDataURL(imageBase64) : null;
+                    
+                    const certData = {
+                        certId: parseInt(selectedCertId, 10),
+                        imageBase64: base64Only || null,
+                        field: {
+                            id: field.id,
+                            page: field.page || 1,
+                            boxX: field.boxX || 0,
+                            boxY: field.boxY || 0,
+                            boxW: field.boxW || 100,
+                            boxH: field.boxH || 30
+                        },
+                        width: null,
+                        height: null,
+                        isTimestamp: "false",
+                        type: 3
+                    };
 
-                const response = await contractService.certificate(recipientId, certData);
-                if (response?.code !== 'SUCCESS') {
-                    throw new Error(response?.message || 'Ký hợp đồng thất bại');
+                    const response = await contractService.certificate(recipientId, certData);
+                    if (response?.code !== 'SUCCESS') {
+                        throw new Error(response?.message || 'Ký hợp đồng thất bại');
+                    }
                 }
             }
 
-            // Sau khi ký hết các field, gọi API phê duyệt luồng cho recipient hiện tại
+            // Sau khi xử lý hết các field, gọi API phê duyệt luồng cho recipient hiện tại
             const approvalRes = await contractService.approvalProcess(recipientId);
             if (approvalRes?.code !== 'SUCCESS') {
                 throw new Error(approvalRes?.message || 'Phê duyệt hợp đồng thất bại');
