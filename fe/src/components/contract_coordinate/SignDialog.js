@@ -44,6 +44,18 @@ function SignDialog({
         return base64Part || null;
     }
 
+    // Helper function to convert text to base64 (with UTF-8 support)
+    const encodeToBase64 = (text) => {
+        if (!text) return '';
+        try {
+            // Encode UTF-8 string to base64
+            return btoa(unescape(encodeURIComponent(text)));
+        } catch (err) {
+            console.warn('Error encoding to base64:', err);
+            return text; // Fallback to original text if encoding fails
+        }
+    };
+
     // Reset state khi mở / đóng dialog
     useEffect(() => {
         if (open) {
@@ -200,11 +212,13 @@ function SignDialog({
                 // Nếu là text field hoặc contract number field được assign cho recipient này
                 if ((field.type === 1 || field.type === 4) && field.recipientId === recipientId) {
                     const fieldValue = textFieldValues[field.id] || '';
+                    // Chuyển text sang base64 trước khi cập nhật
+                    const encodedValue = encodeToBase64(fieldValue.trim());
                     return {
                         id: field.id, // Giữ id để backend biết đây là update
                         name: field.name || '',
                         type: field.type,
-                        value: fieldValue.trim(),
+                        value: encodedValue,
                         font: field.font || 'Times New Roman',
                         fontSize: field.fontSize || 13,
                         page: typeof field.page === 'string' ? parseInt(field.page) || 1 : (field.page || 1),
