@@ -1091,6 +1091,45 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                 return;
             }
 
+            // Validate coordinators
+            const incompleteCoordinators = partner.coordinators?.filter((coord) =>
+                coord.fullName !== undefined &&
+                coord.email !== undefined &&
+                (!coord.fullName?.trim() || !coord.email?.trim())
+            ) || [];
+            if (incompleteCoordinators.length > 0) {
+                errors.push(
+                    `Vui lòng nhập đầy đủ Họ tên và Email cho tất cả người điều phối trong đối tác "${partner.name}".`
+                );
+            }
+
+            const invalidCoordinators = partner.coordinators?.filter(
+                (coord) => coord.email && !validateEmail(coord.email)
+            ) || [];
+            if (invalidCoordinators.length > 0) {
+                errors.push(`Email của người điều phối trong đối tác "${partner.name}" không hợp lệ.`);
+            }
+
+            // Validate reviewers
+            const incompletePartnerReviewers = partner.reviewers?.filter((reviewer) =>
+                reviewer.fullName !== undefined &&
+                reviewer.email !== undefined &&
+                (!reviewer.fullName?.trim() || !reviewer.email?.trim())
+            ) || [];
+            if (incompletePartnerReviewers.length > 0) {
+                errors.push(
+                    `Vui lòng nhập đầy đủ Họ tên và Email cho tất cả người xem xét trong đối tác "${partner.name}".`
+                );
+            }
+
+            const invalidPartnerReviewers = partner.reviewers?.filter(
+                (reviewer) => reviewer.email && !validateEmail(reviewer.email)
+            ) || [];
+            if (invalidPartnerReviewers.length > 0) {
+                errors.push(`Email của người xem xét trong đối tác "${partner.name}" không hợp lệ.`);
+            }
+
+            // Validate signers
             const validatePartnerSigners = (signersList) => {
                 const invalid = signersList.filter((signer) => {
                     if (!signer.fullName?.trim()) return false;
@@ -1119,7 +1158,26 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
             };
 
             if (partner.type === 2 || partner.type === 3) {
-                validatePartnerSigners(partner.signers);
+                validatePartnerSigners(partner.signers || []);
+            }
+
+            // Validate clerks
+            const incompletePartnerClerks = partner.clerks?.filter((clerk) =>
+                clerk.fullName !== undefined &&
+                clerk.email !== undefined &&
+                (!clerk.fullName?.trim() || !clerk.email?.trim())
+            ) || [];
+            if (incompletePartnerClerks.length > 0) {
+                errors.push(
+                    `Vui lòng nhập đầy đủ Họ tên và Email cho tất cả văn thư trong đối tác "${partner.name}".`
+                );
+            }
+
+            const invalidPartnerClerks = partner.clerks?.filter(
+                (clerk) => clerk.email && !validateEmail(clerk.email)
+            ) || [];
+            if (invalidPartnerClerks.length > 0) {
+                errors.push(`Email của văn thư trong đối tác "${partner.name}" không hợp lệ.`);
             }
         });
 
@@ -1215,7 +1273,10 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
             if (!partner.name?.trim()) return;
 
             const partnerRecipients = [];
+            addRecipients(partner.coordinators, 1, partnerRecipients); // Thêm coordinators
+            addRecipients(partner.reviewers, 2, partnerRecipients); // Thêm reviewers
             addRecipients(partner.signers, 3, partnerRecipients);
+            addRecipients(partner.clerks, 4, partnerRecipients); // Thêm clerks
 
             if (partnerRecipients.length > 0) {
                 const partnerOrdering = parseInt(partner.ordering, 10);
