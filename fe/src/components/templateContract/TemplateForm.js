@@ -263,11 +263,69 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                             cid
                         );
                     if (participantsRes?.code === 'SUCCESS' && participantsRes?.data) {
-                        setParticipantsData(
-                            Array.isArray(participantsRes.data)
-                                ? participantsRes.data
-                                : []
-                        );
+                        const participants = Array.isArray(participantsRes.data)
+                            ? participantsRes.data
+                            : [];
+                        setParticipantsData(participants);
+
+                        // Parse participants thành partners, reviewers, signers, clerks
+                        const newReviewers = [];
+                        const newSigners = [];
+                        const newClerks = [];
+                        const newPartners = [];
+
+                        participants.forEach((participant, pIndex) => {
+                            const isMyOrg = participant.type === 1;
+                            const baseOrdering = participant.ordering || pIndex + 1;
+
+                            (participant.recipients || []).forEach((recipient, rIndex) => {
+                                const mapped = {
+                                    id: Date.now() + pIndex + rIndex,
+                                    recipientId: recipient.id, // Giữ recipientId khi edit
+                                    fullName: recipient.name || '',
+                                    email: recipient.email || '',
+                                    phone: recipient.phone || '',
+                                    card_id: recipient.cardId || recipient.card_id || '',
+                                    cardId: recipient.cardId || recipient.card_id || '',
+                                    ordering: recipient.ordering || rIndex + 1,
+                                    loginByPhone: recipient.loginByPhone || false
+                                };
+
+                                if (isMyOrg) {
+                                    if (recipient.role === 2) newReviewers.push(mapped);
+                                    else if (recipient.role === 3) newSigners.push(mapped);
+                                    else if (recipient.role === 4) newClerks.push(mapped);
+                                } else {
+                                    // Partner participants -> push into partners array
+                                    let partner = newPartners.find(p => p.participantId === participant.id);
+                                    if (!partner) {
+                                        partner = {
+                                            id: Date.now() + pIndex,
+                                            participantId: participant.id,
+                                            type: participant.type || 2,
+                                            name: participant.name || `Đối tác ${pIndex + 1}`,
+                                            ordering: baseOrdering,
+                                            coordinators: [],
+                                            reviewers: [],
+                                            signers: [],
+                                            clerks: []
+                                        };
+                                        newPartners.push(partner);
+                                    }
+
+                                    if (recipient.role === 1) partner.coordinators.push(mapped);
+                                    else if (recipient.role === 2) partner.reviewers.push(mapped);
+                                    else if (recipient.role === 3) partner.signers.push(mapped);
+                                    else if (recipient.role === 4) partner.clerks.push(mapped);
+                                }
+                            });
+                        });
+
+                        // Update state với dữ liệu đã parse
+                        if (newReviewers.length > 0) setReviewers(newReviewers);
+                        if (newSigners.length > 0) setSigners(newSigners);
+                        if (newClerks.length > 0) setDocumentClerks(newClerks);
+                        if (newPartners.length > 0) setPartners(newPartners);
                     }
                 } catch (paErr) {
                     console.warn('Không thể tải participants của mẫu:', paErr);
@@ -336,59 +394,92 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
 
                 if (participantsData && participantsData.length > 0 && contractId) {
                     try {
-                        const participant = participantsData[0];
-                        if (participant && participant.recipients) {
-                            const newReviewers = [];
-                            const newSigners = [];
-                            const newClerks = [];
+                        // Parse tất cả participants, bao gồm cả partners
+                        const newReviewers = [];
+                        const newSigners = [];
+                        const newClerks = [];
+                        const newPartners = [];
 
-                            participant.recipients.forEach((recipient, index) => {
+                        participantsData.forEach((participant, pIndex) => {
+                            const isMyOrg = participant.type === 1;
+                            const baseOrdering = participant.ordering || pIndex + 1;
+
+                            (participant.recipients || []).forEach((recipient, rIndex) => {
                                 const recipientData = {
-                                    id: Date.now() + index,
+                                    id: Date.now() + pIndex + rIndex,
                                     recipientId: recipient.id,
                                     fullName: recipient.name || '',
                                     email: recipient.email || '',
                                     phone: recipient.phone || '',
-                                    card_id:
-                                        recipient.card_id || recipient.cardId || '',
-                                    ordering: recipient.ordering || index + 1,
+                                    card_id: recipient.card_id || recipient.cardId || '',
+                                    cardId: recipient.cardId || recipient.card_id || '',
+                                    ordering: recipient.ordering || rIndex + 1,
                                     loginByPhone: recipient.loginByPhone || false
                                 };
 
-                                if (recipient.role === 2) newReviewers.push(recipientData);
-                                else if (recipient.role === 3)
-                                    newSigners.push(recipientData);
-                                else if (recipient.role === 4)
-                                    newClerks.push(recipientData);
-                            });
+                                if (isMyOrg) {
+                                    if (recipient.role === 2) newReviewers.push(recipientData);
+                                    else if (recipient.role === 3) newSigners.push(recipientData);
+                                    else if (recipient.role === 4) newClerks.push(recipientData);
+                                } else {
+                                    // Partner participants -> push into partners array
+                                    let partner = newPartners.find(p => p.participantId === participant.id);
+                                    if (!partner) {
+                                        partner = {
+                                            id: Date.now() + pIndex,
+                                            participantId: participant.id,
+                                            type: participant.type || 2,
+                                            name: participant.name || `Đối tác ${pIndex + 1}`,
+                                            ordering: baseOrdering,
+                                            coordinators: [],
+                                            reviewers: [],
+                                            signers: [],
+                                            clerks: []
+                                        };
+                                        newPartners.push(partner);
+                                    }
 
-                            const hasOnlyEmptySigner =
-                                signers.length === 1 &&
-                                !signers[0].fullName &&
-                                !signers[0].email;
-
-                            const shouldLoad =
-                                (newReviewers.length > 0 ||
-                                    newSigners.length > 0 ||
-                                    newClerks.length > 0) &&
-                                reviewers.length === 0 &&
-                                hasOnlyEmptySigner &&
-                                documentClerks.length === 0;
-
-                            if (shouldLoad) {
-                                setReviewers(newReviewers);
-                                if (newSigners.length > 0) {
-                                    setSigners(newSigners);
+                                    if (recipient.role === 1) partner.coordinators.push(recipientData);
+                                    else if (recipient.role === 2) partner.reviewers.push(recipientData);
+                                    else if (recipient.role === 3) partner.signers.push(recipientData);
+                                    else if (recipient.role === 4) partner.clerks.push(recipientData);
                                 }
-                                setDocumentClerks(newClerks);
-                            }
+                            });
+                        });
 
-                            if (participant.ordering) {
-                                setFormData(prev => ({
-                                    ...prev,
-                                    organizationOrdering: participant.ordering
-                                }));
+                        const hasOnlyEmptySigner =
+                            signers.length === 1 &&
+                            !signers[0].fullName &&
+                            !signers[0].email;
+
+                        const shouldLoad =
+                            (newReviewers.length > 0 ||
+                                newSigners.length > 0 ||
+                                newClerks.length > 0 ||
+                                newPartners.length > 0) &&
+                            reviewers.length === 0 &&
+                            hasOnlyEmptySigner &&
+                            documentClerks.length === 0 &&
+                            partners.length === 0;
+
+                        if (shouldLoad) {
+                            setReviewers(newReviewers);
+                            if (newSigners.length > 0) {
+                                setSigners(newSigners);
                             }
+                            setDocumentClerks(newClerks);
+                            if (newPartners.length > 0) {
+                                setPartners(newPartners);
+                            }
+                        }
+
+                        // Set organization ordering từ participant đầu tiên (tổ chức của tôi)
+                        const firstParticipant = participantsData.find(p => p.type === 1);
+                        if (firstParticipant && firstParticipant.ordering) {
+                            setFormData(prev => ({
+                                ...prev,
+                                organizationOrdering: firstParticipant.ordering
+                            }));
                         }
                     } catch (err) {
                         console.error(
