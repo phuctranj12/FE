@@ -13,7 +13,8 @@ function TemplateContractItem({
     onShare, 
     onCopy, 
     onCreateWithFlow, 
-    onDelete 
+    onDelete,
+    onDownload
 }) {
     const {
         id,
@@ -143,6 +144,7 @@ function TemplateContractItem({
                 onCopy={onCopy}
                 onCreateWithFlow={onCreateWithFlow}
                 onDelete={onDelete}
+                onDownload={onDownload}
             />
         </div>
     );

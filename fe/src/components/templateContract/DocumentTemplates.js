@@ -396,6 +396,36 @@ function DocumentTemplates() {
         console.log("Create document with flow from template:", template);
     };
 
+    const handleDownload = async (template) => {
+        const templateId = template.id || template.contractId;
+        if (!templateId) {
+            showToast("Không tìm thấy ID của mẫu tài liệu", 'error');
+            return;
+        }
+
+        try {
+            showToast("Đang chuẩn bị tải xuống...", 'success');
+            await contractService.downloadContract(templateId);
+        } catch (error) {
+            console.error('Error downloading template contract:', error);
+            let errorMessage = "Không thể tải hợp đồng";
+            
+            if (error.message) {
+                if (error.message.includes('Không tìm thấy tài liệu')) {
+                    errorMessage = 'Mẫu tài liệu chưa có file để tải xuống';
+                } else if (error.message.includes('không khả dụng') || error.message.includes('không tồn tại')) {
+                    errorMessage = 'File không tồn tại hoặc đã hết hạn truy cập';
+                } else if (error.message.includes('URL')) {
+                    errorMessage = 'Không thể tạo link tải xuống';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            showToast(errorMessage, 'error');
+        }
+    };
+
     const showToast = (message, variant = 'success') => {
         const id = Date.now() + Math.random();
         setToasts(prev => [...prev, { id, message, variant }]);
@@ -587,6 +617,7 @@ function DocumentTemplates() {
                                 onCopy={handleCopy}
                                 onCreateWithFlow={handleCreateWithFlow}
                                 onDelete={handleDelete}
+                                onDownload={handleDownload}
                             />
                         ))
                     )}

@@ -188,6 +188,31 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
         setShowRelatedContracts(true);
     };
 
+    const handleDownload = async (doc) => {
+        if (!doc?.id) return;
+        try {
+            const contractService = (await import('../../api/contractService')).default;
+            await contractService.downloadContract(doc.id);
+        } catch (error) {
+            console.error('Error downloading contract:', error);
+            let errorMessage = 'Không thể tải hợp đồng. Vui lòng thử lại sau.';
+            
+            if (error.message) {
+                if (error.message.includes('Không tìm thấy tài liệu')) {
+                    errorMessage = 'Hợp đồng chưa có tài liệu để tải xuống.';
+                } else if (error.message.includes('không khả dụng') || error.message.includes('không tồn tại')) {
+                    errorMessage = 'File không tồn tại hoặc đã hết hạn truy cập. Vui lòng liên hệ quản trị viên.';
+                } else if (error.message.includes('URL')) {
+                    errorMessage = 'Không thể tạo link tải xuống. Vui lòng thử lại.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            setErrorMessage(errorMessage);
+        }
+    };
+
     const handleCopy = async (doc) => {
         if (!doc?.id) return;
 
@@ -393,6 +418,7 @@ function Document({ selectedStatus = "all", onDocumentClick }) {
                                                 onExtend={handleExtend}
                                                 onUploadAttachment={handleUploadAttachment}
                                                 onViewRelated={handleViewRelated}
+                                                onDownload={handleDownload}
                                                 doc={doc}
                                             />
                                         </td>

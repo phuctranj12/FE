@@ -2,7 +2,7 @@ import apiClient from './apiClient';
 
 const contractService = {
     // ========== CONTRACT API ==========
-    
+
     // 7.1.1. Kiểm tra mã hợp đồng unique
     checkCodeUnique: async (code) => {
         try {
@@ -351,7 +351,7 @@ const contractService = {
 
             const formData = new FormData();
             formData.append('file', file);
-            
+
             console.log('[getPageSize] Sending POST request to /contracts/documents/get-page-size');
             console.log('[getPageSize] FormData entries:', Array.from(formData.entries()).map(([key, value]) => ({
                 key,
@@ -360,10 +360,10 @@ const contractService = {
 
             const response = await apiClient.post('/contracts/documents/get-page-size', formData, {
                 headers: {
-                  'Accept': '*/*',
-                  'Content-Type': 'multipart/form-data',
+                    'Accept': '*/*',
+                    'Content-Type': 'multipart/form-data',
                 },
-              }
+            }
             );
 
             console.log('[getPageSize] API Response received:', {
@@ -464,6 +464,74 @@ const contractService = {
             const response = await apiClient.get(`/contracts/documents/get-document-by-contract/${contractId}`);
             return response;
         } catch (error) {
+            throw error;
+        }
+    },
+
+    // 7.2.7. Tải hợp đồng về máy
+    downloadContract: async (contractId) => {
+        try {
+            console.log('[downloadContract] Starting download for contractId:', contractId);
+
+            // Lấy danh sách documents
+            const documentsResponse = await apiClient.get(`/contracts/documents/get-document-by-contract/${contractId}`);
+            console.log('[downloadContract] Documents response:', documentsResponse);
+
+            if (!documentsResponse?.data || documentsResponse.data.length === 0) {
+                throw new Error('Không tìm thấy tài liệu');
+            }
+
+            // Tìm document có type = 2, nếu không có thì lấy type = 1
+            let targetDoc = documentsResponse.data.find(doc => doc.type === 2);
+            if (!targetDoc) {
+                targetDoc = documentsResponse.data.find(doc => doc.type === 1);
+            }
+
+            if (!targetDoc) {
+                throw new Error('Không tìm thấy tài liệu phù hợp (type 1 hoặc 2)');
+            }
+
+            console.log('[downloadContract] Target document:', targetDoc);
+
+            // Lấy presigned URL
+            const urlResponse = await apiClient.get(`/contracts/documents/get-presigned-url/${targetDoc.id}`);
+            console.log('[downloadContract] URL response:', urlResponse);
+
+            // Kiểm tra response structure - URL có thể ở data.message, data.url, hoặc data
+            const presignedUrl = urlResponse?.data?.message || urlResponse?.data?.url || urlResponse?.data;
+
+            if (!presignedUrl || typeof presignedUrl !== 'string') {
+                console.error('[downloadContract] Invalid presigned URL:', urlResponse);
+                throw new Error('URL tải xuống không hợp lệ');
+            }
+
+            console.log('[downloadContract] Presigned URL:', presignedUrl);
+
+            // Tải file về trực tiếp bằng fetch
+            const fileName = targetDoc.fileName || targetDoc.name || `contract_${contractId}.pdf`;
+
+            const response = await fetch(presignedUrl);
+            if (!response.ok) {
+                throw new Error(`File không khả dụng (HTTP ${response.status})`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Giải phóng URL object
+            window.URL.revokeObjectURL(url);
+
+            console.log('[downloadContract] Download completed successfully');
+            return { success: true, fileName };
+        } catch (error) {
+            console.error('[downloadContract] Error:', error);
             throw error;
         }
     },
