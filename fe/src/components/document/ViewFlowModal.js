@@ -58,6 +58,15 @@ function ViewFlowModal({ show, onClose, contractId }) {
             default: return "";
         }
     };
+    const getStatusRecipients = (status) => {
+        switch (status) {
+            case 0: return "Đợi đến lượt xử lý ";
+            case 1: return "Đang xử lý";
+            case 2: return "Đã xử lý";
+            case 4: return "Đã uý quyền";
+            default: return "";
+        }
+    };
 
     const formatDate = (date) => {
         if (!date) return "Chưa có";
@@ -124,7 +133,7 @@ function ViewFlowModal({ show, onClose, contractId }) {
                                                     <p><strong>Email:</strong> {recipient.email}</p>
                                                     <p><strong>Vai trò:</strong> {getRoleLabel(recipient.role)}</p>
                                                     <p><strong>Tổ chức:</strong> {recipient.participantName}</p>
-                                                    <p><strong>Thứ tự xử lý:</strong> {recipient.ordering}</p>
+                                                    <p><strong>Thứ tự xử lý:</strong> {getStatusRecipients(recipient.status)}</p>
                                                     {recipient.processAt && (
                                                         <p><strong>Thời gian xử lý:</strong> {formatDate(recipient.processAt)}</p>
                                                     )}
