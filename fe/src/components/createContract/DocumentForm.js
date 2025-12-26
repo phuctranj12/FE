@@ -1607,7 +1607,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
             const orderingValue = Number.isNaN(participantOrdering) || participantOrdering <= 0 ? 1 : participantOrdering;
 
             const participantPayload = {
-                ...(participantsData?.[0]?.id && { id: participantsData[0].id }),
+                // Chỉ truyền id khi đang edit hợp đồng (không phải tạo từ template)
+                ...(isEdit && participantsData?.[0]?.id && { id: participantsData[0].id }),
                 name: participantName,
                 type: 1,  // Tổ chức của tôi
                 ordering: orderingValue,
@@ -1644,7 +1645,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                         : partnerOrdering;
 
                     const partnerPayload = {
-                        ...(partner.participantId && { id: partner.participantId }),
+                        // Chỉ truyền id khi đang edit hợp đồng (không phải tạo từ template)
+                        ...(isEdit && partner.participantId && { id: partner.participantId }),
                         name: partner.name.trim(),
                         type: partner.type,  // 2 = Đối tác, 3 = Cá nhân
                         ordering: orderingValue,
