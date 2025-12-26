@@ -56,6 +56,50 @@ function SignDialog({
         }
     };
 
+    // Helper function to convert text to image base64
+    const convertTextToImageBase64 = (text, field) => {
+        return new Promise((resolve, reject) => {
+            try {
+                // Tạo canvas để render text thành image
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Lấy thông tin font từ field
+                const fontSize = field.fontSize || 13;
+                const fontFamily = field.font || 'Times New Roman';
+                const boxW = field.boxW || 200;
+                const boxH = field.boxH || 30;
+                
+                // Set canvas size
+                canvas.width = boxW;
+                canvas.height = boxH;
+                
+                // Set background (transparent hoặc white)
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Set text style
+                ctx.font = `${fontSize}px ${fontFamily}`;
+                ctx.fillStyle = 'black';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+                
+                // Draw text
+                const textY = canvas.height / 2;
+                ctx.fillText(text, 5, textY);
+                
+                // Convert canvas to base64 (without data:image/png;base64, prefix)
+                const dataURL = canvas.toDataURL('image/png');
+                const base64 = extractBase64FromDataURL(dataURL);
+                
+                resolve(base64);
+            } catch (err) {
+                console.error('Error converting text to image:', err);
+                reject(err);
+            }
+        });
+    };
+
     // Reset state khi mở / đóng dialog
     useEffect(() => {
         if (open) {
@@ -215,30 +259,11 @@ function SignDialog({
             const sortedTextFields = [...textFields].sort((a, b) => (a.ordering || 0) - (b.ordering || 0));
             sortedTextFields.forEach(field => {
                 const fieldValue = textFieldValues[field.id] || '';
-                // Chuyển text sang base64 trước khi cập nhật
-                const encodedValue = encodeToBase64(fieldValue.trim());
                 
                 fieldsToProcess.push({
                     field: field,
                     type: 'text',
-                    payload: {
-                        id: field.id, // Giữ id để backend biết đây là update
-                        name: field.name || '',
-                        type: field.type,
-                        value: encodedValue,
-                        font: field.font || 'Times New Roman',
-                        fontSize: field.fontSize || 13,
-                        page: typeof field.page === 'string' ? parseInt(field.page) || 1 : (field.page || 1),
-                        boxX: field.boxX || 0,
-                        boxY: field.boxY || 0,
-                        boxW: field.boxW || 100,
-                        boxH: typeof field.boxH === 'string' ? field.boxH : (field.boxH || 30).toString(),
-                        status: field.status || 0,
-                        contractId: contractId,
-                        documentId: field.documentId,
-                        recipientId: field.recipientId,
-                        ordering: field.ordering || 1
-                    }
+                    value: fieldValue.trim() // Lưu text value để convert sang image sau
                 });
             });
 
@@ -255,24 +280,38 @@ function SignDialog({
             // 3. Gọi API cho từng field riêng biệt theo thứ tự
             for (const item of fieldsToProcess) {
                 if (item.type === 'text') {
-                    // Gọi API cập nhật text field
+                    // Text field: Convert text sang image base64 và gọi API certificate
                     try {
-                        if (item.payload.id) {
-                            // Field có id -> dùng updateField
-                            const updateRes = await contractService.updateField(item.payload.id, item.payload);
-                            if (updateRes?.code !== 'SUCCESS') {
-                                throw new Error(updateRes?.message || 'Cập nhật text field thất bại');
-                            }
-                        } else {
-                            // Field không có id -> dùng createField với mảng 1 phần tử
-                            const createRes = await contractService.createField([item.payload]);
-                            if (createRes?.code !== 'SUCCESS') {
-                                throw new Error(createRes?.message || 'Tạo text field thất bại');
-                            }
+                        const field = item.field;
+                        const textValue = item.value;
+                        
+                        // Convert text to image base64
+                        const textImageBase64 = await convertTextToImageBase64(textValue, field);
+                        
+                        const certData = {
+                            certId: parseInt(selectedCertId, 10),
+                            imageBase64: textImageBase64, // Image được render từ text
+                            field: {
+                                id: field.id,
+                                page: field.page || 1,
+                                boxX: field.boxX || 0,
+                                boxY: field.boxY || 0,
+                                boxW: field.boxW || 100,
+                                boxH: field.boxH || 30
+                            },
+                            width: null,
+                            height: null,
+                            isTimestamp: "false",
+                            type: field.type // type 1 hoặc 4 cho text field
+                        };
+
+                        const certResponse = await contractService.certificate(recipientId, certData);
+                        if (certResponse?.code !== 'SUCCESS') {
+                            throw new Error(certResponse?.message || 'Ký text field thất bại');
                         }
                     } catch (err) {
-                        console.error('Error updating text field:', err);
-                        throw new Error(err.message || 'Cập nhật text field thất bại. Vui lòng thử lại.');
+                        console.error('Error signing text field:', err);
+                        throw new Error(err.message || 'Ký text field thất bại. Vui lòng thử lại.');
                     }
                 } else if (item.type === 'signature') {
                     // Gọi API ký signature field
