@@ -7,7 +7,7 @@ const API_CONFIG = {
     VERSION: '',
     
     // Timeout for API requests (in milliseconds)
-    TIMEOUT: 10000,
+    TIMEOUT: 30000,
     
     // Retry configuration
     RETRY: {
