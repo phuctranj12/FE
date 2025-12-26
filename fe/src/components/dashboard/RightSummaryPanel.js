@@ -20,11 +20,11 @@ const DocItem = ({
                 </div>
                 <div className="doc-info">
                     <div className="doc-title">{title}</div>
-                    <div className="doc-party">Bên A : {party}</div>
+                    {/* <div className="doc-party">Bên A : {party}</div>
                     <div className="doc-tag">
                         <span className="tag-dot" />
                         <span className="tag-text">{tag}</span>
-                    </div>
+                    </div> */}
                 </div>
             </div>
             <div className="doc-right">
@@ -176,7 +176,7 @@ const RightSummaryPanel = () => {
                             <DocItem
                                 key={doc.id || index}
                                 title={doc.name || doc.title || 'Tài liệu không có tên'}
-                                party={getOrganizationDisplay(doc)}
+                                // party={getOrganizationDisplay(doc)}
                                 // tag={getSignTag(doc)}
                                 date={formatDate(doc.createdAt)}
                             />
