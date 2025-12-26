@@ -47,6 +47,7 @@ function ContractDetail() {
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [showSignDialog, setShowSignDialog] = useState(false);
     const [showAuthorizeDialog, setShowAuthorizeDialog] = useState(false);
+    const [textFieldValues, setTextFieldValues] = useState({});
     const [documentMeta, setDocumentMeta] = useState(null);
     const [recipient, setRecipient] = useState(null);
     const [currentSignFieldIndex, setCurrentSignFieldIndex] = useState(0);
@@ -130,6 +131,14 @@ function ContractDetail() {
                 setLoading(true);
                 setError(null);
                 
+                // Reset highlighted fields khi load lại
+                const showAllFields = searchParams.get('showAllFields');
+                if (showAllFields === '0' || showAllFields === 'false') {
+                    setHighlightedFields([]);
+                    setHighlightType(null);
+                    setReviewDecision(''); // Reset review decision
+                }
+                
                 // Lấy thông tin hợp đồng
                 const contractResponse = await contractService.getContractById(contractId);
                 if (contractResponse?.code === 'SUCCESS') {
@@ -189,11 +198,24 @@ function ContractDetail() {
                         const fieldsData = fieldsResponse.data || [];
                         setFields(fieldsData);
 
+                        // Khởi tạo text field values từ fields data
+                        const initialTextValues = {};
+                        fieldsData
+                            .filter(f => (f.type === 1 || f.type === 4) && f.recipientId === parseInt(urlRecipientId))
+                            .forEach(field => {
+                                initialTextValues[field.id] = field.value || '';
+                            });
+                        setTextFieldValues(initialTextValues);
+
                         // Nếu từ danh sách "Tài liệu đã tạo" (showAllFields=1) thì tự hiển thị tất cả field lên PDF
                         const showAllFields = searchParams.get('showAllFields');
                         if (showAllFields === '1' || showAllFields === 'true') {
                             setHighlightedFields(fieldsData);
                             setHighlightType('auto');
+                        } else if (showAllFields === '0' || showAllFields === 'false') {
+                            // Ẩn tất cả fields khi showAllFields=0
+                            setHighlightedFields([]);
+                            setHighlightType(null);
                         }
                     }
 
@@ -349,31 +371,43 @@ function ContractDetail() {
         if (reviewDecision === 'disagree') return [];
         if (!highlightedFields.length) return [];
 
-        return highlightedFields.map(field => ({
-            id: `highlight-${field.id}`,
-            // Nếu đang ở chế độ tìm ô ký / ô thông tin thì ưu tiên theo highlightType
-            // Còn nếu là 'auto' (mở từ danh sách tài liệu) thì phân loại theo type của field
-            type:
-                highlightType === 'sign'
-                    ? 'signature'
-                    : highlightType === 'info'
-                        ? 'text'
-                        : (field.type === 2 || field.type === 3) // 2,3: ô ký; còn lại là text/info
-                            ? 'signature'
-                            : 'text',
-            page: field.page || 1,
-            properties: {
-                x: field.boxX || 0,
-                y: field.boxY || 0,
-                width: field.boxW || 100,
-                height: field.boxH || 30
-            },
-            name: field.name || '',
-            recipient: field.recipient || null,
-            highlight: true,
-            highlightType: highlightType,
-            locked: true // Không cho phép edit highlight fields
-        }));
+        return highlightedFields.map(field => {
+            // Xác định type của component
+            let componentType;
+            if (highlightType === 'sign') {
+                // Khi ở chế độ sign, phân loại theo type của field
+                componentType = (field.type === 1 || field.type === 4) ? 'text' : 'signature';
+            } else if (highlightType === 'info') {
+                componentType = 'text';
+            } else {
+                // Auto mode
+                componentType = (field.type === 2 || field.type === 3) ? 'signature' : 'text';
+            }
+
+            // Text fields (type 1, 4) không bị locked để có thể click
+            const isTextFieldClickable = type === 'sign' && (field.type === 1 || field.type === 4) && field.recipientId === recipientId;
+
+            return {
+                id: `highlight-${field.id}`,
+                type: componentType,
+                page: field.page || 1,
+                properties: {
+                    x: field.boxX || 0,
+                    y: field.boxY || 0,
+                    width: field.boxW || 100,
+                    height: field.boxH || 30,
+                    // Chỉ hiển thị value từ state hoặc từ API, không hiển thị field.name
+                    fieldName: textFieldValues[field.id] || field.value || '',
+                    // Lưu field name để hiển thị label
+                    label: field.name || (field.type === 4 ? 'Số hợp đồng' : 'Nội dung')
+                },
+                name: field.name || '',
+                recipient: field.recipient || null,
+                highlight: true,
+                highlightType: highlightType,
+                locked: !isTextFieldClickable // Text field có thể click, signature field bị locked
+            };
+        });
     };
 
     const handleReviewClick = () => {
@@ -448,6 +482,39 @@ function ContractDetail() {
             return;
         }
 
+        // Kiểm tra xem có text field nào chưa điền không
+        const requiredTextFields = fields.filter(field => 
+            (field.type === 1 || field.type === 4) && 
+            field.recipientId === recipientId
+        );
+
+        const unfilledFields = requiredTextFields.filter(field => {
+            const value = textFieldValues[field.id] || '';
+            // Contract number field (type 4) là bắt buộc
+            if (field.type === 4 && !value.trim()) {
+                return true;
+            }
+            // Text field (type 1) cũng nên được điền
+            if (field.type === 1 && !value.trim()) {
+                return true;
+            }
+            return false;
+        });
+
+        if (unfilledFields.length > 0) {
+            const fieldNames = unfilledFields.map(f => f.name || (f.type === 4 ? 'Số hợp đồng' : 'Nội dung')).join(', ');
+            showToast(`Vui lòng điền đầy đủ thông tin cho các ô: ${fieldNames}`, 'warning', 5000);
+            
+            // Focus vào field đầu tiên chưa điền
+            if (unfilledFields[0]) {
+                setFocusComponentId(`highlight-${unfilledFields[0].id}`);
+                if (unfilledFields[0].page) {
+                    setCurrentPage(unfilledFields[0].page);
+                }
+            }
+            return;
+        }
+
         setShowSignDialog(true);
     };
 
@@ -461,6 +528,38 @@ function ContractDetail() {
             navigate(`/main/c/detail/${contractId}?showAllFields=0`);
         }, 1200);
     };
+
+    const handleComponentClick = (component) => {
+        // Chỉ xử lý khi ở chế độ sign và component là text field
+        if (type !== 'sign') return;
+        
+        // Tìm field tương ứng với component
+        const fieldId = component.id.replace('highlight-', '');
+        const field = fields.find(f => f.id === parseInt(fieldId));
+        
+        if (!field) return;
+        
+        // Chỉ cho phép edit text fields (type 1, 4) thuộc về recipient hiện tại
+        if ((field.type === 1 || field.type === 4) && field.recipientId === recipientId) {
+            // Bật chế độ editing cho component này
+            setEditingComponentId(component.id);
+        }
+    };
+
+    const handleTextFieldChange = (componentId, value) => {
+        const fieldId = componentId.replace('highlight-', '');
+        setTextFieldValues(prev => ({
+            ...prev,
+            [fieldId]: value
+        }));
+    };
+
+    const handleTextFieldBlur = () => {
+        // Tắt chế độ editing
+        setEditingComponentId(null);
+    };
+
+    const [editingComponentId, setEditingComponentId] = useState(null);
 
     const handleCoordinate = async () => {
         // Load existing signers từ participant data trước khi mở CoordinateAssigners
@@ -656,7 +755,17 @@ function ContractDetail() {
     };
 
     const handleBack = () => {
-        navigate(-1);
+        // Nếu đang ở màn detail sau khi ký xong (showAllFields=0), về dashboard
+        const showAllFields = searchParams.get('showAllFields');
+        if (type === 'detail' && showAllFields === '0') {
+            navigate('/main/dashboard');
+        } else if (type === 'sign' || type === 'review' || type === 'coordinate') {
+            // Nếu đang ở màn xử lý, về trang đã xử lý
+            navigate('/main/processed-documents');
+        } else {
+            // Các trường hợp khác, back về trang trước
+            navigate(-1);
+        }
     };
 
     const pdfDocument = useMemo(() => {
@@ -802,7 +911,24 @@ function ContractDetail() {
                                                     name="reviewDecision"
                                                     value="agree"
                                                     checked={reviewDecision === 'agree'}
-                                                    onChange={() => setReviewDecision('agree')}
+                                                    onChange={() => {
+                                                        setReviewDecision('agree');
+                                                        // Khi chọn Đồng ý, tự động hiển thị tất cả text fields và signature fields
+                                                        if (type === 'sign') {
+                                                            const signFields = fields.filter(field => 
+                                                                ((field.type === 1 || field.type === 4 || field.type === 3) && 
+                                                                field.recipientId === recipientId)
+                                                            );
+                                                            if (signFields.length > 0) {
+                                                                setHighlightedFields(signFields);
+                                                                setHighlightType('sign');
+                                                                // Chuyển đến trang đầu tiên có field
+                                                                if (signFields[0].page) {
+                                                                    setCurrentPage(signFields[0].page);
+                                                                }
+                                                            }
+                                                        }
+                                                    }}
                                                 />
                                                 <span className="radio-label">Đồng ý</span>
                                             </label>
@@ -891,6 +1017,10 @@ function ContractDetail() {
                             onPageChange={handlePageChange}
                             components={getHighlightComponents()}
                             focusComponentId={focusComponentId}
+                            onComponentClick={handleComponentClick}
+                            editingComponentId={editingComponentId}
+                            onTextFieldChange={handleTextFieldChange}
+                            onTextFieldBlur={handleTextFieldBlur}
                         />
                     ) : (
                         <div className="pdf-loading">
@@ -1040,6 +1170,7 @@ function ContractDetail() {
                 recipientId={recipientId}
                 recipient={recipient}
                 fields={fields}
+                textFieldValues={textFieldValues}
                 onSigned={handleSignSuccess}
             />
 

@@ -10,6 +10,7 @@ function SignDialog({
     recipientId,
     fields = [],
     recipient,
+    textFieldValues = {}, // Nhận từ parent
     onSigned 
 }) {
     const navigate = useNavigate();
@@ -31,8 +32,11 @@ function SignDialog({
     // State cho validation
     const [errors, setErrors] = useState({});
 
-    // State cho text fields và contract number fields
-    const [textFieldValues, setTextFieldValues] = useState({});
+    // Filter text fields và contract number fields được assign cho recipient này
+    const textFields = fields.filter(field => 
+        (field.type === 1 || field.type === 4) && 
+        field.recipientId === recipientId
+    );
 
     // Helper: tách base64 thuần từ data URL (bỏ prefix data:image/...;base64,)
     function extractBase64FromDataURL(dataURL) {
@@ -111,19 +115,8 @@ function SignDialog({
             setSelectedCertId('');
             setError(null);
             setErrors({});
-            
-            // Khởi tạo giá trị cho text fields và contract number fields
-            const textFields = fields.filter(field => 
-                (field.type === 1 || field.type === 4) && 
-                field.recipientId === recipientId
-            );
-            const initialValues = {};
-            textFields.forEach(field => {
-                initialValues[field.id] = field.value || '';
-            });
-            setTextFieldValues(initialValues);
         }
-    }, [open, fields, recipientId]);
+    }, [open]);
 
     // Reset ảnh khi chọn option "none"
     useEffect(() => {
@@ -136,12 +129,6 @@ function SignDialog({
     const availableFields = fields.filter(field => 
         field.type === 3 && 
         field.status === 0 && 
-        field.recipientId === recipientId
-    );
-
-    // Filter text fields và contract number fields được assign cho recipient này
-    const textFields = fields.filter(field => 
-        (field.type === 1 || field.type === 4) && 
         field.recipientId === recipientId
     );
 
@@ -454,47 +441,6 @@ function SignDialog({
                                     )}
                                 </div>
                             </div>
-
-                            {/* Hiển thị form điền text fields và contract number fields */}
-                            {textFields.length > 0 && (
-                                <div className="sign-dialog-field">
-                                    <label className="sign-dialog-label">Điền thông tin</label>
-                                    <div className="sign-dialog-text-fields">
-                                        {textFields.map(field => (
-                                            <div key={field.id} className="sign-dialog-text-field-item">
-                                                <label className="sign-dialog-text-field-label">
-                                                    {field.name || (field.type === 4 ? 'Số hợp đồng' : 'Nội dung')}
-                                                    {field.type === 4 && <span style={{ color: 'red' }}> *</span>}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="sign-dialog-text-input"
-                                                    value={textFieldValues[field.id] || ''}
-                                                    onChange={(e) => {
-                                                        setTextFieldValues(prev => ({
-                                                            ...prev,
-                                                            [field.id]: e.target.value
-                                                        }));
-                                                        // Clear error khi user nhập
-                                                        if (errors[`field_${field.id}`]) {
-                                                            setErrors(prev => {
-                                                                const newErrors = { ...prev };
-                                                                delete newErrors[`field_${field.id}`];
-                                                                return newErrors;
-                                                            });
-                                                        }
-                                                    }}
-                                                    placeholder={`Nhập ${field.name || (field.type === 4 ? 'số hợp đồng' : 'nội dung')}`}
-                                                    disabled={loading}
-                                                />
-                                                {errors[`field_${field.id}`] && (
-                                                    <span className="sign-dialog-error-text">{errors[`field_${field.id}`]}</span>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
 
                             <div className="sign-dialog-field">
                                 <label className="sign-dialog-checkbox-label">
