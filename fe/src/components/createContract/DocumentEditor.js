@@ -465,9 +465,21 @@ function DocumentEditor({
         loadPresignedUrl();
     }, [documentId, pdfUrl]);
 
+    // Store normalized coordinates from database for re-scaling
+    const normalizedFieldsRef = useRef([]);
+
     // Load fields data khi component mount hoặc fieldsData thay đổi
     useEffect(() => {
         if (fieldsData && fieldsData.length > 0 && documentComponents.length === 0 && currentScale > 0) {
+            // Store normalized coordinates for later re-scaling
+            normalizedFieldsRef.current = fieldsData.map(field => ({
+                id: field.id,
+                boxX: field.boxX || 0,
+                boxY: field.boxY || 0,
+                boxW: field.boxW || 100,
+                boxH: field.boxH || 30
+            }));
+
             // Convert fieldsData về documentComponents format
             // NOTE: Coordinates from DB are normalized (scale=1.0)
             // We scale them by currentScale for editing consistency
@@ -510,6 +522,57 @@ function DocumentEditor({
             setDocumentComponents(loadedComponents);
         }
     }, [fieldsData, currentScale, lockedFieldIds]);
+
+    // Re-scale components when currentScale changes (important for locked components from previous organizations)
+    // This ensures components from previous organizations are displayed at correct scale
+    useEffect(() => {
+        // Only re-scale if we have normalized fields and existing components with fieldId
+        if (normalizedFieldsRef.current.length > 0 && currentScale > 0) {
+            setDocumentComponents(prev => {
+                // Check if any component needs re-scaling
+                const needsRescaling = prev.some(comp => {
+                    if (!comp.fieldId) return false;
+                    const normalizedField = normalizedFieldsRef.current.find(nf => nf.id === comp.fieldId);
+                    if (!normalizedField) return false;
+                    // Check if coordinates are already at correct scale
+                    const expectedX = normalizedField.boxX * currentScale;
+                    const expectedY = normalizedField.boxY * currentScale;
+                    // Allow small floating point differences (0.1px tolerance)
+                    return Math.abs(comp.properties.x - expectedX) > 0.1 || 
+                           Math.abs(comp.properties.y - expectedY) > 0.1;
+                });
+
+                if (!needsRescaling) return prev;
+
+                // Re-scale all components that came from database
+                return prev.map(component => {
+                    // Only re-scale components that came from database (have fieldId)
+                    if (!component.fieldId) return component;
+                    
+                    // Find normalized coordinates for this component
+                    const normalizedField = normalizedFieldsRef.current.find(nf => nf.id === component.fieldId);
+                    if (!normalizedField) return component;
+
+                    // Re-scale from normalized coordinates
+                    const scaledX = normalizedField.boxX * currentScale;
+                    const scaledY = normalizedField.boxY * currentScale;
+                    const scaledW = normalizedField.boxW * currentScale;
+                    const scaledH = normalizedField.boxH * currentScale;
+
+                    return {
+                        ...component,
+                        properties: {
+                            ...component.properties,
+                            x: scaledX,
+                            y: scaledY,
+                            width: scaledW,
+                            height: scaledH
+                        }
+                    };
+                });
+            });
+        }
+    }, [currentScale]);
 
     useEffect(() => {
         if (!lockedFieldIds) return;
