@@ -493,7 +493,11 @@ function DocumentSigners({
                                     <input
                                         type="text"
                                         value={signer.card_id || signer.cardId || ''}
-                                        onChange={(e) => updateSigner(signer.id, 'card_id', e.target.value)}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            updateSigner(signer.id, 'card_id', value);
+                                            updateSigner(signer.id, 'cardId', value);
+                                        }}
                                         placeholder="Nhập Mã số thuế/CMT/CCCD"
                                     />
                                 </div>
@@ -1109,7 +1113,11 @@ function DocumentSigners({
                                                     <input
                                                         type="text"
                                                         value={signer.card_id || signer.cardId || ''}
-                                                        onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'card_id', e.target.value)}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value;
+                                                            updatePartnerSigner(partner.id, signer.id, 'card_id', value);
+                                                            updatePartnerSigner(partner.id, signer.id, 'cardId', value);
+                                                        }}
                                                         placeholder="Nhập Mã số thuế/CMT/CCCD"
                                                     />
                                                 </div>
