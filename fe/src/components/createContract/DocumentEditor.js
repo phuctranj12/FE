@@ -158,7 +158,11 @@ function DocumentEditor({
     const SIGNER_ALLOWED_ROLES = [3, 4];
     const signerRecipients = recipientsList.filter(recipient => SIGNER_ALLOWED_ROLES.includes(recipient.role));
     const getActiveRecipientList = (componentId = selectedComponent?.id) => {
-        if (componentId === 'digital-signature' || componentId === 'image-signature') {
+        // Signature components và text components chỉ được assign cho người ký (role 3) và văn thư (role 4)
+        if (componentId === 'digital-signature' || 
+            componentId === 'image-signature' || 
+            componentId === 'text' ||
+            selectedComponent?.type === 'text') {
             return signerRecipients;
         }
         return recipientsList;
@@ -1333,7 +1337,7 @@ function DocumentEditor({
                                                     <option key={idx} value={suggestion} onClick={() => handleSuggestionSelect(suggestion)} />
                                                 ))}
                                             </datalist>
-                                            {recipientsList.length > 0 && (
+                                            {getActiveRecipientList().length > 0 && (
                                                 <select 
                                                     className="property-input"
                                                     style={{ marginTop: '8px' }}
@@ -1344,7 +1348,7 @@ function DocumentEditor({
                                                     }}
                                                 >
                                                     <option value="">Hoặc chọn từ danh sách</option>
-                                                    {recipientsList.map(recipient => (
+                                                    {getActiveRecipientList().map(recipient => (
                                                         <option key={recipient.id} value={recipient.id}>
                                                             {recipient.name} ({recipient.roleName})
                                                         </option>

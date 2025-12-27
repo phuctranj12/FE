@@ -628,6 +628,19 @@ function DocumentSigners({
                                             placeholder="Nhập số điện thoại"
                                         />
                                     </div>
+                                    <div className="form-group">
+                                        <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
+                                        <input
+                                            type="text"
+                                            value={clerk.card_id || clerk.cardId || ''}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                updateDocumentClerk(clerk.id, 'card_id', value);
+                                                updateDocumentClerk(clerk.id, 'cardId', value);
+                                            }}
+                                            placeholder="Nhập Mã số thuế/CMT/CCCD"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1247,6 +1260,19 @@ function DocumentSigners({
                                                                 value={clerk.phone || ''}
                                                                 onChange={(e) => updatePartnerClerk(partner.id, clerk.id, 'phone', e.target.value)}
                                                                 placeholder="Nhập số điện thoại"
+                                                            />
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
+                                                            <input
+                                                                type="text"
+                                                                value={clerk.card_id || clerk.cardId || ''}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value;
+                                                                    updatePartnerClerk(partner.id, clerk.id, 'card_id', value);
+                                                                    updatePartnerClerk(partner.id, clerk.id, 'cardId', value);
+                                                                }}
+                                                                placeholder="Nhập Mã số thuế/CMT/CCCD"
                                                             />
                                                         </div>
                                                     </div>
