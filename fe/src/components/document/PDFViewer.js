@@ -262,13 +262,19 @@ function PDFViewer({
                                                 height: `${component.properties?.height || 30}px`,
                                                 fontSize: `${component.properties?.size || 12}px`,
                                                 fontFamily: component.properties?.font || 'Times New Roman',
-                                                cursor: isLocked ? 'not-allowed' : (component.type === 'text' && !isLocked ? 'text' : (isDragging ? 'grabbing' : 'grab')),
+                                                cursor: isLocked 
+                                                    ? 'not-allowed' 
+                                                    : (component.type === 'text' && onTextFieldChange && !isLocked) 
+                                                        ? 'text'  // Text cursor chỉ khi có inline editing (màn sign)
+                                                        : (isDragging ? 'grabbing' : 'grab'), // Grab cursor cho DocumentEditor
                                                 zIndex: editingComponentId === component.id ? 100 : 10
                                             }}
                                         onMouseEnter={() => onComponentMouseEnter && onComponentMouseEnter(component.id)}
                                         onMouseLeave={() => onComponentMouseLeave && onComponentMouseLeave()}
                                         onMouseDown={(e) => {
-                                            if (!isLocked && onComponentMouseDown && editingComponentId !== component.id) {
+                                            // Chỉ block drag khi đang inline editing (có onTextFieldChange)
+                                            const isInlineEditing = editingComponentId === component.id && onTextFieldChange;
+                                            if (!isLocked && onComponentMouseDown && !isInlineEditing) {
                                                 onComponentMouseDown(e, component.id);
                                             }
                                         }}
