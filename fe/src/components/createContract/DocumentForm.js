@@ -58,7 +58,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const getDefaultExpirationDate = () => {
         const today = new Date();
         const expirationDate = new Date(today);
-        expirationDate.setDate(today.getDate() + 5);
+        expirationDate.setDate(today.getDate() + 30);
         const day = String(expirationDate.getDate()).padStart(2, '0');
         const month = String(expirationDate.getMonth() + 1).padStart(2, '0');
         const year = expirationDate.getFullYear();
