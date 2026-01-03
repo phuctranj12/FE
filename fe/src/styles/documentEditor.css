@@ -250,7 +250,7 @@
 .document-component.dragging {
     cursor: grabbing;
     z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transform: rotate(2deg);
 }
 
@@ -259,24 +259,27 @@
     border-width: 3px;
     border-style: solid;
     background: rgba(11, 87, 208, 0.15);
-    box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.2), 
-                0 4px 12px rgba(11, 87, 208, 0.3),
-                0 0 20px rgba(11, 87, 208, 0.2);
+    box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.2),
+        0 4px 12px rgba(11, 87, 208, 0.3),
+        0 0 20px rgba(11, 87, 208, 0.2);
     transform: scale(1.02);
     animation: componentPulse 1.5s ease-in-out infinite;
     z-index: 100 !important;
 }
 
 @keyframes componentPulse {
-    0%, 100% {
-        box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.2), 
-                    0 4px 12px rgba(11, 87, 208, 0.3),
-                    0 0 20px rgba(11, 87, 208, 0.2);
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.2),
+            0 4px 12px rgba(11, 87, 208, 0.3),
+            0 0 20px rgba(11, 87, 208, 0.2);
     }
+
     50% {
-        box-shadow: 0 0 0 4px rgba(11, 87, 208, 0.3), 
-                    0 6px 16px rgba(11, 87, 208, 0.4),
-                    0 0 30px rgba(11, 87, 208, 0.3);
+        box-shadow: 0 0 0 4px rgba(11, 87, 208, 0.3),
+            0 6px 16px rgba(11, 87, 208, 0.4),
+            0 0 30px rgba(11, 87, 208, 0.3);
     }
 }
 
@@ -423,7 +426,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
     z-index: 10;
 }
@@ -439,7 +442,7 @@
     background: white;
     margin: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     position: relative;
     display: flex;
@@ -637,7 +640,7 @@
     padding: 16px 20px;
     background: white;
     border-top: 1px solid #e0e0e0;
-    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .back-btn {
@@ -713,9 +716,63 @@
     .components-sidebar {
         width: 200px;
     }
-    
+
     .properties-sidebar {
         width: 250px;
+    }
+}
+
+/* Tối ưu cho laptop (1024px - 1440px) - PDF viewer lớn hơn */
+@media (min-width: 769px) and (max-width: 1440px) {
+    .components-sidebar {
+        width: 160px; /* Giảm từ 250px xuống 160px */
+        padding: 12px; /* Giảm padding */
+    }
+
+    .properties-sidebar {
+        width: 220px; /* Giảm từ 300px xuống 220px */
+        padding: 12px; /* Giảm padding */
+    }
+
+    .document-content {
+        margin: 10px; /* Giảm margin để tăng không gian cho PDF */
+    }
+    
+    .editor-header {
+        padding: 15px; /* Giảm padding header */
+    }
+
+    .sidebar-title {
+        font-size: 13px; /* Giảm font size */
+        margin-bottom: 10px;
+    }
+
+    .sidebar-instruction {
+        font-size: 11px; /* Giảm font size */
+        margin-bottom: 15px;
+    }
+
+    .component-item {
+        padding: 8px 10px; /* Giảm padding */
+        gap: 8px;
+    }
+
+    .component-name {
+        font-size: 12px; /* Giảm font size */
+    }
+    
+    .component-icon {
+        font-size: 16px; /* Giảm icon size */
+        width: 20px;
+    }
+    
+    .property-label {
+        font-size: 12px; /* Giảm font size */
+    }
+    
+    .property-input {
+        padding: 6px 10px; /* Giảm padding */
+        font-size: 12px;
     }
 }
 
@@ -723,26 +780,53 @@
     .editor-content {
         flex-direction: column;
     }
-    
+
     .components-sidebar,
     .properties-sidebar {
         width: 100%;
         height: auto;
-        max-height: 200px;
+        max-height: 150px;
+        /* Giảm từ 200px xuống 150px */
     }
-    
+
     .document-content {
         margin: 10px;
-        min-height: 400px;
+        min-height: 60vh;
+        /* Tăng từ 400px lên 60% viewport height */
+        flex: 1;
+        /* Cho phép PDF viewer chiếm không gian còn lại */
     }
-    
+
     .editor-header {
         flex-direction: column;
         gap: 12px;
+        padding: 15px;
+        /* Giảm padding để tiết kiệm không gian */
     }
-    
+
     .document-type-selection {
         flex-direction: column;
         gap: 8px;
+    }
+}
+
+/* Thêm responsive cho màn hình rất nhỏ */
+@media (max-width: 480px) {
+
+    .components-sidebar,
+    .properties-sidebar {
+        max-height: 120px;
+        /* Giảm thêm cho màn hình rất nhỏ */
+    }
+
+    .document-content {
+        min-height: 65vh;
+        /* Tăng thêm cho PDF viewer */
+        margin: 5px;
+        /* Giảm margin để tối đa hóa không gian */
+    }
+
+    .editor-header {
+        padding: 10px;
     }
 }
