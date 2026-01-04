@@ -22,6 +22,7 @@
 }
 
 .sign-dialog {
+    position: relative;
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -401,3 +402,41 @@
     }
 }
 
+
+/* Loading Overlay for Sign Dialog - Full Screen */
+.sign-loading-overlay-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(3px);
+}
+
+.sign-loading-overlay-fullscreen .loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-top: 5px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.sign-loading-overlay-fullscreen .loading-text {
+    margin-top: 20px;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+}

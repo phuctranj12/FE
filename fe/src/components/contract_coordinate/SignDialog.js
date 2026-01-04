@@ -17,8 +17,13 @@ function SignDialog({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Bước hiện tại: 1 = Đóng dấu tài liệu, 2 = Chọn chứng thư số
+    // Bước hiện tại: 1 = Chọn ảnh, 2 = Chọn chứng thư số
     const [step, setStep] = useState(1);
+
+    // Kiểm tra role: role 4 = Văn thư, role 3 = Người ký
+    const isClerk = recipient?.role === 4;
+    const step1Title = isClerk ? 'Đóng Dấu Tài Liệu' : 'Ký Chứng Thư Số';
+    const step2Title = isClerk ? 'Chọn Chứng Thư Số' : 'Chọn Chứng Thư Số';
 
     // State cho lựa chọn ảnh đóng dấu
     const [stampOption, setStampOption] = useState('none'); // 'none' | 'upload'
@@ -358,10 +363,19 @@ function SignDialog({
     if (!open) return null;
 
     return (
-        <div className="sign-dialog-overlay" onClick={handleClose}>
-            <div className="sign-dialog" onClick={(e) => e.stopPropagation()}>
-                <div className="sign-dialog-header">
-                    <h3>{step === 1 ? 'Đóng Dấu Tài Liệu' : 'Ký Chứng Thư Số'}</h3>
+        <>
+            {/* Loading Overlay - Full Screen */}
+            {loading && (
+                <div className="sign-loading-overlay-fullscreen">
+                    <div className="loading-spinner"></div>
+                    <div className="loading-text">Đang xử lý, vui lòng đợi...</div>
+                </div>
+            )}
+            
+            <div className="sign-dialog-overlay" onClick={handleClose}>
+                <div className="sign-dialog" onClick={(e) => e.stopPropagation()}>
+                    <div className="sign-dialog-header">
+                    <h3>{step === 1 ? step1Title : step2Title}</h3>
                     <button 
                         className="sign-dialog-close" 
                         onClick={handleClose}
@@ -546,6 +560,7 @@ function SignDialog({
                 </div>
             </div>
         </div>
+        </>
     );
 }
 
