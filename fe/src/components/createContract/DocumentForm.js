@@ -1575,8 +1575,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 const email = (role === 3 && item.loginByPhone) ? '' : (item.email?.trim() || '');
                 const phone = (role === 3 && item.loginByPhone) ? (item.phone?.trim() || '') : (item.phone?.trim() || '');
 
-                // cardId chỉ có cho signers (role === 3), trim để loại bỏ khoảng trắng thừa
-                const cardId = role === 3 ? ((item.cardId || item.card_id || '').trim()) : '';
+                // cardId cho signers (role === 3) và clerks (role === 4), trim để loại bỏ khoảng trắng thừa
+                const cardId = (role === 3 || role === 4) ? ((item.cardId || item.card_id || '').trim()) : '';
 
                 // signType luôn = 6 theo CreateContractFlow.md
                 recipientsArray.push({

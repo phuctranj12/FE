@@ -1222,7 +1222,7 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                         : item.phone || '';
 
                 const cardId =
-                    role === 3 ? item.cardId || item.card_id || '' : '';
+                    (role === 3 || role === 4) ? (item.cardId || item.card_id || '').trim() : '';
 
                 recipientsArray.push({
                     ...(item.recipientId && { id: item.recipientId }),

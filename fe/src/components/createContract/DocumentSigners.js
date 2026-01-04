@@ -74,17 +74,12 @@ function DocumentSigners({
     // Handle suggestion selection
     const handleSuggestionSelect = (suggestion, itemId, field, partnerId = null) => {
         if (field === 'signer') {
-            const signer = signers.find(s => s.id === itemId);
             updateSigner(itemId, 'fullName', suggestion.name);
-            // If signer is using phone login, fill phone; otherwise fill email
-            if (signer?.loginByPhone) {
-                if (suggestion.phone) {
-                    updateSigner(itemId, 'phone', suggestion.phone);
-                }
-            } else {
-                if (suggestion.email) {
-                    updateSigner(itemId, 'email', suggestion.email);
-                }
+            if (suggestion.email) {
+                updateSigner(itemId, 'email', suggestion.email);
+            }
+            if (suggestion.phone) {
+                updateSigner(itemId, 'phone', suggestion.phone);
             }
         } else if (field === 'reviewer') {
             updateReviewer(itemId, 'fullName', suggestion.name);
@@ -119,17 +114,12 @@ function DocumentSigners({
                 updatePartnerReviewer(partnerId, itemId, 'phone', suggestion.phone);
             }
         } else if (field === 'partner-signer' && partnerId) {
-            const partner = partners.find(p => p.id === partnerId);
-            const signer = partner?.signers.find(s => s.id === itemId);
             updatePartnerSigner(partnerId, itemId, 'fullName', suggestion.name);
-            if (signer?.loginByPhone) {
-                if (suggestion.phone) {
-                    updatePartnerSigner(partnerId, itemId, 'phone', suggestion.phone);
-                }
-            } else {
-                if (suggestion.email) {
-                    updatePartnerSigner(partnerId, itemId, 'email', suggestion.email);
-                }
+            if (suggestion.email) {
+                updatePartnerSigner(partnerId, itemId, 'email', suggestion.email);
+            }
+            if (suggestion.phone) {
+                updatePartnerSigner(partnerId, itemId, 'phone', suggestion.phone);
             }
         } else if (field === 'partner-clerk' && partnerId) {
             updatePartnerClerk(partnerId, itemId, 'fullName', suggestion.name);
@@ -444,38 +434,25 @@ function DocumentSigners({
                                         </div>
                                     )}
                                 </div>
-                                <div className="checkbox-group">
-                                    <label className="checkbox-option">
-                                        <input
-                                            type="checkbox"
-                                            checked={signer.loginByPhone}
-                                            onChange={(e) => updateSigner(signer.id, 'loginByPhone', e.target.checked)}
-                                        />
-                                        <span>Đăng nhập bằng số điện thoại</span>
-                                    </label>
+                                <div className="form-group">
+                                    <label>Email <span style={{ color: 'red' }}>*</span></label>
+                                    <input
+                                        type="email"
+                                        value={signer.email}
+                                        onChange={(e) => updateSigner(signer.id, 'email', e.target.value)}
+                                        placeholder="Nhập email"
+                                    />
                                 </div>
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>
-                                        {signer.loginByPhone ? 'Số điện thoại ' : 'Email '}
-                                        <span style={{ color: 'red' }}>*</span>
-                                    </label>
-                                    {signer.loginByPhone ? (
-                                        <input
-                                            type="tel"
-                                            value={signer.phone || ''}
-                                            onChange={(e) => updateSigner(signer.id, 'phone', e.target.value)}
-                                            placeholder="Nhập số điện thoại"
-                                        />
-                                    ) : (
-                                        <input
-                                            type="email"
-                                            value={signer.email}
-                                            onChange={(e) => updateSigner(signer.id, 'email', e.target.value)}
-                                            placeholder="Nhập email"
-                                        />
-                                    )}
+                                    <label>Số điện thoại</label>
+                                    <input
+                                        type="tel"
+                                        value={signer.phone || ''}
+                                        onChange={(e) => updateSigner(signer.id, 'phone', e.target.value)}
+                                        placeholder="Nhập số điện thoại"
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
@@ -626,6 +603,30 @@ function DocumentSigners({
                                             value={clerk.phone || ''}
                                             onChange={(e) => updateDocumentClerk(clerk.id, 'phone', e.target.value)}
                                             placeholder="Nhập số điện thoại"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
+                                        <input
+                                            type="text"
+                                            value="Ký bằng chứng thư số server"
+                                            readOnly
+                                            className="readonly-input"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
+                                        <input
+                                            type="text"
+                                            value={clerk.card_id || clerk.cardId || ''}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                updateDocumentClerk(clerk.id, 'card_id', value);
+                                                updateDocumentClerk(clerk.id, 'cardId', value);
+                                            }}
+                                            placeholder="Nhập Mã số thuế/CMT/CCCD"
                                         />
                                     </div>
                                 </div>
@@ -1064,38 +1065,25 @@ function DocumentSigners({
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="checkbox-group">
-                                                    <label className="checkbox-option">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={signer.loginByPhone}
-                                                            onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'loginByPhone', e.target.checked)}
-                                                        />
-                                                        <span>Đăng nhập bằng số điện thoại</span>
-                                                    </label>
+                                                <div className="form-group">
+                                                    <label>Email <span style={{ color: 'red' }}>*</span></label>
+                                                    <input
+                                                        type="email"
+                                                        value={signer.email}
+                                                        onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'email', e.target.value)}
+                                                        placeholder="Nhập email"
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="form-row">
                                                 <div className="form-group">
-                                                    <label>
-                                                        {signer.loginByPhone ? 'Số điện thoại ' : 'Email '}
-                                                        <span style={{ color: 'red' }}>*</span>
-                                                    </label>
-                                                    {signer.loginByPhone ? (
-                                                        <input
-                                                            type="tel"
-                                                            value={signer.phone || ''}
-                                                            onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'phone', e.target.value)}
-                                                            placeholder="Nhập số điện thoại"
-                                                        />
-                                                    ) : (
-                                                        <input
-                                                            type="email"
-                                                            value={signer.email}
-                                                            onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'email', e.target.value)}
-                                                            placeholder="Nhập email"
-                                                        />
-                                                    )}
+                                                    <label>Số điện thoại</label>
+                                                    <input
+                                                        type="tel"
+                                                        value={signer.phone || ''}
+                                                        onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'phone', e.target.value)}
+                                                        placeholder="Nhập số điện thoại"
+                                                    />
                                                 </div>
                                                 <div className="form-group">
                                                     <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
@@ -1247,6 +1235,30 @@ function DocumentSigners({
                                                                 value={clerk.phone || ''}
                                                                 onChange={(e) => updatePartnerClerk(partner.id, clerk.id, 'phone', e.target.value)}
                                                                 placeholder="Nhập số điện thoại"
+                                                            />
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
+                                                            <input
+                                                                type="text"
+                                                                value="Ký bằng chứng thư số server"
+                                                                readOnly
+                                                                className="readonly-input"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="form-row">
+                                                        <div className="form-group">
+                                                            <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
+                                                            <input
+                                                                type="text"
+                                                                value={clerk.card_id || clerk.cardId || ''}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value;
+                                                                    updatePartnerClerk(partner.id, clerk.id, 'card_id', value);
+                                                                    updatePartnerClerk(partner.id, clerk.id, 'cardId', value);
+                                                                }}
+                                                                placeholder="Nhập Mã số thuế/CMT/CCCD"
                                                             />
                                                         </div>
                                                     </div>
