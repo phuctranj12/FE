@@ -1505,14 +1505,13 @@ const TemplateForm = ({ onBack, editTemplate = null }) => {
                     }));
                 }
 
-                showToast(
-                    isEdit
-                        ? 'Cập nhật thông tin mẫu tài liệu thành công!'
-                        : 'Tạo hợp đồng mẫu thành công! ID: ' +
-                              currentContractId,
-                    'success',
-                    3000
-                );
+                if (isEdit) {
+                    showToast(
+                        'Cập nhật thông tin mẫu tài liệu thành công!',
+                        'success',
+                        3000
+                    );
+                }
 
                 setCurrentStep(2);
             } catch (err) {

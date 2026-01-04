@@ -4,8 +4,8 @@ import '../../styles/createdDocumentsChart.css';
 
 const CreatedDocumentsChart = () => {
     const [activeTab, setActiveTab] = useState('mine');
-    const [startDate, setStartDate] = useState('2025-01-01');
-    const [endDate, setEndDate] = useState('2025-12-31');
+    const [startDate, setStartDate] = useState('2026-01-01');
+    const [endDate, setEndDate] = useState('2026-12-31');
     const [data, setData] = useState({ mine: [], org: [] });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);

@@ -10,6 +10,7 @@ function SignDialog({
     recipientId,
     fields = [],
     recipient,
+    textFieldValues = {}, // Nhận từ parent
     onSigned 
 }) {
     const navigate = useNavigate();
@@ -31,8 +32,11 @@ function SignDialog({
     // State cho validation
     const [errors, setErrors] = useState({});
 
-    // State cho text fields và contract number fields
-    const [textFieldValues, setTextFieldValues] = useState({});
+    // Filter text fields và contract number fields được assign cho recipient này
+    const textFields = fields.filter(field => 
+        (field.type === 1 || field.type === 4) && 
+        field.recipientId === recipientId
+    );
 
     // Helper: tách base64 thuần từ data URL (bỏ prefix data:image/...;base64,)
     function extractBase64FromDataURL(dataURL) {
@@ -43,6 +47,62 @@ function SignDialog({
         const base64Part = dataURL.split(',')[1];
         return base64Part || null;
     }
+
+    // Helper function to convert text to base64 (with UTF-8 support)
+    const encodeToBase64 = (text) => {
+        if (!text) return '';
+        try {
+            // Encode UTF-8 string to base64
+            return btoa(unescape(encodeURIComponent(text)));
+        } catch (err) {
+            console.warn('Error encoding to base64:', err);
+            return text; // Fallback to original text if encoding fails
+        }
+    };
+
+    // Helper function to convert text to image base64
+    const convertTextToImageBase64 = (text, field) => {
+        return new Promise((resolve, reject) => {
+            try {
+                // Tạo canvas để render text thành image
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Lấy thông tin font từ field
+                const fontSize = field.fontSize || 13;
+                const fontFamily = field.font || 'Times New Roman';
+                const boxW = field.boxW || 200;
+                const boxH = field.boxH || 30;
+                
+                // Set canvas size
+                canvas.width = boxW;
+                canvas.height = boxH;
+                
+                // Set background (transparent hoặc white)
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Set text style
+                ctx.font = `${fontSize}px ${fontFamily}`;
+                ctx.fillStyle = 'black';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+                
+                // Draw text
+                const textY = canvas.height / 2;
+                ctx.fillText(text, 5, textY);
+                
+                // Convert canvas to base64 (without data:image/png;base64, prefix)
+                const dataURL = canvas.toDataURL('image/png');
+                const base64 = extractBase64FromDataURL(dataURL);
+                
+                resolve(base64);
+            } catch (err) {
+                console.error('Error converting text to image:', err);
+                reject(err);
+            }
+        });
+    };
 
     // Reset state khi mở / đóng dialog
     useEffect(() => {
@@ -55,19 +115,8 @@ function SignDialog({
             setSelectedCertId('');
             setError(null);
             setErrors({});
-            
-            // Khởi tạo giá trị cho text fields và contract number fields
-            const textFields = fields.filter(field => 
-                (field.type === 1 || field.type === 4) && 
-                field.recipientId === recipientId
-            );
-            const initialValues = {};
-            textFields.forEach(field => {
-                initialValues[field.id] = field.value || '';
-            });
-            setTextFieldValues(initialValues);
         }
-    }, [open, fields, recipientId]);
+    }, [open]);
 
     // Reset ảnh khi chọn option "none"
     useEffect(() => {
@@ -80,12 +129,6 @@ function SignDialog({
     const availableFields = fields.filter(field => 
         field.type === 3 && 
         field.status === 0 && 
-        field.recipientId === recipientId
-    );
-
-    // Filter text fields và contract number fields được assign cho recipient này
-    const textFields = fields.filter(field => 
-        (field.type === 1 || field.type === 4) && 
         field.recipientId === recipientId
     );
 
@@ -194,92 +237,100 @@ function SignDialog({
             setLoading(true);
             setError(null);
 
-            // Cập nhật giá trị cho text fields và contract number fields trước khi ký
-            // Tạo mảng fields mới với giá trị đã được cập nhật, format theo yêu cầu của API
-            const updatedFields = fields.map(field => {
-                // Nếu là text field hoặc contract number field được assign cho recipient này
-                if ((field.type === 1 || field.type === 4) && field.recipientId === recipientId) {
-                    const fieldValue = textFieldValues[field.id] || '';
-                    return {
-                        id: field.id, // Giữ id để backend biết đây là update
-                        name: field.name || '',
-                        type: field.type,
-                        value: fieldValue.trim(),
-                        font: field.font || 'Times New Roman',
-                        fontSize: field.fontSize || 13,
-                        page: typeof field.page === 'string' ? parseInt(field.page) || 1 : (field.page || 1),
-                        boxX: field.boxX || 0,
-                        boxY: field.boxY || 0,
-                        boxW: field.boxW || 100,
-                        boxH: typeof field.boxH === 'string' ? field.boxH : (field.boxH || 30).toString(),
-                        status: field.status || 0,
-                        contractId: contractId,
-                        documentId: field.documentId,
-                        recipientId: field.recipientId,
-                        ordering: field.ordering || 1
-                    };
-                }
-                // Giữ nguyên các field khác, format lại để đảm bảo đúng format API
-                return {
-                    id: field.id,
-                    name: field.name || '',
-                    type: field.type,
-                    value: field.value || '',
-                    font: field.font || 'Times New Roman',
-                    fontSize: field.fontSize || 13,
-                    page: typeof field.page === 'string' ? parseInt(field.page) || 1 : (field.page || 1),
-                    boxX: field.boxX || 0,
-                    boxY: field.boxY || 0,
-                    boxW: field.boxW || 100,
-                    boxH: typeof field.boxH === 'string' ? field.boxH : (field.boxH || 30).toString(),
-                    status: field.status || 0,
-                    contractId: contractId,
-                    documentId: field.documentId,
-                    recipientId: field.recipientId,
-                    ordering: field.ordering || 1
-                };
+            // Tạo danh sách tất cả các fields cần xử lý (text fields + signature fields)
+            // Sắp xếp theo thứ tự: text fields trước (type 1, 4), sau đó signature fields (type 3)
+            const fieldsToProcess = [];
+
+            // 1. Thêm text fields và contract number fields (type 1, 4) trước
+            // Sắp xếp text fields theo ordering để đảm bảo thứ tự đúng
+            const sortedTextFields = [...textFields].sort((a, b) => (a.ordering || 0) - (b.ordering || 0));
+            sortedTextFields.forEach(field => {
+                const fieldValue = textFieldValues[field.id] || '';
+                
+                fieldsToProcess.push({
+                    field: field,
+                    type: 'text',
+                    value: fieldValue.trim() // Lưu text value để convert sang image sau
+                });
             });
 
-            // Gọi createField với tất cả fields (bao gồm cả fields đã được cập nhật)
-            // Backend sẽ xử lý update nếu field có id
-            try {
-                await contractService.createField(updatedFields);
-            } catch (err) {
-                console.error('Error updating fields:', err);
-                // Không throw error, chỉ log để không chặn quá trình ký
-                // Nếu backend yêu cầu bắt buộc phải update thành công, có thể uncomment dòng dưới
-                // throw new Error('Cập nhật thông tin fields thất bại. Vui lòng thử lại.');
-            }
+            // 2. Thêm signature fields (type 3) sau
+            // Sắp xếp signature fields theo ordering để đảm bảo thứ tự đúng
+            const sortedSignatureFields = [...availableFields].sort((a, b) => (a.ordering || 0) - (b.ordering || 0));
+            sortedSignatureFields.forEach(field => {
+                fieldsToProcess.push({
+                    field: field,
+                    type: 'signature'
+                });
+            });
 
-            // Ký tất cả các field hợp lệ cho người ký hiện tại
-            for (const field of availableFields) {
-                // Tách base64 thuần từ data URL (bỏ prefix) trước khi gửi lên server
-                const base64Only = imageBase64 ? extractBase64FromDataURL(imageBase64) : null;
-                
-                const certData = {
-                    certId: parseInt(selectedCertId, 10),
-                    imageBase64: base64Only || null,
-                    field: {
-                        id: field.id,
-                        page: field.page || 1,
-                        boxX: field.boxX || 0,
-                        boxY: field.boxY || 0,
-                        boxW: field.boxW || 100,
-                        boxH: field.boxH || 30
-                    },
-                    width: null,
-                    height: null,
-                    isTimestamp: "false",
-                    type: 3
-                };
+            // 3. Gọi API cho từng field riêng biệt theo thứ tự
+            for (const item of fieldsToProcess) {
+                if (item.type === 'text') {
+                    // Text field: Convert text sang image base64 và gọi API certificate
+                    try {
+                        const field = item.field;
+                        const textValue = item.value;
+                        
+                        // Convert text to image base64
+                        const textImageBase64 = await convertTextToImageBase64(textValue, field);
+                        
+                        const certData = {
+                            certId: parseInt(selectedCertId, 10),
+                            imageBase64: textImageBase64, // Image được render từ text
+                            field: {
+                                id: field.id,
+                                page: field.page || 1,
+                                boxX: field.boxX || 0,
+                                boxY: field.boxY || 0,
+                                boxW: field.boxW || 100,
+                                boxH: field.boxH || 30
+                            },
+                            width: null,
+                            height: null,
+                            isTimestamp: "false",
+                            type: field.type // type 1 hoặc 4 cho text field
+                        };
 
-                const response = await contractService.certificate(recipientId, certData);
-                if (response?.code !== 'SUCCESS') {
-                    throw new Error(response?.message || 'Ký hợp đồng thất bại');
+                        const certResponse = await contractService.certificate(recipientId, certData);
+                        if (certResponse?.code !== 'SUCCESS') {
+                            throw new Error(certResponse?.message || 'Ký text field thất bại');
+                        }
+                    } catch (err) {
+                        console.error('Error signing text field:', err);
+                        throw new Error(err.message || 'Ký text field thất bại. Vui lòng thử lại.');
+                    }
+                } else if (item.type === 'signature') {
+                    // Gọi API ký signature field
+                    const field = item.field;
+                    // Tách base64 thuần từ data URL (bỏ prefix) trước khi gửi lên server
+                    const base64Only = imageBase64 ? extractBase64FromDataURL(imageBase64) : null;
+                    
+                    const certData = {
+                        certId: parseInt(selectedCertId, 10),
+                        imageBase64: base64Only || null,
+                        field: {
+                            id: field.id,
+                            page: field.page || 1,
+                            boxX: field.boxX || 0,
+                            boxY: field.boxY || 0,
+                            boxW: field.boxW || 100,
+                            boxH: field.boxH || 30
+                        },
+                        width: null,
+                        height: null,
+                        isTimestamp: "false",
+                        type: 3
+                    };
+
+                    const response = await contractService.certificate(recipientId, certData);
+                    if (response?.code !== 'SUCCESS') {
+                        throw new Error(response?.message || 'Ký hợp đồng thất bại');
+                    }
                 }
             }
 
-            // Sau khi ký hết các field, gọi API phê duyệt luồng cho recipient hiện tại
+            // Sau khi xử lý hết các field, gọi API phê duyệt luồng cho recipient hiện tại
             const approvalRes = await contractService.approvalProcess(recipientId);
             if (approvalRes?.code !== 'SUCCESS') {
                 throw new Error(approvalRes?.message || 'Phê duyệt hợp đồng thất bại');
@@ -390,47 +441,6 @@ function SignDialog({
                                     )}
                                 </div>
                             </div>
-
-                            {/* Hiển thị form điền text fields và contract number fields */}
-                            {textFields.length > 0 && (
-                                <div className="sign-dialog-field">
-                                    <label className="sign-dialog-label">Điền thông tin</label>
-                                    <div className="sign-dialog-text-fields">
-                                        {textFields.map(field => (
-                                            <div key={field.id} className="sign-dialog-text-field-item">
-                                                <label className="sign-dialog-text-field-label">
-                                                    {field.name || (field.type === 4 ? 'Số hợp đồng' : 'Nội dung')}
-                                                    {field.type === 4 && <span style={{ color: 'red' }}> *</span>}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="sign-dialog-text-input"
-                                                    value={textFieldValues[field.id] || ''}
-                                                    onChange={(e) => {
-                                                        setTextFieldValues(prev => ({
-                                                            ...prev,
-                                                            [field.id]: e.target.value
-                                                        }));
-                                                        // Clear error khi user nhập
-                                                        if (errors[`field_${field.id}`]) {
-                                                            setErrors(prev => {
-                                                                const newErrors = { ...prev };
-                                                                delete newErrors[`field_${field.id}`];
-                                                                return newErrors;
-                                                            });
-                                                        }
-                                                    }}
-                                                    placeholder={`Nhập ${field.name || (field.type === 4 ? 'số hợp đồng' : 'nội dung')}`}
-                                                    disabled={loading}
-                                                />
-                                                {errors[`field_${field.id}`] && (
-                                                    <span className="sign-dialog-error-text">{errors[`field_${field.id}`]}</span>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
 
                             <div className="sign-dialog-field">
                                 <label className="sign-dialog-checkbox-label">

@@ -32,7 +32,6 @@ function Header({ breadcrumb }) {
 
     // Fetch notifications từ API
     const fetchNotifications = async (page = 0) => {
-        // Nếu chưa có token thì không gọi API để tránh interceptor redirect về /login
         const token =
             sessionStorage.getItem("token") || localStorage.getItem("token");
         if (!token) return;
@@ -40,12 +39,13 @@ function Header({ breadcrumb }) {
         try {
             setLoading(true);
             const response = await notificationService.getAllNotice(page, 10);
+            console.log("Notifications response:", response);
 
-            if (response.data && response.data.code === 200) {
-                const data = response.data.data;
-                setNotifications(data.content || []);
-                setTotalPages(data.totalPages || 0);
-                setCurrentPage(page);
+            if (response.data && response.code === "SUCCESS") {
+                const data = response.data;
+                const notificationData = data || [];
+                console.log("Notifications data:", notificationData);
+                setNotifications(notificationData);
             }
         } catch (error) {
             console.error("Lỗi khi tải thông báo:", error);
@@ -56,7 +56,6 @@ function Header({ breadcrumb }) {
 
     // Load notifications khi component mount
     useEffect(() => {
-        // Chỉ fetch khi đã có token
         const token =
             sessionStorage.getItem("token") || localStorage.getItem("token");
         if (!token) return;
@@ -98,22 +97,43 @@ function Header({ breadcrumb }) {
         navigate("/main/user/information");
     };
 
-    // Đánh dấu đã đọc
+    // ✅ FIX: Đánh dấu đã đọc và cập nhật state ngay lập tức
     const handleMarkAsRead = async (id) => {
         try {
             await notificationService.readNotice(id);
-            // Cập nhật lại danh sách sau khi đánh dấu đã đọc
-            fetchNotifications(currentPage);
+            // Cập nhật state local ngay để UI phản hồi nhanh
+            setNotifications(prevNoti =>
+                prevNoti.map(n =>
+                    n.id === id ? { ...n, read: true } : n
+                )
+            );
         } catch (error) {
             console.error("Lỗi khi đánh dấu đã đọc:", error);
         }
     };
 
-    // Phân loại notification type
+    // ✅ FIX: Đánh dấu tất cả đã đọc
+    const handleMarkAllAsRead = async () => {
+        try {
+            const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+            if (unreadIds.length === 0) return;
+
+            await Promise.all(unreadIds.map(id => notificationService.readNotice(id)));
+
+            setNotifications(prevNoti =>
+                prevNoti.map(n => ({ ...n, read: true }))
+            );
+        } catch (error) {
+            console.error("Lỗi khi đánh dấu tất cả đã đọc:", error);
+        }
+    };
+
+    // ✅ FIX: Phân loại notification type dựa trên noticeContent
     const getNotificationType = (notification) => {
-        if (notification.title?.includes("[Sắp hết hạn]")) return "warning";
-        if (notification.title?.includes("[Huỷ]")) return "cancel";
-        if (notification.title?.includes("[Quá hạn]")) return "expired";
+        const content = notification.noticeContent || "";
+        if (content.includes("Sắp hết hạn") || content.includes("sắp hết hạn")) return "warning";
+        if (content.includes("Huỷ") || content.includes("hủy") || content.includes("Hủy")) return "cancel";
+        if (content.includes("Quá hạn") || content.includes("quá hạn")) return "expired";
         return "info";
     };
 
@@ -128,8 +148,17 @@ function Header({ breadcrumb }) {
     const formatDate = (dateString) => {
         if (!dateString) return "";
         const date = new Date(dateString);
-        return date.toLocaleString("vi-VN");
+        return date.toLocaleString("vi-VN", {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
+
+    // ✅ Đếm số thông báo chưa đọc
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
         <header className="header">
@@ -185,8 +214,8 @@ function Header({ breadcrumb }) {
                         }}
                     >
                         🔔
-                        {notifications.length > 0 && (
-                            <span className="bell-badge">{notifications.length}</span>
+                        {unreadCount > 0 && (
+                            <span className="bell-badge">{unreadCount}</span>
                         )}
                     </button>
 
@@ -194,6 +223,20 @@ function Header({ breadcrumb }) {
                         <div className="dropdown-box noti-dropdown">
                             <div className="noti-header">
                                 <h4>Thông báo</h4>
+                                <div className="noti-header-actions">
+                                    {unreadCount > 0 && (
+                                        <>
+                                            <span className="unread-count">{unreadCount} chưa đọc</span>
+                                            <button
+                                                className="mark-all-btn"
+                                                onClick={handleMarkAllAsRead}
+                                                title="Đánh dấu tất cả đã đọc"
+                                            >
+                                                ✓ Đọc hết
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
 
                             {loading ? (
@@ -206,14 +249,27 @@ function Header({ breadcrumb }) {
                                         {notifications.map((noti) => (
                                             <div
                                                 key={noti.id}
-                                                className={`noti-item ${noti.isRead ? 'read' : 'unread'} ${getNotificationType(noti)}`}
-                                                onClick={() => handleMarkAsRead(noti.id)}
+                                                className={`noti-item ${noti.read ? 'read' : 'unread'} ${getNotificationType(noti)}`}
+                                                onClick={() => !noti.read && handleMarkAsRead(noti.id)}
+                                                style={{ cursor: noti.read ? 'default' : 'pointer' }}
                                             >
-                                                <div className="noti-title">{noti.title}</div>
-                                                <div className="noti-sender">{noti.sender || "Hệ thống"}</div>
-                                                <div className="noti-time">
-                                                    {formatDate(noti.createdAt)}
+                                                <div className="noti-content">
+                                                    <div className="noti-title">
+                                                        Hợp đồng: {noti.contractNo}
+                                                    </div>
+                                                    <div className="noti-message">
+                                                        {noti.noticeContent}
+                                                    </div>
+                                                    {noti.email && (
+                                                        <div className="noti-sender">
+                                                            Email : {noti.email}
+                                                        </div>
+                                                    )}
+                                                    <div className="noti-time">
+                                                        Date : {formatDate(noti.createdAt)}
+                                                    </div>
                                                 </div>
+                                                {!noti.read && <span className="unread-dot"></span>}
                                             </div>
                                         ))}
                                     </div>

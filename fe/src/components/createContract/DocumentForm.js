@@ -58,7 +58,7 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
     const getDefaultExpirationDate = () => {
         const today = new Date();
         const expirationDate = new Date(today);
-        expirationDate.setDate(today.getDate() + 5);
+        expirationDate.setDate(today.getDate() + 30);
         const day = String(expirationDate.getDate()).padStart(2, '0');
         const month = String(expirationDate.getMonth() + 1).padStart(2, '0');
         const year = expirationDate.getFullYear();
@@ -1845,13 +1845,13 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 }
 
                 setContractId(currentContractId);
-                showToast(
-                    isEdit
-                        ? 'Cập nhật hợp đồng thành công!'
-                        : 'Tạo hợp đồng thành công! Contract ID: ' + currentContractId,
-                    'success',
-                    3000
-                );
+                if (isEdit) {
+                    showToast(
+                        'Cập nhật hợp đồng thành công!',
+                        'success',
+                        3000
+                    );
+                }
 
                 // Move to next step
                 setCurrentStep(currentStep + 1);

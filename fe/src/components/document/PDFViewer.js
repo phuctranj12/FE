@@ -25,7 +25,9 @@ function PDFViewer({
     autoFitWidth = false, // New prop to enable auto-fit-to-width,
     onScaleChange = null, // Callback to notify parent of scale changes
     focusComponentId = null,
-    showLockedBadge = true
+    showLockedBadge = true,
+    onTextFieldChange = null, // Callback khi text field thay đổi
+    onTextFieldBlur = null // Callback khi text field blur
 }) {
     const [numPages, setNumPages] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -250,6 +252,7 @@ function PDFViewer({
                                         <div
                                             key={component.id}
                                             data-component-id={component.id}
+                                            data-component-type={component.type}
                                             className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''} ${isLocked ? 'locked' : ''} ${component.highlight ? `highlight-${component.highlightType}` : ''}`}
                                             style={{
                                                 position: 'absolute',
@@ -259,13 +262,19 @@ function PDFViewer({
                                                 height: `${component.properties?.height || 30}px`,
                                                 fontSize: `${component.properties?.size || 12}px`,
                                                 fontFamily: component.properties?.font || 'Times New Roman',
-                                                cursor: isLocked ? 'not-allowed' : (isDragging ? 'grabbing' : 'grab'),
+                                                cursor: isLocked 
+                                                    ? 'not-allowed' 
+                                                    : (component.type === 'text' && onTextFieldChange && !isLocked) 
+                                                        ? 'text'  // Text cursor chỉ khi có inline editing (màn sign)
+                                                        : (isDragging ? 'grabbing' : 'grab'), // Grab cursor cho DocumentEditor
                                                 zIndex: editingComponentId === component.id ? 100 : 10
                                             }}
                                         onMouseEnter={() => onComponentMouseEnter && onComponentMouseEnter(component.id)}
                                         onMouseLeave={() => onComponentMouseLeave && onComponentMouseLeave()}
                                         onMouseDown={(e) => {
-                                            if (!isLocked && onComponentMouseDown) {
+                                            // Chỉ block drag khi đang inline editing (có onTextFieldChange)
+                                            const isInlineEditing = editingComponentId === component.id && onTextFieldChange;
+                                            if (!isLocked && onComponentMouseDown && !isInlineEditing) {
                                                 onComponentMouseDown(e, component.id);
                                             }
                                         }}
@@ -281,12 +290,57 @@ function PDFViewer({
                                             </div>
                                         )}
                                         <div className="component-content" style={{ color: '#000' }}>
-                                            {component.type === 'text' && component.properties?.fieldName 
-                                                ? `[${component.properties.fieldName}]` 
-                                                : component.signatureType 
+                                            {component.type === 'text' && editingComponentId === component.id && onTextFieldChange ? (
+                                                // Inline editing mode (chỉ khi có onTextFieldChange - màn sign)
+                                                <input
+                                                    type="text"
+                                                    className="component-inline-input"
+                                                    value={component.properties?.fieldName || ''}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onTextFieldChange) {
+                                                            onTextFieldChange(component.id, e.target.value);
+                                                        }
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onTextFieldBlur) {
+                                                            onTextFieldBlur();
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === 'Escape') {
+                                                            e.target.blur();
+                                                        }
+                                                        e.stopPropagation();
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    placeholder={component.properties?.label || 'Nhập nội dung'}
+                                                    autoFocus
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        border: '2px solid #4CAF50',
+                                                        padding: '4px',
+                                                        fontSize: 'inherit',
+                                                        fontFamily: 'inherit',
+                                                        outline: 'none',
+                                                        background: 'white'
+                                                    }}
+                                                />
+                                            ) : (
+                                                // Display mode
+                                                component.type === 'text' ? (
+                                                    component.properties?.fieldName 
+                                                        ? component.properties.fieldName
+                                                        : <span style={{ color: '#999', fontStyle: 'italic' }}>
+                                                            {component.properties?.label || (onTextFieldChange ? 'Nhấp để điền' : `[${component.name}]`)}
+                                                          </span>
+                                                ) : component.signatureType 
                                                     ? `[${component.name}]`
                                                     : `[${component.name}]`
-                                            }
+                                            )}
                                         </div>
                                         
                                         {showLockedBadge && isLocked && (component.recipient?.name || component.name) && (
