@@ -67,6 +67,14 @@ function DocumentConfirmation({
 
     return (
         <div className="step-content">
+            {/* Loading Overlay */}
+            {loading && (
+                <div className="loading-overlay">
+                    <div className="loading-spinner"></div>
+                    <div className="loading-text">Đang xử lý, vui lòng đợi...</div>
+                </div>
+            )}
+            
             {/* Document Type Selection - Read Only */}
             <div className="document-type-section">
                 <div className="radio-group readonly">

@@ -41,6 +41,14 @@ function TemplateConfirmation({
 
     return (
         <div className="step-content">
+            {/* Loading Overlay */}
+            {loading && (
+                <div className="loading-overlay">
+                    <div className="loading-spinner"></div>
+                    <div className="loading-text">Đang xử lý, vui lòng đợi...</div>
+                </div>
+            )}
+            
             {/* Document Information Summary */}
             <div className="document-summary">
                 <h3 className="summary-title">Thông tin mẫu tài liệu</h3>
