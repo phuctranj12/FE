@@ -741,6 +741,19 @@ function CoordinateAssigners({
                 return;
             }
 
+            // Validate Mã số thuế/CMT/CCCD cho các văn thư
+            const clerksMissingCardId = clerks.filter((clerk) => {
+                const hasInfo = clerk.fullName?.trim() || clerk.email?.trim() || clerk.phone?.trim();
+                if (!hasInfo) return false;
+                const cardValue = clerk.card_id ?? clerk.cardId;
+                return !cardValue || !cardValue.toString().trim();
+            });
+
+            if (clerksMissingCardId.length > 0) {
+                setError('Vui lòng nhập Mã số thuế/CMT/CCCD cho tất cả văn thư.');
+                return;
+            }
+
             // BƯỚC 4: Tạo participant mới (nếu có người tham gia)
             const allRecipients = [
                 ...reviewers.map(r => ({ ...r, role: 2 })), // Role 2: Xem xét
@@ -1283,14 +1296,13 @@ function CoordinateAssigners({
                                         <div className="coordinate-form-row">
                                             <div className="coordinate-form-group">
                                                 <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
-                                                <select
-                                                    value={signer.signType || 'hsm'}
-                                                    onChange={(e) => handleUpdateSigner(signer.id, 'signType', e.target.value)}
-                                                    className="coordinate-select"
-                                                    disabled={locked}
-                                                >
-                                                    <option value="hsm">Chứng thư số server</option>
-                                                </select>
+                                                <input
+                                                    type="text"
+                                                    value="Ký bằng chứng thư số server"
+                                                    readOnly
+                                                    className="coordinate-select readonly-input"
+                                                    style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                                                />
                                                 <div className="coordinate-warning-text">
                                                     Lưu ý: bạn chỉ được phép chọn 1 kiểu ký số!
                                                 </div>
@@ -1392,16 +1404,13 @@ function CoordinateAssigners({
                                     <div className="coordinate-form-row">
                                         <div className="coordinate-form-group">
                                             <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
-                                            <select
-                                                value={clerk.signType || 'hsm'}
-                                                onChange={(e) => handleUpdateClerk(clerk.id, 'signType', e.target.value)}
-                                                className="coordinate-select"
-                                            >
-                                                <option value="hsm">Chứng thư số HSM</option>
-                                            </select>
-                                            <div className="coordinate-warning-text">
-                                                Lưu ý: bạn chỉ được phép chọn 1 kiểu ký số!
-                                            </div>
+                                            <input
+                                                type="text"
+                                                value="Ký bằng chứng thư số server"
+                                                readOnly
+                                                className="coordinate-select readonly-input"
+                                                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                                            />
                                         </div>
                                         <div className="coordinate-form-group">
                                             <label>
@@ -1414,6 +1423,23 @@ function CoordinateAssigners({
                                                 onChange={(e) => handleUpdateClerk(clerk.id, 'phone', e.target.value)}
                                                 placeholder="Nhập số điện thoại"
                                             />
+                                        </div>
+                                    </div>
+                                    <div className="coordinate-form-row">
+                                        <div className="coordinate-form-group">
+                                            <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
+                                            <input
+                                                type="text"
+                                                value={clerk.cardId || clerk.card_id || ''}
+                                                onChange={(e) => {
+                                                    handleUpdateClerk(clerk.id, 'cardId', e.target.value);
+                                                    handleUpdateClerk(clerk.id, 'card_id', e.target.value);
+                                                }}
+                                                placeholder="Nhập mã số thuế/CMT/CCCD"
+                                            />
+                                        </div>
+                                        <div className="coordinate-form-group">
+                                            {/* Empty space for layout balance */}
                                         </div>
                                     </div>
                                 </div>

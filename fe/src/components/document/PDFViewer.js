@@ -244,15 +244,21 @@ function PDFViewer({
                                     const badgeLabel = assignedName
                                         ? `${assignedName}${assignedRole ? ` - ${assignedRole}` : ''}`
                                         : '';
+                                    
                                     // Calculate current scale factor
                                     const currentScale = autoFitWidth ? autoScale : (zoom / 100);
                                     
-                                    // Scale component coordinates and dimensions
-                                    const scaledX = (component.properties?.x || 0) * currentScale;
-                                    const scaledY = (component.properties?.y || 0) * currentScale;
-                                    const scaledWidth = (component.properties?.width || 100) * currentScale;
-                                    const scaledHeight = (component.properties?.height || 30) * currentScale;
-                                    const scaledFontSize = (component.properties?.size || 12) * currentScale;
+                                    // Only scale components in viewer mode (not in editor mode)
+                                    // Editor mode is detected by presence of onComponentMouseDown (drag handler)
+                                    const isEditorMode = Boolean(onComponentMouseDown);
+                                    const shouldScale = !isEditorMode;
+                                    
+                                    // Scale component coordinates and dimensions only in viewer mode
+                                    const scaledX = shouldScale ? (component.properties?.x || 0) * currentScale : (component.properties?.x || 0);
+                                    const scaledY = shouldScale ? (component.properties?.y || 0) * currentScale : (component.properties?.y || 0);
+                                    const scaledWidth = shouldScale ? (component.properties?.width || 100) * currentScale : (component.properties?.width || 100);
+                                    const scaledHeight = shouldScale ? (component.properties?.height || 30) * currentScale : (component.properties?.height || 30);
+                                    const scaledFontSize = shouldScale ? (component.properties?.size || 12) * currentScale : (component.properties?.size || 12);
                                     
                                     return (
                                         <div
