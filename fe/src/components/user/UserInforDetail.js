@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import customerService from "../../api/customerService";
 import "../../styles/userInforDetail.css";
 import OrganizationService from "../../api/OrganizationService";
+
 const UserInforDetail = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -46,12 +47,11 @@ const UserInforDetail = () => {
             setError(null);
             const response = await customerService.getCustomerByToken();
 
-
             if (response && response.data) {
                 const u = response.data;
                 const role = u.roles?.[0] || {};
                 const responeOrganization = await OrganizationService.getById(u.organizationId);
-                console.log("Organization Response:", responeOrganization);
+
                 setUserInfo({
                     id: u.id,
                     name: u.name || "",
@@ -158,7 +158,6 @@ const UserInforDetail = () => {
                 setSuccessMessage("Cập nhật thông tin thành công!");
                 setIsEditing(false);
                 await fetchUserInfo();
-
                 setTimeout(() => setSuccessMessage(""), 3000);
             }
         } catch (err) {
@@ -187,7 +186,6 @@ const UserInforDetail = () => {
 
     return (
         <div className="user-infor-detail">
-
             {error && (
                 <div className="alert alert-error">
                     <span>{error}</span>
@@ -215,99 +213,107 @@ const UserInforDetail = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="user-info-form">
-
+                    {/* ✨ Thông tin cá nhân - Grid 2 cột */}
                     <div className="form-section">
-                        {/* <h3>Thông tin cá nhân</h3> */}
+                        <div className="form-grid">
+                            <div className="form-group-user-infor">
+                                <label>Họ và tên <span className="required">*</span></label>
+                                {isEditing ? (
+                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
+                                ) : (
+                                    <p className="form-value">{userInfo.name || "Chưa cập nhật"}</p>
+                                )}
+                            </div>
 
-                        <div className="form-group-user-infor">
-                            <label>Họ và tên <span className="required">*</span></label>
-                            {isEditing ? (
-                                <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
-                            ) : (
-                                <p className="form-value">{userInfo.name || "Chưa cập nhật"}</p>
-                            )}
-                        </div>
+                            <div className="form-group-user-infor">
+                                <label>Email <span className="required">*</span></label>
+                                {isEditing ? (
+                                    <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
+                                ) : (
+                                    <p className="form-value">{userInfo.email || "Chưa cập nhật"}</p>
+                                )}
+                            </div>
 
-                        <div className="form-group-user-infor">
-                            <label>Email <span className="required">*</span></label>
-                            {isEditing ? (
-                                <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
-                            ) : (
-                                <p className="form-value">{userInfo.email || "Chưa cập nhật"}</p>
-                            )}
-                        </div>
+                            <div className="form-group-user-infor">
+                                <label>Số điện thoại</label>
+                                {isEditing ? (
+                                    <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} />
+                                ) : (
+                                    <p className="form-value">{userInfo.phone || "Chưa cập nhật"}</p>
+                                )}
+                            </div>
 
-                        <div className="form-group-user-infor">
-                            <label>Số điện thoại</label>
-                            {isEditing ? (
-                                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} />
-                            ) : (
-                                <p className="form-value">{userInfo.phone || "Chưa cập nhật"}</p>
-                            )}
-                        </div>
+                            <div className="form-group-user-infor">
+                                <label>Ngày sinh</label>
+                                {isEditing ? (
+                                    <input type="date" name="birthday" value={formData.birthday} onChange={handleInputChange} />
+                                ) : (
+                                    <p className="form-value">{userInfo.birthday || "Chưa cập nhật"}</p>
+                                )}
+                            </div>
 
-                        {/* ✨ THÊM MỚI: Birthday */}
-                        <div className="form-group-user-infor">
-                            <label>Ngày sinh</label>
-                            {isEditing ? (
-                                <input type="date" name="birthday" value={formData.birthday} onChange={handleInputChange} />
-                            ) : (
-                                <p className="form-value">{userInfo.birthday || "Chưa cập nhật"}</p>
-                            )}
-                        </div>
+                            <div className="form-group-user-infor">
+                                <label>Giới tính</label>
+                                {isEditing ? (
+                                    <select name="gender" value={formData.gender} onChange={handleInputChange}>
+                                        <option value="">Chọn giới tính</option>
+                                        <option value="male">Nam</option>
+                                        <option value="female">Nữ</option>
+                                        <option value="other">Khác</option>
+                                    </select>
+                                ) : (
+                                    <p className="form-value">
+                                        {userInfo.gender === "male"
+                                            ? "Nam"
+                                            : userInfo.gender === "female"
+                                                ? "Nữ"
+                                                : userInfo.gender === "other"
+                                                    ? "Khác"
+                                                    : "Chưa cập nhật"}
+                                    </p>
+                                )}
+                            </div>
 
-                        {/* ✨ THÊM MỚI: Gender */}
-                        <div className="form-group-user-infor">
-                            <label>Giới tính</label>
-                            {isEditing ? (
-                                <select name="gender" value={formData.gender} onChange={handleInputChange}>
-                                    <option value="">Chọn giới tính</option>
-                                    <option value="male">Nam</option>
-                                    <option value="female">Nữ</option>
-                                    <option value="other">Khác</option>
-                                </select>
-                            ) : (
+                            <div className="form-group-user-infor">
+                                <label>Mã số thuế</label>
+                                {isEditing ? (
+                                    <input type="text" name="taxCode" value={formData.taxCode} onChange={handleInputChange} />
+                                ) : (
+                                    <p className="form-value">{userInfo.taxCode || "Chưa cập nhật"}</p>
+                                )}
+                            </div>
+
+                            <div className="form-group-user-infor form-group-full">
+                                <label>Địa chỉ</label>
+                                {isEditing ? (
+                                    <input type="text" name="address" value={formData.address} onChange={handleInputChange} />
+                                ) : (
+                                    <p className="form-value">{userInfo.address || "Chưa cập nhật"}</p>
+                                )}
+                            </div>
+
+                            <div className="form-group-user-infor">
+                                <label>Trạng thái</label>
                                 <p className="form-value">
-                                    {userInfo.gender === "male"
-                                        ? "Nam"
-                                        : userInfo.gender === "female"
-                                            ? "Nữ"
-                                            : "Khác / Chưa cập nhật"}
+                                    {userInfo.status === 1 ? "Hoạt động" : "Không hoạt động"}
                                 </p>
-                            )}
+                            </div>
                         </div>
-
-                        {/* ✨ THÊM MỚI: TaxCode */}
-                        <div className="form-group-user-infor">
-                            <label>Mã số thuế</label>
-                            {isEditing ? (
-                                <input type="text" name="taxCode" value={formData.taxCode} onChange={handleInputChange} />
-                            ) : (
-                                <p className="form-value">{userInfo.taxCode || "Chưa cập nhật"}</p>
-                            )}
-                        </div>
-
-                        {/* ✨ THÊM MỚI: Status */}
-                        <div className="form-group-user-infor">
-                            <label>Trạng thái</label>
-                            <p className="form-value">
-                                {userInfo.status === 1 ? "Hoạt động" : "Không hoạt động"}
-                            </p>
-                        </div>
-
                     </div>
 
+                    {/* ✨ Thông tin tổ chức - Grid 2 cột */}
                     <div className="form-section">
                         <h3>Thông tin tổ chức</h3>
+                        <div className="form-grid">
+                            <div className="form-group-user-infor">
+                                <label>Tổ chức</label>
+                                <p className="form-value">{userInfo.organizationName || "Chưa có tổ chức"}</p>
+                            </div>
 
-                        <div className="form-group-user-infor">
-                            <label>Tổ chức</label>
-                            <p className="form-value">{userInfo.organizationName || "Chưa có tổ chức"}</p>
-                        </div>
-
-                        <div className="form-group-user-infor">
-                            <label>Vai trò</label>
-                            <p className="form-value">{userInfo.roleName || "Chưa có vai trò"}</p>
+                            <div className="form-group-user-infor">
+                                <label>Vai trò</label>
+                                <p className="form-value">{userInfo.roleName || "Chưa có vai trò"}</p>
+                            </div>
                         </div>
                     </div>
 
@@ -321,13 +327,12 @@ const UserInforDetail = () => {
                                 <button type="button" className="btn btn-secondary" onClick={handleCancel}>
                                     Hủy
                                 </button>
-                                <button type="submit" className="btn btn-primary">
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
                                     {loading ? "Đang lưu..." : "Lưu thay đổi"}
                                 </button>
                             </>
                         )}
                     </div>
-
                 </form>
             </div>
         </div>
