@@ -244,9 +244,15 @@ function PDFViewer({
                                     const badgeLabel = assignedName
                                         ? `${assignedName}${assignedRole ? ` - ${assignedRole}` : ''}`
                                         : '';
-                                    // Render component coordinates as-is
-                                    // In DocumentEditor: coordinates are stored at currentScale (scaled for editing)
-                                    // In other views: coordinates will be scaled based on zoom level
+                                    // Calculate current scale factor
+                                    const currentScale = autoFitWidth ? autoScale : (zoom / 100);
+                                    
+                                    // Scale component coordinates and dimensions
+                                    const scaledX = (component.properties?.x || 0) * currentScale;
+                                    const scaledY = (component.properties?.y || 0) * currentScale;
+                                    const scaledWidth = (component.properties?.width || 100) * currentScale;
+                                    const scaledHeight = (component.properties?.height || 30) * currentScale;
+                                    const scaledFontSize = (component.properties?.size || 12) * currentScale;
                                     
                                     return (
                                         <div
@@ -256,11 +262,11 @@ function PDFViewer({
                                             className={`document-component ${editingComponentId === component.id ? 'editing' : ''} ${isDragging && draggedComponent?.id === component.id ? 'dragging' : ''} ${isLocked ? 'locked' : ''} ${component.highlight ? `highlight-${component.highlightType}` : ''}`}
                                             style={{
                                                 position: 'absolute',
-                                                left: `${component.properties?.x || 0}px`,
-                                                top: `${component.properties?.y || 0}px`,
-                                                width: `${component.properties?.width || 100}px`,
-                                                height: `${component.properties?.height || 30}px`,
-                                                fontSize: `${component.properties?.size || 12}px`,
+                                                left: `${scaledX}px`,
+                                                top: `${scaledY}px`,
+                                                width: `${scaledWidth}px`,
+                                                height: `${scaledHeight}px`,
+                                                fontSize: `${scaledFontSize}px`,
                                                 fontFamily: component.properties?.font || 'Times New Roman',
                                                 cursor: isLocked 
                                                     ? 'not-allowed' 
