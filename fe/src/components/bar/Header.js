@@ -40,12 +40,17 @@ function Header({ breadcrumb }) {
         try {
             setLoading(true);
             const response = await notificationService.getAllNotice(page, 10);
-
-            if (response.data && response.data.code === 200) {
-                const data = response.data.data;
-                setNotifications(data.content || []);
-                setTotalPages(data.totalPages || 0);
-                setCurrentPage(page);
+            console.log("Notifications response:", response);
+            if (response.data && response.code === "SUCCESS") {
+                const data = response.data;
+                // setNotifications(data.content || []);
+                // setTotalPages(data.totalPages || 0);
+                // setCurrentPage(page);
+                console.log(" data:", data);
+                const notificationData = data || [];
+                console.log("Notifications data:", notificationData);
+                setNotifications(notificationData);
+                console.log("Notifications data:", notifications);
             }
         } catch (error) {
             console.error("Lỗi khi tải thông báo:", error);
