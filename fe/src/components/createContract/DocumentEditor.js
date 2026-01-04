@@ -52,6 +52,9 @@ function DocumentEditor({
     
     // Ref cho PDF viewer container để scroll
     const pdfViewerContainerRef = useRef(null);
+    
+    // Ref để track xem đã load fieldsData lần đầu chưa
+    const hasLoadedFieldsRef = useRef(false);
 
     const DEFAULT_COMPONENT_WIDTH = 200;
     const DEFAULT_COMPONENT_HEIGHT = 80;
@@ -473,8 +476,30 @@ function DocumentEditor({
     const normalizedFieldsRef = useRef([]);
 
     // Load fields data khi component mount hoặc fieldsData thay đổi
+    // CHỈ load MỘT LẦN khi có fieldsData lần đầu
     useEffect(() => {
-        if (fieldsData && fieldsData.length > 0 && documentComponents.length === 0 && currentScale > 0) {
+        // Chỉ load khi:
+        // 1. Có fieldsData
+        // 2. Chưa load lần nào (hasLoadedFieldsRef.current === false)
+        // 3. Có currentScale
+        // 4. fieldsData có length > 0
+        const shouldLoad = fieldsData && 
+                          fieldsData.length > 0 && 
+                          !hasLoadedFieldsRef.current && 
+                          currentScale > 0;
+        
+        console.log('[DEBUG] useEffect fieldsData check:', {
+            shouldLoad,
+            fieldsDataLength: fieldsData?.length,
+            hasLoadedFields: hasLoadedFieldsRef.current,
+            componentsLength: documentComponents.length,
+            currentScale
+        });
+        
+        if (shouldLoad) {
+            console.log('[DEBUG] Loading components from fieldsData (FIRST TIME)...');
+            hasLoadedFieldsRef.current = true; // Đánh dấu đã load
+            
             // Store normalized coordinates for later re-scaling
             normalizedFieldsRef.current = fieldsData.map(field => ({
                 id: field.id,
@@ -500,6 +525,14 @@ function DocumentEditor({
                 const scaledH = (field.boxH || 30) * currentScale;
                 
                 const isLocked = lockedFieldIds?.includes(field.id);
+                
+                console.log('[DEBUG] Loading field:', { 
+                    fieldId: field.id, 
+                    fieldName: field.name,
+                    isLocked, 
+                    lockedFieldIds,
+                    hasFieldId: !!field.id
+                });
 
                 return {
                     id: field.id || Date.now() + index,
@@ -523,6 +556,7 @@ function DocumentEditor({
                     locked: Boolean(isLocked)
                 };
             });
+            console.log('[DEBUG] Loaded components:', loadedComponents);
             setDocumentComponents(loadedComponents);
         }
     }, [fieldsData, currentScale, lockedFieldIds]);
@@ -734,10 +768,23 @@ function DocumentEditor({
 
     const handleRemoveComponent = (componentId) => {
         const target = documentComponents.find(comp => comp.id === componentId);
+        console.log('[DEBUG] Remove component:', { 
+            componentId, 
+            target, 
+            locked: target?.locked, 
+            lockedFieldIds,
+            currentFieldsDataLength: fieldsData?.length,
+            currentComponentsLength: documentComponents.length
+        });
         if (target?.locked) {
+            console.log('[DEBUG] Component is locked, cannot remove');
             return;
         }
-        setDocumentComponents(prev => prev.filter(comp => comp.id !== componentId));
+        setDocumentComponents(prev => {
+            const newComponents = prev.filter(comp => comp.id !== componentId);
+            console.log('[DEBUG] After remove, components length:', newComponents.length);
+            return newComponents;
+        });
     };
 
     const handleComponentClick = (component) => {
@@ -1268,8 +1315,14 @@ function DocumentEditor({
                                 draggedComponent={draggedComponent}
                                 onComponentClick={handleComponentClick}
                                 onComponentMouseDown={handleMouseDown}
-                                onComponentMouseEnter={setHoveredComponentId}
-                                onComponentMouseLeave={() => setHoveredComponentId(null)}
+                                onComponentMouseEnter={(id) => {
+                                    console.log('[DEBUG] Mouse enter component:', id);
+                                    setHoveredComponentId(id);
+                                }}
+                                onComponentMouseLeave={() => {
+                                    console.log('[DEBUG] Mouse leave component');
+                                    setHoveredComponentId(null);
+                                }}
                                 onResizeStart={handleResizeStart}
                                 onRemoveComponent={handleRemoveComponent}
                                 autoFitWidth={true}

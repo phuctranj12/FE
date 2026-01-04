@@ -579,7 +579,8 @@ const DocumentForm = ({ initialData = null, isEdit = false }) => {
                 // Prefill fields only when empty
                 if (!fieldsData || fieldsData.length === 0) {
                     const mappedFields = templateFields.map((field, index) => ({
-                        id: field.id,
+                        // KHÔNG giữ field.id khi tạo từ template - để field được coi là mới
+                        // id sẽ được tạo mới khi save ở bước 4
                         name: field.name || field.label || '',
                         font: field.font || 'Times New Roman',
                         fontSize: field.fontSize || 11,
