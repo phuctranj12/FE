@@ -255,18 +255,18 @@ function Header({ breadcrumb }) {
                                             >
                                                 <div className="noti-content">
                                                     <div className="noti-title">
-                                                        📄 Hợp đồng: {noti.contractNo}
+                                                        Hợp đồng: {noti.contractNo}
                                                     </div>
                                                     <div className="noti-message">
                                                         {noti.noticeContent}
                                                     </div>
                                                     {noti.email && (
                                                         <div className="noti-sender">
-                                                            📧 {noti.email}
+                                                            Email : {noti.email}
                                                         </div>
                                                     )}
                                                     <div className="noti-time">
-                                                        ⏰ {formatDate(noti.createdAt)}
+                                                        Date : {formatDate(noti.createdAt)}
                                                     </div>
                                                 </div>
                                                 {!noti.read && <span className="unread-dot"></span>}
