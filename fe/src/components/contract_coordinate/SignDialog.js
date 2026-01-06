@@ -425,9 +425,19 @@ function SignDialog({
                             {stampOption === 'upload' && (
                                 <div className="sign-dialog-field">
                                     <label className="sign-dialog-label">Tải ảnh chữ ký / con dấu</label>
+                                    <button
+                                        type="button"
+                                        className="sign-dialog-upload-btn"
+                                        disabled={loading}
+                                        onClick={() => document.getElementById('stamp-image-upload').click()}
+                                    >
+                                        Chọn ảnh
+                                    </button>
                                     <input
+                                        id="stamp-image-upload"
                                         type="file"
                                         accept="image/*"
+                                        style={{ display: 'none' }}
                                         disabled={loading}
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
