@@ -4,17 +4,17 @@ import customerService from '../../api/customerService';
 import contractService from '../../api/contractService';
 import PDFViewer from '../document/PDFViewer';
 
-function DocumentEditor({ 
-    documentType = 'single-template', 
+function DocumentEditor({
+    documentType = 'single-template',
     contractId,
     documentId,
     participantsData = [],
     fieldsData = [],
     onFieldsChange,
     totalPages: initialTotalPages = 1,
-    onBack, 
-    onNext, 
-    onSaveDraft, 
+    onBack,
+    onNext,
+    onSaveDraft,
     hideFooter = false,
     lockedFieldIds = [],
     onAssignmentStateChange = null,
@@ -43,27 +43,55 @@ function DocumentEditor({
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [nextWarning, setNextWarning] = useState('');
     const [currentScale, setCurrentScale] = useState(1); // Track PDF scale for coordinate normalization
-    
+
     // State cho autocomplete gợi ý tên
     const [nameSuggestions, setNameSuggestions] = useState([]);
     const [suggestionLoading, setSuggestionLoading] = useState(false);
     const [recipientSearchValue, setRecipientSearchValue] = useState('');
     const suggestionTimeoutRef = useRef(null);
-    
+
     // Ref cho PDF viewer container để scroll
     const pdfViewerContainerRef = useRef(null);
-    
+
     // Ref để track xem đã load fieldsData lần đầu chưa
     const hasLoadedFieldsRef = useRef(false);
 
-    const DEFAULT_COMPONENT_WIDTH = 200;
-    const DEFAULT_COMPONENT_HEIGHT = 80;
+    // Hàm tính default size dựa trên PDF page width
+    const getDefaultComponentSize = () => {
+        const pdfContainer = pdfViewerContainerRef.current;
+        if (!pdfContainer) {
+            // Fallback nếu chưa có container
+            return { width: 200, height: 80 };
+        }
+
+        const safePageIndex = Math.max(0, (currentPage || 1) - 1);
+        const pageSelector = `[data-page-index="${safePageIndex}"]`;
+        const pageElement = pdfContainer.querySelector(pageSelector);
+        const targetElement = pageElement?.querySelector('canvas, .page, .react-pdf__Page') || pageElement;
+        const pageWidth = targetElement?.clientWidth;
+
+        if (!pageWidth || pageWidth === 0) {
+            // Fallback nếu chưa load page
+            return { width: 200, height: 80 };
+        }
+
+        // Component width = 25% của page width (có thể điều chỉnh tỷ lệ này)
+        // Component height = 10% của page width (giữ tỷ lệ hợp lý)
+        const width = Math.round(pageWidth * 0.25);
+        const height = Math.round(pageWidth * 0.10);
+
+        return {
+            width: Math.max(width, 50),   // Tối thiểu 50px
+            height: Math.max(height, 20)  // Tối thiểu 20px
+        };
+    };
 
     const createCenteredProperties = (overrides = {}) => {
         const minWidth = 50;
         const minHeight = 20;
-        const width = Math.max(overrides.width ?? DEFAULT_COMPONENT_WIDTH, minWidth);
-        const height = Math.max(overrides.height ?? DEFAULT_COMPONENT_HEIGHT, minHeight);
+        const defaultSize = getDefaultComponentSize();
+        const width = Math.max(overrides.width ?? defaultSize.width, minWidth);
+        const height = Math.max(overrides.height ?? defaultSize.height, minHeight);
         const { x, y } = getCenteredPosition(width, height);
 
         return {
@@ -80,7 +108,14 @@ function DocumentEditor({
         };
     };
 
-    const getCenteredPosition = (width = DEFAULT_COMPONENT_WIDTH, height = DEFAULT_COMPONENT_HEIGHT) => {
+    const getCenteredPosition = (width, height) => {
+        // Nếu không truyền width/height, lấy default size
+        if (!width || !height) {
+            const defaultSize = getDefaultComponentSize();
+            width = width || defaultSize.width;
+            height = height || defaultSize.height;
+        }
+
         const fallbackCenter = {
             x: Math.max(0, (800 - width) / 2),
             y: Math.max(0, (600 - height) / 2)
@@ -146,9 +181,9 @@ function DocumentEditor({
                             name: recipient.name,
                             email: recipient.email,
                             role: recipient.role,
-                            roleName: recipient.role === 2 ? 'Xem xét' : 
-                                     recipient.role === 3 ? 'Ký' : 
-                                     recipient.role === 4 ? 'Văn thư' : 'Điều phối'
+                            roleName: recipient.role === 2 ? 'Xem xét' :
+                                recipient.role === 3 ? 'Ký' :
+                                    recipient.role === 4 ? 'Văn thư' : 'Điều phối'
                         });
                     });
                 }
@@ -162,8 +197,8 @@ function DocumentEditor({
     const signerRecipients = recipientsList.filter(recipient => SIGNER_ALLOWED_ROLES.includes(recipient.role));
     const getActiveRecipientList = (componentId = selectedComponent?.id) => {
         // Signature components và text components chỉ được assign cho người ký (role 3) và văn thư (role 4)
-        if (componentId === 'digital-signature' || 
-            componentId === 'image-signature' || 
+        if (componentId === 'digital-signature' ||
+            componentId === 'image-signature' ||
             componentId === 'text' ||
             selectedComponent?.type === 'text') {
             return signerRecipients;
@@ -198,7 +233,7 @@ function DocumentEditor({
     }, [documentComponents]);
 
     const hasUnassignedComponents = unassignedComponents.length > 0;
-    
+
     useEffect(() => {
         if (typeof onAssignmentStateChange === 'function') {
             onAssignmentStateChange(unassignedComponents.length);
@@ -263,7 +298,7 @@ function DocumentEditor({
             // Vị trí giữa: x = 400 - width/2, y = 300 - height/2
             const ordering = documentComponents.length + 1;
             const centeredProperties = createCenteredProperties();
-            
+
             const newComponent = {
                 id: Date.now(),
                 type: component.id,
@@ -275,7 +310,7 @@ function DocumentEditor({
                     fieldName: ''
                 }
             };
-            
+
             setDocumentComponents(prev => [...prev, newComponent]);
             setSelectedComponent(component);
             setEditingComponentId(newComponent.id);
@@ -340,14 +375,14 @@ function DocumentEditor({
     const handleRecipientSearchChange = (value) => {
         setRecipientSearchValue(value);
         fetchSuggestions(value);
-        
+
         const targetList = getActiveRecipientList();
 
         // Tìm recipient trong danh sách phù hợp theo tên
-        const foundRecipient = targetList.find(recipient => 
+        const foundRecipient = targetList.find(recipient =>
             recipient.name.toLowerCase().includes(value.toLowerCase())
         );
-        
+
         if (foundRecipient) {
             handlePropertyChange('signer', foundRecipient.id.toString());
         }
@@ -357,14 +392,14 @@ function DocumentEditor({
     const handleSuggestionSelect = (suggestionName) => {
         setRecipientSearchValue(suggestionName);
         setNameSuggestions([]);
-        
+
         const targetList = getActiveRecipientList();
 
         // Tìm recipient trong danh sách phù hợp theo tên chính xác
-        const foundRecipient = targetList.find(recipient => 
+        const foundRecipient = targetList.find(recipient =>
             recipient.name === suggestionName
         );
-        
+
         if (foundRecipient) {
             handlePropertyChange('signer', foundRecipient.id.toString());
         }
@@ -416,7 +451,7 @@ function DocumentEditor({
             if (!pdfUrl) {
                 // Test URL - có thể xóa sau khi test xong
                 const testUrl = 'http://127.0.0.1:9000/contracts/1762524046600_CV_NguyenThaiMinh%20%281%29.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=minioadmin%2F20251107%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251107T164659Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=0d9fc7c599bcd075819ace8caf2fdf9fe9b31eaa0c321c2e308c22a625527e20';
-                
+
                 if (documentId) {
                     try {
                         setPdfLoading(true);
@@ -424,9 +459,9 @@ function DocumentEditor({
                         const response = isTemplateDocument
                             ? await contractService.getTemplateDocumentPresignedUrl(documentId)
                             : await contractService.getPresignedUrl(documentId);
-                        
+
                         console.log('[DocumentEditor] getPresignedUrl response:', response);
-                        
+
                         // Kiểm tra response format
                         if (response && response.code === 'SUCCESS') {
                             // URL có thể ở nhiều vị trí:
@@ -434,10 +469,10 @@ function DocumentEditor({
                             // 2. response.data.url
                             // 3. response.data.message (theo response thực tế)
                             // 4. response.url
-                            const url = typeof response.data === 'string' 
-                                ? response.data 
+                            const url = typeof response.data === 'string'
+                                ? response.data
                                 : (response.data?.url || response.data?.message || response.url);
-                            
+
                             if (url) {
                                 setPdfUrl(url);
                                 setPdfError(null);
@@ -454,8 +489,8 @@ function DocumentEditor({
                     } catch (err) {
                         console.error('[DocumentEditor] Error loading presigned URL:', err);
                         // Xử lý error từ axios
-                        const errorMessage = err.response?.data?.message 
-                            || err.message 
+                        const errorMessage = err.response?.data?.message
+                            || err.message
                             || 'Không thể tải tài liệu';
                         setPdfError(errorMessage);
                     } finally {
@@ -483,11 +518,11 @@ function DocumentEditor({
         // 2. Chưa load lần nào (hasLoadedFieldsRef.current === false)
         // 3. Có currentScale
         // 4. fieldsData có length > 0
-        const shouldLoad = fieldsData && 
-                          fieldsData.length > 0 && 
-                          !hasLoadedFieldsRef.current && 
-                          currentScale > 0;
-        
+        const shouldLoad = fieldsData &&
+            fieldsData.length > 0 &&
+            !hasLoadedFieldsRef.current &&
+            currentScale > 0;
+
         console.log('[DEBUG] useEffect fieldsData check:', {
             shouldLoad,
             fieldsDataLength: fieldsData?.length,
@@ -495,11 +530,11 @@ function DocumentEditor({
             componentsLength: documentComponents.length,
             currentScale
         });
-        
+
         if (shouldLoad) {
             console.log('[DEBUG] Loading components from fieldsData (FIRST TIME)...');
             hasLoadedFieldsRef.current = true; // Đánh dấu đã load
-            
+
             // Store normalized coordinates for later re-scaling
             normalizedFieldsRef.current = fieldsData.map(field => ({
                 id: field.id,
@@ -517,19 +552,19 @@ function DocumentEditor({
                 let componentType = 'text';
                 if (field.type === 2) componentType = 'image-signature';
                 else if (field.type === 3) componentType = 'digital-signature';
-                
+
                 // Scale coordinates from normalized (scale=1.0) to currentScale
                 const scaledX = (field.boxX || 0) * currentScale;
                 const scaledY = (field.boxY || 0) * currentScale;
                 const scaledW = (field.boxW || 100) * currentScale;
                 const scaledH = (field.boxH || 30) * currentScale;
-                
+
                 const isLocked = lockedFieldIds?.includes(field.id);
-                
-                console.log('[DEBUG] Loading field:', { 
-                    fieldId: field.id, 
+
+                console.log('[DEBUG] Loading field:', {
+                    fieldId: field.id,
                     fieldName: field.name,
-                    isLocked, 
+                    isLocked,
                     lockedFieldIds,
                     hasFieldId: !!field.id
                 });
@@ -576,8 +611,8 @@ function DocumentEditor({
                     const expectedX = normalizedField.boxX * currentScale;
                     const expectedY = normalizedField.boxY * currentScale;
                     // Allow small floating point differences (0.1px tolerance)
-                    return Math.abs(comp.properties.x - expectedX) > 0.1 || 
-                           Math.abs(comp.properties.y - expectedY) > 0.1;
+                    return Math.abs(comp.properties.x - expectedX) > 0.1 ||
+                        Math.abs(comp.properties.y - expectedY) > 0.1;
                 });
 
                 if (!needsRescaling) return prev;
@@ -586,7 +621,7 @@ function DocumentEditor({
                 return prev.map(component => {
                     // Only re-scale components that came from database (have fieldId)
                     if (!component.fieldId) return component;
-                    
+
                     // Find normalized coordinates for this component
                     const normalizedField = normalizedFieldsRef.current.find(nf => nf.id === component.fieldId);
                     if (!normalizedField) return component;
@@ -638,14 +673,14 @@ function DocumentEditor({
                 .map((component, index) => {
                     const fieldType = getFieldType(component.type);
                     const recipientId = component.properties.recipientId || parseInt(component.properties.signer);
-                    
+
                     // Normalize coordinates: divide by currentScale to get scale=1.0 coordinates
                     // These normalized coordinates will be saved to database
                     const normalizedX = (component.properties.x || 0) / currentScale;
                     const normalizedY = (component.properties.y || 0) / currentScale;
                     const normalizedW = (component.properties.width || 100) / currentScale;
                     const normalizedH = (component.properties.height || 30) / currentScale;
-                    
+
                     return {
                         // Chỉ include id khi edit (có fieldId)
                         ...(component.fieldId && { id: component.fieldId }),
@@ -666,7 +701,7 @@ function DocumentEditor({
                         status: 0
                     };
                 });
-            
+
             if (fields.length > 0) {
                 onFieldsChange(fields);
             }
@@ -694,7 +729,7 @@ function DocumentEditor({
         if (isDragging || isResizing) {
             document.addEventListener('mousemove', handleMouseMoveEvent);
             document.addEventListener('mouseup', handleMouseUpEvent);
-            
+
             return () => {
                 document.removeEventListener('mousemove', handleMouseMoveEvent);
                 document.removeEventListener('mouseup', handleMouseUpEvent);
@@ -707,7 +742,7 @@ function DocumentEditor({
             ...componentProperties,
             [property]: value
         };
-        
+
         // Nếu thay đổi signer, tự động set recipientId
         if (property === 'signer' && value) {
             const recipientId = parseInt(value);
@@ -715,22 +750,22 @@ function DocumentEditor({
                 newProperties.recipientId = recipientId;
             }
         }
-        
+
         setComponentProperties(newProperties);
-        
+
         // Tự động cập nhật component trong documentComponents khi đang edit
         if (editingComponentId) {
             const editingComponent = documentComponents.find(comp => comp.id === editingComponentId);
             if (editingComponent && !editingComponent.locked) {
-                setDocumentComponents(prev => prev.map(comp => 
-                    comp.id === editingComponentId 
-                        ? { 
-                            ...comp, 
-                            properties: { 
-                                ...comp.properties, 
+                setDocumentComponents(prev => prev.map(comp =>
+                    comp.id === editingComponentId
+                        ? {
+                            ...comp,
+                            properties: {
+                                ...comp.properties,
                                 ...newProperties,
                                 page: currentPage // Đảm bảo page được cập nhật
-                            } 
+                            }
                         }
                         : comp
                 ));
@@ -743,17 +778,17 @@ function DocumentEditor({
             // Đảm bảo kích thước tối thiểu
             const width = Math.max(componentProperties.width || 100, 50);
             const height = Math.max(componentProperties.height || 30, 20);
-            
+
             const recipientId = parseInt(componentProperties.signer);
             const ordering = documentComponents.length + 1;
-            
+
             const newComponent = {
                 id: Date.now(),
                 type: selectedComponent.id,
                 name: selectedComponent.name,
                 page: currentPage,
                 locked: false,
-                properties: { 
+                properties: {
                     ...componentProperties,
                     recipientId: recipientId,
                     width: width,
@@ -768,10 +803,10 @@ function DocumentEditor({
 
     const handleRemoveComponent = (componentId) => {
         const target = documentComponents.find(comp => comp.id === componentId);
-        console.log('[DEBUG] Remove component:', { 
-            componentId, 
-            target, 
-            locked: target?.locked, 
+        console.log('[DEBUG] Remove component:', {
+            componentId,
+            target,
+            locked: target?.locked,
             lockedFieldIds,
             currentFieldsDataLength: fieldsData?.length,
             currentComponentsLength: documentComponents.length
@@ -803,17 +838,17 @@ function DocumentEditor({
             icon: foundComponent?.icon || '📄',
             autoCreate: foundComponent?.autoCreate || false
         });
-        
+
         // Scroll đến component ở giữa màn hình
         scrollToComponent(component);
     };
-    
+
     // Hàm scroll đến component ở giữa màn hình
     const scrollToComponent = (component) => {
         // Đợi một chút để đảm bảo component đã được render
         setTimeout(() => {
             const componentPage = component.properties?.page || component.page || currentPage;
-            
+
             // Chuyển đến trang chứa component nếu cần
             if (componentPage !== currentPage) {
                 setCurrentPage(componentPage);
@@ -826,7 +861,7 @@ function DocumentEditor({
             }
         }, 150);
     };
-    
+
     const performScroll = (component, pageNumber) => {
         // Tìm component element bằng data-component-id
         const componentElement = document.querySelector(`[data-component-id="${component.id}"]`);
@@ -835,31 +870,31 @@ function DocumentEditor({
             setTimeout(() => performScroll(component, pageNumber), 200);
             return;
         }
-        
+
         // Lấy PDF viewer container - thử nhiều selector
         const pdfContainer = pdfViewerContainerRef.current?.querySelector('.pdf-viewer-container') ||
-                            pdfViewerContainerRef.current ||
-                            document.querySelector('.pdf-viewer-container') ||
-                            document.querySelector('.pdf-viewer-inner') ||
-                            document.querySelector('.pdf-viewer');
-        
+            pdfViewerContainerRef.current ||
+            document.querySelector('.pdf-viewer-container') ||
+            document.querySelector('.pdf-viewer-inner') ||
+            document.querySelector('.pdf-viewer');
+
         if (!pdfContainer) {
             console.warn('PDF container not found for scrolling');
             return;
         }
-        
+
         // Lấy vị trí của component element
         const componentRect = componentElement.getBoundingClientRect();
         const containerRect = pdfContainer.getBoundingClientRect();
-        
+
         // Tính toán vị trí scroll để component ở giữa viewport
         const componentTopRelativeToContainer = componentRect.top - containerRect.top + pdfContainer.scrollTop;
         const containerHeight = containerRect.height;
         const componentHeight = componentRect.height;
-        
+
         // Scroll để component ở giữa màn hình
         const targetScrollTop = componentTopRelativeToContainer - (containerHeight / 2) + (componentHeight / 2);
-        
+
         // Scroll với smooth animation
         pdfContainer.scrollTo({
             top: Math.max(0, targetScrollTop),
@@ -871,8 +906,9 @@ function DocumentEditor({
     const handleSignatureOptionClick = (option) => {
         console.log('handleSignatureOptionClick', option);
         if (selectedComponent) {
-            const width = Math.max(componentProperties.width || DEFAULT_COMPONENT_WIDTH, 50);
-            const height = Math.max(componentProperties.height || DEFAULT_COMPONENT_HEIGHT, 20);
+            const defaultSize = getDefaultComponentSize();
+            const width = Math.max(componentProperties.width || defaultSize.width, 50);
+            const height = Math.max(componentProperties.height || defaultSize.height, 20);
             const { x, y } = getCenteredPosition(width, height);
 
             const newComponent = {
@@ -881,7 +917,7 @@ function DocumentEditor({
                 name: `${selectedComponent.name} - ${option.name}`,
                 signatureType: option.id,
                 locked: false,
-                properties: { 
+                properties: {
                     ...componentProperties,
                     width,
                     height,
@@ -900,7 +936,7 @@ function DocumentEditor({
     const handleMouseDown = (e, componentId) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const component = documentComponents.find(comp => comp.id === componentId);
         if (!component || component.locked) return;
 
@@ -916,7 +952,7 @@ function DocumentEditor({
 
         setDraggedComponent(component);
         setIsDragging(true);
-        
+
         if (pageRect) {
             // Lưu offset từ mouse đến component (relative với page container)
             const offsetX = e.clientX - componentRect.left;
@@ -948,28 +984,28 @@ function DocumentEditor({
         // Tìm page container hiện tại (cập nhật mỗi lần move để handle scroll)
         const pageNumber = draggedComponent.properties?.page || draggedComponent.page || currentPage;
         const pageContainer = document.querySelector(`[data-page-index="${pageNumber - 1}"]`);
-        
+
         if (pageContainer) {
             const pageRect = pageContainer.getBoundingClientRect();
             // Tính toán tọa độ mới relative với page container
             // newX = (mouse position - page position) - offset từ mouse đến component
             const newX = (e.clientX - pageRect.left) - dragStart.offsetX;
             const newY = (e.clientY - pageRect.top) - dragStart.offsetY;
-            
+
             setDocumentComponents(prev => prev.map(comp => {
                 if (comp.id === draggedComponent.id) {
-                    const updatedProperties = { 
-                        ...comp.properties, 
-                        x: Math.max(0, newX), 
+                    const updatedProperties = {
+                        ...comp.properties,
+                        x: Math.max(0, newX),
                         y: Math.max(0, newY),
                         page: pageNumber
                     };
-                    
+
                     // Cập nhật componentProperties để sidebar hiển thị giá trị mới ngay lập tức
                     if (editingComponentId === draggedComponent.id) {
                         setComponentProperties(updatedProperties);
                     }
-                    
+
                     return { ...comp, properties: updatedProperties };
                 }
                 return comp;
@@ -981,18 +1017,18 @@ function DocumentEditor({
 
             setDocumentComponents(prev => prev.map(comp => {
                 if (comp.id === draggedComponent.id) {
-                    const updatedProperties = { 
-                        ...comp.properties, 
-                        x: Math.max(0, newX), 
+                    const updatedProperties = {
+                        ...comp.properties,
+                        x: Math.max(0, newX),
                         y: Math.max(0, newY),
                         page: currentPage
                     };
-                    
+
                     // Cập nhật componentProperties để sidebar hiển thị giá trị mới ngay lập tức
                     if (editingComponentId === draggedComponent.id) {
                         setComponentProperties(updatedProperties);
                     }
-                    
+
                     return { ...comp, properties: updatedProperties };
                 }
                 return comp;
@@ -1026,9 +1062,9 @@ function DocumentEditor({
     const handleResizeStart = (e, componentId, handle) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         console.log('Resize start:', { componentId, handle, clientX: e.clientX, clientY: e.clientY });
-        
+
         const component = documentComponents.find(comp => comp.id === componentId);
         if (!component || component.locked) return;
 
@@ -1047,13 +1083,13 @@ function DocumentEditor({
         const deltaX = e.clientX - dragStart.x;
         const deltaY = e.clientY - dragStart.y;
 
-        console.log('Resize move:', { 
-            deltaX, 
-            deltaY, 
-            resizeHandle, 
-            clientX: e.clientX, 
+        console.log('Resize move:', {
+            deltaX,
+            deltaY,
+            resizeHandle,
+            clientX: e.clientX,
             clientY: e.clientY,
-            dragStart 
+            dragStart
         });
 
         // Get current component from state to ensure we have latest values
@@ -1085,9 +1121,9 @@ function DocumentEditor({
         console.log('New size:', { newWidth, newHeight });
 
         const updatedProperties = { ...currentComponent.properties, width: newWidth, height: newHeight };
-        
-        setDocumentComponents(prev => prev.map(comp => 
-            comp.id === draggedComponent.id 
+
+        setDocumentComponents(prev => prev.map(comp =>
+            comp.id === draggedComponent.id
                 ? { ...comp, properties: updatedProperties }
                 : comp
         ));
@@ -1114,9 +1150,9 @@ function DocumentEditor({
                 <div className="editor-header">
                     <div className="document-type-selection">
                         <label className="radio-option">
-                            <input 
-                                type="radio" 
-                                name="documentType" 
+                            <input
+                                type="radio"
+                                name="documentType"
                                 value="single-no-template"
                                 checked={documentType === 'single-no-template'}
                                 readOnly
@@ -1124,42 +1160,42 @@ function DocumentEditor({
                             Tài liệu đơn lẻ không theo mẫu
                         </label>
                         <label className="radio-option">
-                            <input 
-                                type="radio" 
-                                name="documentType" 
-                                value="single-template" 
+                            <input
+                                type="radio"
+                                name="documentType"
+                                value="single-template"
                                 checked={documentType === 'single-template'}
                                 readOnly
                             />
                             Tài liệu đơn lẻ theo mẫu
                         </label>
                     </div>
-                    
+
                     <div className="pagination-controls">
-                        <button 
-                            className="page-btn" 
+                        <button
+                            className="page-btn"
                             onClick={() => handlePageChange(1)}
                             disabled={currentPage === 1}
                         >
                             ««
                         </button>
-                        <button 
-                            className="page-btn" 
+                        <button
+                            className="page-btn"
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
                         >
                             «
                         </button>
                         <span className="page-info">{currentPage} / {totalPages}</span>
-                        <button 
-                            className="page-btn" 
+                        <button
+                            className="page-btn"
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
                         >
                             »
                         </button>
-                        <button 
-                            className="page-btn" 
+                        <button
+                            className="page-btn"
                             onClick={() => handlePageChange(totalPages)}
                             disabled={currentPage === totalPages}
                         >
@@ -1175,7 +1211,7 @@ function DocumentEditor({
                         <p className="sidebar-instruction">
                             Kéo thả các trường thông tin dưới đây để thêm ô nhập hoặc ô ký vào tài liệu
                         </p>
-                        
+
                         <div className="components-list">
                             {availableComponents.map(component => (
                                 <div key={component.id} className="component-wrapper">
@@ -1201,10 +1237,10 @@ function DocumentEditor({
                                         <span className="component-name">{component.name}</span>
                                         {component.hasDropdown && <span className="dropdown-arrow">›</span>}
                                     </button>
-                                    
+
                                     {/* Dropdown cho chữ ký số */}
                                     {component.hasDropdown && showSignatureDropdown && (
-                                        <div 
+                                        <div
                                             className="signature-dropdown"
                                             style={{
                                                 top: `${dropdownPosition.top}px`,
@@ -1212,8 +1248,8 @@ function DocumentEditor({
                                             }}
                                         >
                                             {signatureOptions.map(option => (
-                                                <div 
-                                                    key={option.id} 
+                                                <div
+                                                    key={option.id}
                                                     className="signature-option"
                                                     onClick={() => handleSignatureOptionClick(option)}
                                                 >
@@ -1261,10 +1297,10 @@ function DocumentEditor({
                     <div className="document-content">
                         <div className="document-page" style={{ position: 'relative' }}>
                             {pdfLoading && (
-                                <div style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center', 
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
                                     height: '100%',
                                     minHeight: '600px'
                                 }}>
@@ -1274,12 +1310,12 @@ function DocumentEditor({
                                     </div>
                                 </div>
                             )}
-                            
+
                             {pdfError && (
-                                <div style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center', 
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
                                     height: '100%',
                                     minHeight: '600px',
                                     color: '#dc3545'
@@ -1290,52 +1326,52 @@ function DocumentEditor({
                                     </div>
                                 </div>
                             )}
-                            
+
                             {pdfUrl && !pdfLoading && !pdfError && (
                                 <div className="pdf-viewer" ref={pdfViewerContainerRef}>
-                            <PDFViewer
-                                document={{ pdfUrl: pdfUrl }}
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                zoom={zoom}
-                                onPageChange={handlePageChange}
-                                onScaleChange={handleScaleChange}
-                                components={documentComponents.map(component => {
-                                    const recipientId = component.properties?.recipientId || parseInt(component.properties?.signer, 10);
-                                    const recipientInfo = recipientsList.find(r => r.id === recipientId);
-                                    return {
-                                        ...component,
-                                        assignedRecipientName: recipientInfo?.name || '',
-                                        assignedRecipientRole: recipientInfo?.roleName || ''
-                                    };
-                                })}
-                                editingComponentId={editingComponentId}
-                                hoveredComponentId={hoveredComponentId}
-                                isDragging={isDragging}
-                                draggedComponent={draggedComponent}
-                                onComponentClick={handleComponentClick}
-                                onComponentMouseDown={handleMouseDown}
-                                onComponentMouseEnter={(id) => {
-                                    console.log('[DEBUG] Mouse enter component:', id);
-                                    setHoveredComponentId(id);
-                                }}
-                                onComponentMouseLeave={() => {
-                                    console.log('[DEBUG] Mouse leave component');
-                                    setHoveredComponentId(null);
-                                }}
-                                onResizeStart={handleResizeStart}
-                                onRemoveComponent={handleRemoveComponent}
-                                autoFitWidth={true}
-                                showLockedBadge={showLockedBadge}
-                            />
+                                    <PDFViewer
+                                        document={{ pdfUrl: pdfUrl }}
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        zoom={zoom}
+                                        onPageChange={handlePageChange}
+                                        onScaleChange={handleScaleChange}
+                                        components={documentComponents.map(component => {
+                                            const recipientId = component.properties?.recipientId || parseInt(component.properties?.signer, 10);
+                                            const recipientInfo = recipientsList.find(r => r.id === recipientId);
+                                            return {
+                                                ...component,
+                                                assignedRecipientName: recipientInfo?.name || '',
+                                                assignedRecipientRole: recipientInfo?.roleName || ''
+                                            };
+                                        })}
+                                        editingComponentId={editingComponentId}
+                                        hoveredComponentId={hoveredComponentId}
+                                        isDragging={isDragging}
+                                        draggedComponent={draggedComponent}
+                                        onComponentClick={handleComponentClick}
+                                        onComponentMouseDown={handleMouseDown}
+                                        onComponentMouseEnter={(id) => {
+                                            console.log('[DEBUG] Mouse enter component:', id);
+                                            setHoveredComponentId(id);
+                                        }}
+                                        onComponentMouseLeave={() => {
+                                            console.log('[DEBUG] Mouse leave component');
+                                            setHoveredComponentId(null);
+                                        }}
+                                        onResizeStart={handleResizeStart}
+                                        onRemoveComponent={handleRemoveComponent}
+                                        autoFitWidth={true}
+                                        showLockedBadge={showLockedBadge}
+                                    />
                                 </div>
                             )}
-                            
+
                             {!pdfUrl && !pdfLoading && !pdfError && (
-                                <div style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center', 
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
                                     height: '100%',
                                     minHeight: '600px',
                                     color: '#666'
@@ -1349,7 +1385,7 @@ function DocumentEditor({
                     {/* Right Sidebar - Properties */}
                     <div className="properties-sidebar">
                         <h3 className="sidebar-title">THUỘC TÍNH</h3>
-                        
+
                         {selectedComponent ? (
                             <div className="properties-form">
                                 {/* Properties cho TEXT */}
@@ -1359,7 +1395,7 @@ function DocumentEditor({
                                             <label className="property-label">
                                                 TÊN TRƯỜNG: <span className="required">*</span>
                                             </label>
-                                            <input 
+                                            <input
                                                 type="text"
                                                 className="property-input"
                                                 value={componentProperties.fieldName || ''}
@@ -1391,7 +1427,7 @@ function DocumentEditor({
                                                 ))}
                                             </datalist>
                                             {getActiveRecipientList().length > 0 && (
-                                                <select 
+                                                <select
                                                     className="property-input"
                                                     style={{ marginTop: '8px' }}
                                                     value={componentProperties.signer}
@@ -1414,54 +1450,54 @@ function DocumentEditor({
 
                                 {/* Properties cho CHỮ KÝ ẢNH và CHỮ KÝ SỐ */}
                                 {(selectedComponent.id === 'image-signature' || selectedComponent.id === 'digital-signature') && (
-                                        <div className="property-group">
-                                            <label className="property-label">
-                                                NGƯỜI KÝ / VĂN THƯ: <span className="required">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
+                                    <div className="property-group">
+                                        <label className="property-label">
+                                            NGƯỜI KÝ / VĂN THƯ: <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="property-input"
+                                            list={`recipient-suggestions-sign-${selectedComponent.id}`}
+                                            value={recipientSearchValue || getRecipientNameById(componentProperties.signer)}
+                                            onChange={(e) => handleRecipientSearchChange(e.target.value)}
+                                            onBlur={() => {
+                                                // Nếu không tìm thấy recipient, reset về giá trị hiện tại
+                                                if (!recipientSearchValue || !signerRecipients.find(r => r.name === recipientSearchValue)) {
+                                                    setRecipientSearchValue(getRecipientNameById(componentProperties.signer));
+                                                }
+                                            }}
+                                            placeholder="Nhập tên để tìm kiếm..."
+                                        />
+                                        <datalist id={`recipient-suggestions-sign-${selectedComponent.id}`}>
+                                            {nameSuggestions.map((suggestion, idx) => (
+                                                <option key={idx} value={suggestion} onClick={() => handleSuggestionSelect(suggestion)} />
+                                            ))}
+                                        </datalist>
+                                        {signerRecipients.length > 0 && (
+                                            <select
                                                 className="property-input"
-                                                list={`recipient-suggestions-sign-${selectedComponent.id}`}
-                                                value={recipientSearchValue || getRecipientNameById(componentProperties.signer)}
-                                                onChange={(e) => handleRecipientSearchChange(e.target.value)}
-                                                onBlur={() => {
-                                                    // Nếu không tìm thấy recipient, reset về giá trị hiện tại
-                                                    if (!recipientSearchValue || !signerRecipients.find(r => r.name === recipientSearchValue)) {
-                                                        setRecipientSearchValue(getRecipientNameById(componentProperties.signer));
-                                                    }
+                                                style={{ marginTop: '8px' }}
+                                                value={componentProperties.signer}
+                                                onChange={(e) => {
+                                                    handlePropertyChange('signer', e.target.value);
+                                                    setRecipientSearchValue(getRecipientNameById(e.target.value));
                                                 }}
-                                                placeholder="Nhập tên để tìm kiếm..."
-                                            />
-                                            <datalist id={`recipient-suggestions-sign-${selectedComponent.id}`}>
-                                                {nameSuggestions.map((suggestion, idx) => (
-                                                    <option key={idx} value={suggestion} onClick={() => handleSuggestionSelect(suggestion)} />
+                                            >
+                                                <option value="">Hoặc chọn từ danh sách</option>
+                                                {signerRecipients.map(recipient => (
+                                                    <option key={recipient.id} value={recipient.id}>
+                                                        {recipient.name} ({recipient.roleName})
+                                                    </option>
                                                 ))}
-                                            </datalist>
-                                            {signerRecipients.length > 0 && (
-                                                <select 
-                                                    className="property-input"
-                                                    style={{ marginTop: '8px' }}
-                                                    value={componentProperties.signer}
-                                                    onChange={(e) => {
-                                                        handlePropertyChange('signer', e.target.value);
-                                                        setRecipientSearchValue(getRecipientNameById(e.target.value));
-                                                    }}
-                                                >
-                                                    <option value="">Hoặc chọn từ danh sách</option>
-                                                    {signerRecipients.map(recipient => (
-                                                        <option key={recipient.id} value={recipient.id}>
-                                                            {recipient.name} ({recipient.roleName})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            )}
-                                        </div>
+                                            </select>
+                                        )}
+                                    </div>
                                 )}
 
                                 {/* Properties chung cho tất cả */}
                                 <div className="property-group">
                                     <label className="property-label">FONT:</label>
-                                    <select 
+                                    <select
                                         className="property-input"
                                         value={componentProperties.font}
                                         onChange={(e) => handlePropertyChange('font', e.target.value)}
@@ -1475,7 +1511,7 @@ function DocumentEditor({
 
                                 <div className="property-group">
                                     <label className="property-label">SIZE:</label>
-                                    <input 
+                                    <input
                                         type="number"
                                         className="property-input"
                                         value={componentProperties.size}
@@ -1488,7 +1524,7 @@ function DocumentEditor({
                                     <div className="position-inputs">
                                         <div className="input-row">
                                             <label>X:</label>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 step="0.01"
                                                 value={componentProperties.x !== undefined ? parseFloat(componentProperties.x).toFixed(2) : ''}
@@ -1497,7 +1533,7 @@ function DocumentEditor({
                                         </div>
                                         <div className="input-row">
                                             <label>Y:</label>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 step="0.01"
                                                 value={componentProperties.y !== undefined ? parseFloat(componentProperties.y).toFixed(2) : ''}
@@ -1506,7 +1542,7 @@ function DocumentEditor({
                                         </div>
                                         <div className="input-row">
                                             <label>CHIỀU DÀI:</label>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 step="0.01"
                                                 value={componentProperties.height ? parseFloat(componentProperties.height).toFixed(2) : ''}
@@ -1515,7 +1551,7 @@ function DocumentEditor({
                                         </div>
                                         <div className="input-row">
                                             <label>CHIỀU RỘNG:</label>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 step="0.01"
                                                 value={componentProperties.width ? parseFloat(componentProperties.width).toFixed(2) : ''}
@@ -1527,11 +1563,11 @@ function DocumentEditor({
 
                                 {/* Chỉ hiển thị nút Tạo nếu không phải autoCreate component và không đang edit */}
                                 {!selectedComponent?.autoCreate && !editingComponentId && (
-                                    <button 
+                                    <button
                                         className="add-component-btn"
                                         onClick={handleAddComponent}
                                         disabled={
-                                            !componentProperties.signer || 
+                                            !componentProperties.signer ||
                                             (selectedComponent.id === 'text' && !componentProperties.fieldName)
                                         }
                                     >
