@@ -661,7 +661,7 @@ function DocumentEditor({
 
     // Convert documentComponents sang fields format và gọi onFieldsChange
     useEffect(() => {
-        if (onFieldsChange && contractId && documentId) {
+        if (onFieldsChange && contractId && documentId && currentScale > 0) {
             const fields = documentComponents
                 .filter(component => {
                     // Bỏ qua các component bị khóa (thuộc đối tác trước đó)
@@ -676,18 +676,21 @@ function DocumentEditor({
 
                     // IMPORTANT: Trong editor mode, components KHÔNG được scale khi hiển thị
                     // (xem PDFViewer.js line 254: shouldScale = !isEditorMode)
-                    // Do đó, tọa độ trong component.properties đã là tọa độ thực (scale=1.0)
-                    // Chúng ta lưu trực tiếp mà KHÔNG cần normalize
+                    // Tuy nhiên, tọa độ trong component.properties là tọa độ PIXEL trên màn hình,
+                    // đã bị ảnh hưởng bởi PDF scale.
                     // 
-                    // Tuy nhiên, để đảm bảo tương thích với màn hình nhỏ (laptop),
-                    // nếu currentScale < 1.0, chúng ta cần scale UP tọa độ để đảm bảo
-                    // kích thước đúng trên tài liệu thực tế
-                    const scaleAdjustment = currentScale > 0 && currentScale < 1.0 ? (1.0 / currentScale) : 1.0;
+                    // Khi PDF có scale < 1.0 (màn hình nhỏ):
+                    // - PDF hiển thị nhỏ hơn kích thước thực
+                    // - Tọa độ pixel trên màn hình < tọa độ thực trên PDF
+                    // - Cần CHIA cho currentScale để có tọa độ thực (scale=1.0)
+                    // 
+                    // Ví dụ: PDF width thực = 800px, scale = 0.7 → PDF hiển thị = 560px
+                    // Component ở x = 280px trên màn hình → x thực = 280 / 0.7 = 400px
                     
-                    const adjustedX = (component.properties.x || 0) * scaleAdjustment;
-                    const adjustedY = (component.properties.y || 0) * scaleAdjustment;
-                    const adjustedW = (component.properties.width || 100) * scaleAdjustment;
-                    const adjustedH = (component.properties.height || 30) * scaleAdjustment;
+                    const normalizedX = (component.properties.x || 0) / currentScale;
+                    const normalizedY = (component.properties.y || 0) / currentScale;
+                    const normalizedW = (component.properties.width || 100) / currentScale;
+                    const normalizedH = (component.properties.height || 30) / currentScale;
 
                     return {
                         // Chỉ include id khi edit (có fieldId)
@@ -695,13 +698,13 @@ function DocumentEditor({
                         name: component.properties.fieldName || component.name,
                         font: component.properties.font || 'Times New Roman',
                         fontSize: component.properties.size || 11,
-                        // Save adjusted coordinates (scale=1.0) to database
-                        boxX: adjustedX,
-                        boxY: adjustedY,
+                        // Save normalized coordinates (scale=1.0) to database
+                        boxX: normalizedX,
+                        boxY: normalizedY,
                         page: (component.properties.page || currentPage).toString(),
                         ordering: component.properties.ordering || index + 1,
-                        boxW: adjustedW, // Có thể là number hoặc string
-                        boxH: adjustedH.toString(), // API yêu cầu string cho boxH
+                        boxW: normalizedW, // Có thể là number hoặc string
+                        boxH: normalizedH.toString(), // API yêu cầu string cho boxH
                         contractId: contractId,
                         documentId: documentId,
                         type: fieldType,
