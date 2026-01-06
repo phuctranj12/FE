@@ -725,54 +725,71 @@
 /* Tối ưu cho laptop (1024px - 1440px) - PDF viewer lớn hơn */
 @media (min-width: 769px) and (max-width: 1440px) {
     .components-sidebar {
-        width: 160px; /* Giảm từ 250px xuống 160px */
-        padding: 12px; /* Giảm padding */
+        width: 140px; /* Giảm từ 250px xuống 140px để tăng không gian PDF */
+        padding: 10px; /* Giảm padding */
     }
 
     .properties-sidebar {
-        width: 220px; /* Giảm từ 300px xuống 220px */
-        padding: 12px; /* Giảm padding */
+        width: 200px; /* Giảm từ 300px xuống 200px để tăng không gian PDF */
+        padding: 10px; /* Giảm padding */
     }
 
     .document-content {
-        margin: 10px; /* Giảm margin để tăng không gian cho PDF */
+        margin: 8px; /* Giảm margin để tăng không gian cho PDF */
     }
     
     .editor-header {
-        padding: 15px; /* Giảm padding header */
+        padding: 12px 15px; /* Giảm padding header */
+        gap: 15px;
     }
 
     .sidebar-title {
-        font-size: 13px; /* Giảm font size */
-        margin-bottom: 10px;
+        font-size: 12px; /* Giảm font size */
+        margin-bottom: 8px;
     }
 
     .sidebar-instruction {
-        font-size: 11px; /* Giảm font size */
-        margin-bottom: 15px;
+        font-size: 10px; /* Giảm font size */
+        margin-bottom: 12px;
     }
 
     .component-item {
-        padding: 8px 10px; /* Giảm padding */
-        gap: 8px;
+        padding: 6px 8px; /* Giảm padding */
+        gap: 6px;
     }
 
     .component-name {
-        font-size: 12px; /* Giảm font size */
+        font-size: 11px; /* Giảm font size */
     }
     
     .component-icon {
-        font-size: 16px; /* Giảm icon size */
-        width: 20px;
+        font-size: 14px; /* Giảm icon size */
+        width: 18px;
     }
     
     .property-label {
-        font-size: 12px; /* Giảm font size */
+        font-size: 11px; /* Giảm font size */
     }
     
     .property-input {
-        padding: 6px 10px; /* Giảm padding */
-        font-size: 12px;
+        padding: 5px 8px; /* Giảm padding */
+        font-size: 11px;
+    }
+    
+    .property-group {
+        gap: 4px; /* Giảm gap giữa các property */
+    }
+    
+    .properties-form {
+        gap: 12px; /* Giảm gap giữa các form group */
+    }
+    
+    .pdf-viewer {
+        padding: 15px; /* Giảm padding của PDF viewer */
+    }
+    
+    .editor-footer {
+        padding: 12px 15px; /* Giảm padding footer */
     }
 }
 
