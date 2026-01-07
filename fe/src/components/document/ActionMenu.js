@@ -20,20 +20,25 @@ function ActionMenu({
     const [position, setPosition] = useState(null);
     const menuRef = useRef(null);
     const triggerRef = useRef(null);
+    const positionCalculatedRef = useRef(false); // Track if position was calculated
 
     const toggleMenu = (e) => {
         e.stopPropagation();
+        if (!open) {
+            positionCalculatedRef.current = false; // Reset flag when opening
+        }
         setOpen((prev) => !prev);
     };
 
     // Tính vị trí menu khi mở
     useEffect(() => {
-        if (open && triggerRef.current) {
+        if (open && triggerRef.current && !positionCalculatedRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
             setPosition({
                 top: rect.bottom + window.scrollY,
                 left: rect.left + window.scrollX - 60
             });
+            positionCalculatedRef.current = true; // Mark as calculated
         }
     }, [open]);
 
@@ -54,12 +59,19 @@ function ActionMenu({
     }, []);
 
     const handleDelete = () => {
-        setShowConfirm(true);
-        setOpen(false);
+        setOpen(false); // Đóng menu trước
+        // Delay một chút để đảm bảo menu đã đóng hoàn toàn
+        setTimeout(() => {
+            setShowConfirm(true);
+        }, 50);
     };
 
     const handleConfirmDelete = () => {
         if (onDelete && doc?.id) onDelete(doc.id);
+        setShowConfirm(false);
+    };
+
+    const handleCancelDelete = () => {
         setShowConfirm(false);
     };
 
@@ -249,7 +261,7 @@ function ActionMenu({
 
             <ConfirmDeleteModal
                 show={showConfirm}
-                onClose={() => setShowConfirm(false)}
+                onClose={handleCancelDelete}
                 onConfirm={handleConfirmDelete}
                 documentName={doc?.name || "này"}
             />
