@@ -47,10 +47,11 @@
 
 .sign-dialog-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     padding: 20px 24px;
     border-bottom: 1px solid #e0e0e0;
+    position: relative;
 }
 
 .sign-dialog-header h3 {
@@ -58,6 +59,8 @@
     font-size: 20px;
     font-weight: 600;
     color: #333;
+    text-align: center;
+    flex: 1;
 }
 
 .sign-dialog-close {
@@ -74,6 +77,8 @@
     justify-content: center;
     border-radius: 4px;
     transition: all 0.2s;
+    position: absolute;
+    right: 24px;
 }
 
 .sign-dialog-close:hover:not(:disabled) {

@@ -1303,9 +1303,6 @@ function CoordinateAssigners({
                                                     className="coordinate-select readonly-input"
                                                     style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                                                 />
-                                                <div className="coordinate-warning-text">
-                                                    Lưu ý: bạn chỉ được phép chọn 1 kiểu ký số!
-                                                </div>
                                             </div>
                                             {!signer.loginByPhone && (
                                                 <div className="coordinate-form-group">
