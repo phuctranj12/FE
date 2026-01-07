@@ -42,7 +42,7 @@ function DocumentEditor({
     const [resizeHandle, setResizeHandle] = useState(null);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [nextWarning, setNextWarning] = useState('');
-    const [currentScale, setCurrentScale] = useState(1); // Track PDF scale for coordinate normalization
+    const [currentScale, setCurrentScale] = useState(1); // Theo dõi tỷ lệ scale của PDF để chuẩn hóa tọa độ
 
     // State cho autocomplete gợi ý tên
     const [nameSuggestions, setNameSuggestions] = useState([]);
@@ -60,7 +60,7 @@ function DocumentEditor({
     const getDefaultComponentSize = () => {
         const pdfContainer = pdfViewerContainerRef.current;
         if (!pdfContainer) {
-            // Fallback nếu chưa có container
+            // Giá trị mặc định nếu chưa có container
             return { width: 200, height: 80 };
         }
 
@@ -71,18 +71,18 @@ function DocumentEditor({
         const pageWidth = targetElement?.clientWidth;
 
         if (!pageWidth || pageWidth === 0) {
-            // Fallback nếu chưa load page
+            // Giá trị mặc định nếu chưa load page
             return { width: 200, height: 80 };
         }
 
-        // Component width = 25% của page width (có thể điều chỉnh tỷ lệ này)
-        // Component height = 10% của page width (giữ tỷ lệ hợp lý)
+        // Chiều rộng component = 25% của chiều rộng page 
+        // Chiều cao component = 10% của chiều rộng page
         const width = Math.round(pageWidth * 0.25);
         const height = Math.round(pageWidth * 0.10);
 
         return {
-            width: Math.max(width, 50),   // Tối thiểu 50px
-            height: Math.max(height, 20)  // Tối thiểu 20px
+            width: Math.max(width, 50),  
+            height: Math.max(height, 20)
         };
     };
 
@@ -109,7 +109,6 @@ function DocumentEditor({
     };
 
     const getCenteredPosition = (width, height) => {
-        // Nếu không truyền width/height, lấy default size
         if (!width || !height) {
             const defaultSize = getDefaultComponentSize();
             width = width || defaultSize.width;
@@ -159,12 +158,11 @@ function DocumentEditor({
         };
     };
 
-    // Map component types sang field types theo CreateContractFlow.md
     const getFieldType = (componentId) => {
         const typeMap = {
-            'text': 1,             // TEXT
-            'image-signature': 2,  // IMAGE_SIGN
-            'digital-signature': 3 // DIGITAL_SIGN
+            'text': 1,             // Trường văn bản
+            'image-signature': 2,  // Chữ ký ảnh
+            'digital-signature': 3 // Chữ ký số
         };
         return typeMap[componentId] || 1;
     };
@@ -196,7 +194,7 @@ function DocumentEditor({
     const SIGNER_ALLOWED_ROLES = [3, 4];
     const signerRecipients = recipientsList.filter(recipient => SIGNER_ALLOWED_ROLES.includes(recipient.role));
     const getActiveRecipientList = (componentId = selectedComponent?.id) => {
-        // Signature components và text components chỉ được assign cho người ký (role 3) và văn thư (role 4)
+        // Các component chữ ký và văn bản chỉ được gán cho người ký (role 3) và văn thư (role 4)
         if (componentId === 'digital-signature' ||
             componentId === 'image-signature' ||
             componentId === 'text' ||
@@ -213,7 +211,7 @@ function DocumentEditor({
             name: 'TEXT',
             icon: 'T',
             type: 'field',
-            autoCreate: true // Tự động tạo khi click
+            autoCreate: true // Tự động tạo component khi click
         },
         {
             id: 'digital-signature',
@@ -280,22 +278,15 @@ function DocumentEditor({
         }
     };
 
-    // Handle scale change from PDFViewer
+    // Xử lý thay đổi tỷ lệ scale từ PDFViewer
     const handleScaleChange = (scale) => {
         console.log(`[Scale Change] Current scale: ${scale}`);
         setCurrentScale(scale);
     };
 
-    // Handle page change from PDFViewer (sync với pagination controls)
-    // const handlePDFPageChange = (page) => {
-    //     setCurrentPage(page);
-    // };
-
     const handleComponentSelect = (component) => {
-        // Nếu component có autoCreate (Text), tự động tạo component ở giữa màn hình
+        // Nếu component có thuộc tính autoCreate (như Text), tự động tạo component ở giữa màn hình
         if (component.autoCreate) {
-            // Tính toán vị trí giữa màn hình (giả sử PDF viewer có width ~800px, height ~600px)
-            // Vị trí giữa: x = 400 - width/2, y = 300 - height/2
             const ordering = documentComponents.length + 1;
             const centeredProperties = createCenteredProperties();
 
@@ -318,7 +309,6 @@ function DocumentEditor({
             setRecipientSearchValue('');
             setNameSuggestions([]);
         } else {
-            // Các component khác (như Chữ ký số) vẫn giữ logic cũ
             setSelectedComponent(component);
             setEditingComponentId(null);
             setRecipientSearchValue('');
@@ -327,14 +317,14 @@ function DocumentEditor({
         }
     };
 
-    // Handle click outside to close dropdown
+    // Xử lý click bên ngoài để đóng dropdown
     const handleClickOutside = (event) => {
         if (showSignatureDropdown && !event.target.closest('.component-wrapper')) {
             setShowSignatureDropdown(false);
         }
     };
 
-    // Fetch name suggestions with debounce
+    // Lấy gợi ý tên với debounce
     const fetchSuggestions = async (textSearch) => {
         if (suggestionTimeoutRef.current) {
             clearTimeout(suggestionTimeoutRef.current);
@@ -361,17 +351,15 @@ function DocumentEditor({
             } finally {
                 setSuggestionLoading(false);
             }
-        }, 300); // 300ms debounce
+        }, 300);
     };
 
-    // Get recipient name by ID
     const getRecipientNameById = (recipientId) => {
         if (!recipientId) return '';
         const recipient = recipientsList.find(r => r.id === parseInt(recipientId));
         return recipient ? recipient.name : '';
     };
 
-    // Handle recipient search change
     const handleRecipientSearchChange = (value) => {
         setRecipientSearchValue(value);
         fetchSuggestions(value);
@@ -388,7 +376,6 @@ function DocumentEditor({
         }
     };
 
-    // Handle suggestion selection
     const handleSuggestionSelect = (suggestionName) => {
         setRecipientSearchValue(suggestionName);
         setNameSuggestions([]);
@@ -405,7 +392,6 @@ function DocumentEditor({
         }
     };
 
-    // Cleanup timeout on unmount
     useEffect(() => {
         return () => {
             if (suggestionTimeoutRef.current) {
@@ -414,7 +400,7 @@ function DocumentEditor({
         };
     }, []);
 
-    // Add event listener for click outside
+    // Thêm event listener cho click bên ngoài
     useEffect(() => {
         if (showSignatureDropdown) {
             document.addEventListener('click', handleClickOutside);
@@ -445,11 +431,10 @@ function DocumentEditor({
         console.log(`[Page Update] Trang hiện tại: ${currentPage} / Tổng số trang: ${totalPages}`);
     }, [currentPage, totalPages]);
 
-    // Load presigned URL khi documentId có
+    // Load presigned URL khi có documentId
     useEffect(() => {
         const loadPresignedUrl = async () => {
             if (!pdfUrl) {
-                // Test URL - có thể xóa sau khi test xong
                 const testUrl = 'http://127.0.0.1:9000/contracts/1762524046600_CV_NguyenThaiMinh%20%281%29.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=minioadmin%2F20251107%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251107T164659Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=0d9fc7c599bcd075819ace8caf2fdf9fe9b31eaa0c321c2e308c22a625527e20';
 
                 if (documentId) {
@@ -462,13 +447,9 @@ function DocumentEditor({
 
                         console.log('[DocumentEditor] getPresignedUrl response:', response);
 
-                        // Kiểm tra response format
+                        // Kiểm tra định dạng response
                         if (response && response.code === 'SUCCESS') {
-                            // URL có thể ở nhiều vị trí:
-                            // 1. response.data là string URL trực tiếp
-                            // 2. response.data.url
-                            // 3. response.data.message (theo response thực tế)
-                            // 4. response.url
+                            
                             const url = typeof response.data === 'string'
                                 ? response.data
                                 : (response.data?.url || response.data?.message || response.url);
@@ -488,7 +469,7 @@ function DocumentEditor({
                         }
                     } catch (err) {
                         console.error('[DocumentEditor] Error loading presigned URL:', err);
-                        // Xử lý error từ axios
+                        // Xử lý lỗi từ axios
                         const errorMessage = err.response?.data?.message
                             || err.message
                             || 'Không thể tải tài liệu';
@@ -507,17 +488,16 @@ function DocumentEditor({
         loadPresignedUrl();
     }, [documentId, pdfUrl]);
 
-    // Store normalized coordinates from database for re-scaling
     const normalizedFieldsRef = useRef([]);
 
-    // Load fields data khi component mount hoặc fieldsData thay đổi
-    // CHỈ load MỘT LẦN khi có fieldsData lần đầu
+    // Load dữ liệu fields khi component mount hoặc fieldsData thay đổi
+    // CHỈ load MỘT LẦN khi có fieldsData lần đầu tiên
     useEffect(() => {
-        // Chỉ load khi:
+        // Chỉ load khi thỏa mãn tất cả điều kiện:
         // 1. Có fieldsData
         // 2. Chưa load lần nào (hasLoadedFieldsRef.current === false)
         // 3. Có currentScale
-        // 4. fieldsData có length > 0
+        // 4. fieldsData có độ dài > 0
         const shouldLoad = fieldsData &&
             fieldsData.length > 0 &&
             !hasLoadedFieldsRef.current &&
@@ -535,7 +515,7 @@ function DocumentEditor({
             console.log('[DEBUG] Loading components from fieldsData (FIRST TIME)...');
             hasLoadedFieldsRef.current = true; // Đánh dấu đã load
 
-            // Store normalized coordinates for later re-scaling
+            // Lưu tọa độ chuẩn hóa để dùng cho re-scaling sau này
             normalizedFieldsRef.current = fieldsData.map(field => ({
                 id: field.id,
                 boxX: field.boxX || 0,
@@ -544,16 +524,13 @@ function DocumentEditor({
                 boxH: field.boxH || 30
             }));
 
-            // Convert fieldsData về documentComponents format
-            // NOTE: Coordinates from DB are normalized (scale=1.0)
-            // We scale them by currentScale for editing consistency
             const loadedComponents = fieldsData.map((field, index) => {
-                // Map field type về component type
+                // Chuyển đổi field type sang component type
                 let componentType = 'text';
                 if (field.type === 2) componentType = 'image-signature';
                 else if (field.type === 3) componentType = 'digital-signature';
 
-                // Scale coordinates from normalized (scale=1.0) to currentScale
+                // Scale tọa độ từ chuẩn hóa (scale=1.0) sang currentScale
                 const scaledX = (field.boxX || 0) * currentScale;
                 const scaledY = (field.boxY || 0) * currentScale;
                 const scaledW = (field.boxW || 100) * currentScale;
@@ -580,7 +557,7 @@ function DocumentEditor({
                         recipientId: field.recipientId,
                         font: field.font || 'Times New Roman',
                         size: field.fontSize || 11,
-                        // Store coordinates at currentScale for editing consistency
+                        // Lưu tọa độ ở currentScale để đảm bảo tính nhất quán khi chỉnh sửa
                         x: scaledX,
                         y: scaledY,
                         width: scaledW,
@@ -596,37 +573,36 @@ function DocumentEditor({
         }
     }, [fieldsData, currentScale, lockedFieldIds]);
 
-    // Re-scale components when currentScale changes (important for locked components from previous organizations)
-    // This ensures components from previous organizations are displayed at correct scale
+    // Re-scale các component khi currentScale thay đổi (quan trọng cho các component bị khóa từ đối tác trước)
+    // Đảm bảo các component từ đối tác trước được hiển thị đúng tỷ lệ
     useEffect(() => {
-        // Only re-scale if we have normalized fields and existing components with fieldId
+        // Chỉ re-scale nếu có normalized fields và components có fieldId
         if (normalizedFieldsRef.current.length > 0 && currentScale > 0) {
             setDocumentComponents(prev => {
-                // Check if any component needs re-scaling
+                // Kiểm tra xem có component nào cần re-scaling không
                 const needsRescaling = prev.some(comp => {
                     if (!comp.fieldId) return false;
                     const normalizedField = normalizedFieldsRef.current.find(nf => nf.id === comp.fieldId);
                     if (!normalizedField) return false;
-                    // Check if coordinates are already at correct scale
+                    // Kiểm tra xem tọa độ đã ở đúng scale chưa
                     const expectedX = normalizedField.boxX * currentScale;
                     const expectedY = normalizedField.boxY * currentScale;
-                    // Allow small floating point differences (0.1px tolerance)
                     return Math.abs(comp.properties.x - expectedX) > 0.1 ||
                         Math.abs(comp.properties.y - expectedY) > 0.1;
                 });
 
                 if (!needsRescaling) return prev;
 
-                // Re-scale all components that came from database
+                // Re-scale tất cả components từ database
                 return prev.map(component => {
-                    // Only re-scale components that came from database (have fieldId)
+                    // Chỉ re-scale components từ database (có fieldId)
                     if (!component.fieldId) return component;
 
-                    // Find normalized coordinates for this component
+                    // Tìm tọa độ chuẩn hóa cho component này
                     const normalizedField = normalizedFieldsRef.current.find(nf => nf.id === component.fieldId);
                     if (!normalizedField) return component;
 
-                    // Re-scale from normalized coordinates
+                    // Re-scale từ tọa độ chuẩn hóa
                     const scaledX = normalizedField.boxX * currentScale;
                     const scaledY = normalizedField.boxY * currentScale;
                     const scaledW = normalizedField.boxW * currentScale;
@@ -675,15 +651,12 @@ function DocumentEditor({
                     const recipientId = component.properties.recipientId || parseInt(component.properties.signer);
 
                     // IMPORTANT: Trong editor mode, components KHÔNG được scale khi hiển thị
-                    // (xem PDFViewer.js line 254: shouldScale = !isEditorMode)
                     // Tuy nhiên, tọa độ trong component.properties là tọa độ PIXEL trên màn hình,
                     // đã bị ảnh hưởng bởi PDF scale.
-                    // 
                     // Khi PDF có scale < 1.0 (màn hình nhỏ):
                     // - PDF hiển thị nhỏ hơn kích thước thực
                     // - Tọa độ pixel trên màn hình < tọa độ thực trên PDF
-                    // - Cần CHIA cho currentScale để có tọa độ thực (scale=1.0)
-                    // 
+                    // - Cần chia cho currentScale để có tọa độ thực (scale=1.0)
                     // Ví dụ: PDF width thực = 800px, scale = 0.7 → PDF hiển thị = 560px
                     // Component ở x = 280px trên màn hình → x thực = 280 / 0.7 = 400px
                     
@@ -703,8 +676,8 @@ function DocumentEditor({
                         boxY: normalizedY,
                         page: (component.properties.page || currentPage).toString(),
                         ordering: component.properties.ordering || index + 1,
-                        boxW: normalizedW, // Có thể là number hoặc string
-                        boxH: normalizedH.toString(), // API yêu cầu string cho boxH
+                        boxW: normalizedW, 
+                        boxH: normalizedH.toString(),
                         contractId: contractId,
                         documentId: documentId,
                         type: fieldType,
@@ -719,7 +692,7 @@ function DocumentEditor({
         }
     }, [documentComponents, contractId, documentId, currentPage, currentScale, onFieldsChange]);
 
-    // Add event listeners for drag and resize
+    // Thêm event listeners cho kéo thả và thay đổi kích thước
     useEffect(() => {
         const handleMouseMoveEvent = (e) => {
             if (isDragging) {
@@ -754,7 +727,7 @@ function DocumentEditor({
             [property]: value
         };
 
-        // Nếu thay đổi signer, tự động set recipientId
+        // Nếu thay đổi người ký, tự động gán recipientId
         if (property === 'signer' && value) {
             const recipientId = parseInt(value);
             if (!isNaN(recipientId)) {
@@ -764,7 +737,7 @@ function DocumentEditor({
 
         setComponentProperties(newProperties);
 
-        // Tự động cập nhật component trong documentComponents khi đang edit
+        // Tự động cập nhật component trong documentComponents khi đang chỉnh sửa
         if (editingComponentId) {
             const editingComponent = documentComponents.find(comp => comp.id === editingComponentId);
             if (editingComponent && !editingComponent.locked) {
@@ -775,7 +748,7 @@ function DocumentEditor({
                             properties: {
                                 ...comp.properties,
                                 ...newProperties,
-                                page: currentPage // Đảm bảo page được cập nhật
+                                page: currentPage // Đảm bảo trang được cập nhật
                             }
                         }
                         : comp
@@ -786,7 +759,6 @@ function DocumentEditor({
 
     const handleAddComponent = () => {
         if (selectedComponent && componentProperties.signer) {
-            // Đảm bảo kích thước tối thiểu
             const width = Math.max(componentProperties.width || 100, 50);
             const height = Math.max(componentProperties.height || 30, 20);
 
@@ -856,7 +828,6 @@ function DocumentEditor({
 
     // Hàm scroll đến component ở giữa màn hình
     const scrollToComponent = (component) => {
-        // Đợi một chút để đảm bảo component đã được render
         setTimeout(() => {
             const componentPage = component.properties?.page || component.page || currentPage;
 
@@ -903,10 +874,8 @@ function DocumentEditor({
         const containerHeight = containerRect.height;
         const componentHeight = componentRect.height;
 
-        // Scroll để component ở giữa màn hình
         const targetScrollTop = componentTopRelativeToContainer - (containerHeight / 2) + (componentHeight / 2);
 
-        // Scroll với smooth animation
         pdfContainer.scrollTo({
             top: Math.max(0, targetScrollTop),
             behavior: 'smooth'
@@ -943,7 +912,7 @@ function DocumentEditor({
         }
     };
 
-    // Drag and Drop handlers
+    // Xử lý kéo thả
     const handleMouseDown = (e, componentId) => {
         e.preventDefault();
         e.stopPropagation();
@@ -999,7 +968,6 @@ function DocumentEditor({
         if (pageContainer) {
             const pageRect = pageContainer.getBoundingClientRect();
             // Tính toán tọa độ mới relative với page container
-            // newX = (mouse position - page position) - offset từ mouse đến component
             const newX = (e.clientX - pageRect.left) - dragStart.offsetX;
             const newY = (e.clientY - pageRect.top) - dragStart.offsetY;
 
@@ -1069,7 +1037,7 @@ function DocumentEditor({
         }
     };
 
-    // Resize handlers
+    // Xử lý thay đổi kích thước
     const handleResizeStart = (e, componentId, handle) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1103,7 +1071,6 @@ function DocumentEditor({
             dragStart
         });
 
-        // Get current component from state to ensure we have latest values
         const currentComponent = documentComponents.find(comp => comp.id === draggedComponent.id);
         if (!currentComponent) return;
 
