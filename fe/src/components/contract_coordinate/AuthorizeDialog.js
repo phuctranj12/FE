@@ -3,12 +3,13 @@ import Notiflix from 'notiflix';
 import '../../styles/modal.css';
 import contractService from '../../api/contractService';
 
-function AuthorizeDialog({ 
-    open, 
-    onClose, 
+function AuthorizeDialog({
+    open,
+    onClose,
     recipientId,
     recipientRole, // 1 = coordinator, 3 = signer
-    onAuthorizeSuccess 
+    contractId, // Thêm contractId để check participants
+    onAuthorizeSuccess
 }) {
     const [formData, setFormData] = useState({
         name: '',
@@ -18,6 +19,7 @@ function AuthorizeDialog({
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [participants, setParticipants] = useState([]);
 
     useEffect(() => {
         if (!open) {
@@ -30,8 +32,43 @@ function AuthorizeDialog({
             });
             setErrors({});
             setLoading(false);
+        } else {
+            // Load participants khi mở dialog
+            loadParticipants();
         }
     }, [open]);
+
+    const loadParticipants = async () => {
+        if (!contractId) return;
+
+        try {
+            const response = await contractService.getAllParticipantsByContract(contractId);
+            if (response?.code === 'SUCCESS') {
+                setParticipants(response.data || []);
+            }
+        } catch (error) {
+            console.error('Error loading participants:', error);
+        }
+    };
+
+    const checkEmailExists = (email) => {
+        if (!email || !participants.length) return false;
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Check trong tất cả participants và recipients
+        for (const participant of participants) {
+            if (participant.recipients && Array.isArray(participant.recipients)) {
+                const emailExists = participant.recipients.some(recipient =>
+                    recipient.email &&
+                    recipient.email.trim().toLowerCase() === normalizedEmail
+                );
+                if (emailExists) return true;
+            }
+        }
+
+        return false;
+    };
 
     const validateForm = () => {
         const newErrors = {};
@@ -48,6 +85,11 @@ function AuthorizeDialog({
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email)) {
                 newErrors.email = 'Email không hợp lệ';
+            } else {
+                // Check email đã tồn tại trong participants
+                if (checkEmailExists(formData.email)) {
+                    newErrors.email = 'Email này đã tồn tại trong danh sách người xử lý hợp đồng';
+                }
             }
         }
 
@@ -121,7 +163,7 @@ function AuthorizeDialog({
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ minWidth: '450px', maxWidth: '550px' }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ minWidth: '450px', maxWidth: '550px' }}>
                 <div className="modal-header">
                     <h3>Ủy quyền/Chuyển tiếp</h3>
                     <button className="close-btn" onClick={onClose} disabled={loading}>×</button>
@@ -217,12 +259,12 @@ function AuthorizeDialog({
                         </>
                     )}
 
-                    
+
                 </div>
                 <div className="modal-footer">
-                    <button 
-                        className="btn-cancel" 
-                        onClick={onClose} 
+                    <button
+                        className="btn-cancel"
+                        onClick={onClose}
                         disabled={loading}
                     >
                         Hủy

@@ -1180,6 +1180,7 @@ function ContractDetail() {
                 onClose={() => setShowAuthorizeDialog(false)}
                 recipientId={recipientId}
                 recipientRole={recipient?.role}
+                contractId={contractId}
                 onAuthorizeSuccess={handleAuthorizeSuccess}
             />
 
