@@ -4,12 +4,12 @@
     min-height: calc(100vh - 200px);
 }
 
-.editor-wrapper {
+.editor-wrapper {   
     background: white;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 240px);
+    height: calc(100vh - 60px) !important;
 }
 
 /* Header */
@@ -74,7 +74,7 @@
 
 /* Left Sidebar - Components */
 .components-sidebar {
-    width: 250px;
+    width: 200px;
     background: white;
     border-right: 1px solid #e0e0e0;
     padding: 20px;
@@ -461,7 +461,7 @@
 .pdf-viewer {
     flex: 1;
     overflow: auto;
-    padding: 20px;
+    padding: 5px !important;
     background: white;
 }
 
@@ -534,7 +534,7 @@
 
 /* Right Sidebar - Properties */
 .properties-sidebar {
-    width: 300px;
+    width: 220px;
     background: white;
     border-left: 1px solid #e0e0e0;
     padding: 20px;

@@ -1,10 +1,13 @@
 import React from "react";
+import ReactDOM from "react-dom";
 import "../../styles/modal.css";
 
 function ConfirmDeleteModal({ show, onClose, onConfirm, documentName }) {
     if (!show) return null;
 
-    return (
+    // Sử dụng Portal để render modal ra ngoài DOM tree của table
+    // Điều này tránh bị ảnh hưởng bởi hover effects và transitions của parent elements
+    return ReactDOM.createPortal(
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
@@ -24,7 +27,8 @@ function ConfirmDeleteModal({ show, onClose, onConfirm, documentName }) {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 

@@ -60,10 +60,7 @@ function ActionMenu({
 
     const handleDelete = () => {
         setOpen(false); // Đóng menu trước
-        // Delay một chút để đảm bảo menu đã đóng hoàn toàn
-        setTimeout(() => {
-            setShowConfirm(true);
-        }, 50);
+        setShowConfirm(true); // Modal giờ dùng Portal riêng nên không cần delay
     };
 
     const handleConfirmDelete = () => {

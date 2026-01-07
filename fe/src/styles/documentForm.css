@@ -2,7 +2,7 @@
 .document-form-container {
     background: #f5f7fa;
     min-height: calc(100vh - 120px);
-    padding: 20px;
+    padding: 0px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
