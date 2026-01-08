@@ -295,7 +295,7 @@ function ContractDetail() {
         showToast('Ủy quyền thành công!', 'success');
         // Navigate về màn detail sau khi ủy quyền thành công
         setTimeout(() => {
-            navigate(`/main/c/detail/${contractId}`);
+            navigate(`/main/c/detail/${contractId}`, { replace: true });
         }, 1200);
     };
 
@@ -451,7 +451,7 @@ function ContractDetail() {
                 showToast('Đã xác nhận đồng ý với hợp đồng thành công!', 'success');
                 setReviewDecision('');
                 setTimeout(() => {
-                    navigate(`/main/c/detail/${contractId}`);
+                    navigate(`/main/c/detail/${contractId}` , { replace: true });
                 }, 1200);
             } else {
                 throw new Error(response?.message || 'Xác nhận xem xét thất bại');
@@ -474,7 +474,7 @@ function ContractDetail() {
         setReviewDecision('');
         // Navigate đến trang chi tiết hợp đồng sau khi từ chối
         setTimeout(() => {
-            navigate(`/main/c/detail/${contractId}`);
+            navigate(`/main/c/detail/${contractId}`, { replace: true });
         }, 500);
     };
 
@@ -533,7 +533,7 @@ function ContractDetail() {
         setShowSignDialog(false);
         setTimeout(() => {
             // Sau khi ký xong, quay về màn chi tiết; nếu muốn ẩn các ô field có thể dùng showAllFields=0
-            navigate(`/main/c/detail/${contractId}?showAllFields=0`);
+            navigate(`/main/c/detail/${contractId}?showAllFields=0`, { replace: true });
         }, 1200);
     };
 
