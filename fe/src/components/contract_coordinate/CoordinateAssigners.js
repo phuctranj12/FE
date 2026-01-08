@@ -29,7 +29,8 @@ function CoordinateAssigners({
     participantId = null,
     coordinatorRecipient = null, // Thông tin người điều phối hiện tại
     onCoordinateSuccess = null, // Callback khi điều phối thành công
-    onCoordinateError = null // Callback khi điều phối lỗi
+    onCoordinateError = null, // Callback khi điều phối lỗi
+    onCoordinateStart = null // Callback khi bắt đầu điều phối
 }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -617,6 +618,11 @@ function CoordinateAssigners({
         try {
             setLoading(true);
             setError(null);
+            
+            // Gọi callback bắt đầu điều phối
+            if (onCoordinateStart) {
+                onCoordinateStart();
+            }
 
             // Làm mới recipients để tránh gửi id stale (optimistic locking)
             const refreshedRecipients = await getLatestRecipients();

@@ -13,25 +13,31 @@ function ContractDetail() {
     const { type, contractId } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    
+
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [zoom, setZoom] = useState(100);
     const [showSigningInfo, setShowSigningInfo] = useState(false); // dùng như state bật/tắt dialog luồng ký
-    
+
     // State cho contract data
     const [contract, setContract] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
+    // State cho review/approve processing
+    const [processingReview, setProcessingReview] = useState(false);
+
+    // State cho coordinate processing
+    const [processingCoordinate, setProcessingCoordinate] = useState(false);
+
     // State cho CoordinateAssigners
     const [showCoordinate, setShowCoordinate] = useState(false);
     const [coordinateStep, setCoordinateStep] = useState(1);
     const [participantId, setParticipantId] = useState(null);
     const [recipientId, setRecipientId] = useState(null);
     const [coordinatorRecipient, setCoordinatorRecipient] = useState(null);
-    
+
     // State cho reviewers, signers, clerks
     const [reviewers, setReviewers] = useState([]);
     const [signers, setSigners] = useState([]);
@@ -126,11 +132,11 @@ function ContractDetail() {
     useEffect(() => {
         const loadContractData = async () => {
             if (!contractId) return;
-            
+
             try {
                 setLoading(true);
                 setError(null);
-                
+
                 // Reset highlighted fields khi load lại
                 const showAllFields = searchParams.get('showAllFields');
                 if (showAllFields === '0' || showAllFields === 'false') {
@@ -138,24 +144,24 @@ function ContractDetail() {
                     setHighlightType(null);
                     setReviewDecision(''); // Reset review decision
                 }
-                
+
                 // Lấy thông tin hợp đồng
                 const contractResponse = await contractService.getContractById(contractId);
                 if (contractResponse?.code === 'SUCCESS') {
                     const contractData = contractResponse.data;
                     setContract(contractData);
-                    
+
                     // Lấy recipientId từ URL params hoặc từ contract data
                     const urlRecipientId = searchParams.get('recipientId');
                     if (urlRecipientId) {
                         setRecipientId(parseInt(urlRecipientId));
-                        
+
                         // Lấy thông tin participant theo recipient ID
                         const participantResponse = await contractService.getParticipantByRecipientId(urlRecipientId);
                         if (participantResponse?.code === 'SUCCESS') {
                             const participantData = participantResponse.data;
                             setParticipantId(participantData.id);
-                            
+
                             // Lấy người điều phối từ recipients
                             const coordinator = participantData.recipients?.find(r => r.role === 1);
                             if (coordinator) {
@@ -163,7 +169,7 @@ function ContractDetail() {
                             }
                         }
                     }
-                    
+
                     // Lấy thông tin document để hiển thị PDF
                     const documentsResponse = await contractService.getDocumentsByContract(contractId);
                     if (documentsResponse?.code === 'SUCCESS' && documentsResponse.data?.length > 0) {
@@ -177,7 +183,7 @@ function ContractDetail() {
                             documents.find(doc => doc.type === 2) ||
                             documents.find(doc => doc.type === 1) ||
                             documents[0];
-                        
+
                         // Lấy presigned URL cho document
                         const urlResponse = await contractService.getPresignedUrl(document.id);
                         if (urlResponse?.code === 'SUCCESS') {
@@ -274,7 +280,7 @@ function ContractDetail() {
         }
 
         const recipientRole = recipient.role;
-        
+
         // Chỉ cho phép ủy quyền nếu là coordinator (role = 1) hoặc signer (role = 3)
         if (recipientRole !== 1 && recipientRole !== 3) {
             showToast('Chỉ người điều phối và người ký mới có thể ủy quyền', 'warning');
@@ -334,25 +340,25 @@ function ContractDetail() {
         console.log('Tìm ô thông tin');
         // Filter fields có type là TEXT (1), CONTRACT_NO (4), MONEY (5)
         const infoFields = fields.filter(field => field.type === 1 || field.type === 4 || field.type === 5);
-        
+
         if (!infoFields || infoFields.length === 0) {
             showToast('Không tìm thấy ô thông tin nào.', 'warning');
             return;
         }
-        
+
         setHighlightedFields(infoFields);
         setHighlightType('info');
-        
+
         // Chuyển đến trang đầu tiên có field thông tin
         if (infoFields.length > 0 && infoFields[0].page) {
             setCurrentPage(infoFields[0].page);
         }
-        
+
         // Focus vào field đầu tiên
         if (infoFields[0]) {
             setFocusComponentId(`highlight-${infoFields[0].id}`);
         }
-        
+
         console.log('Found info fields:', infoFields);
     };
 
@@ -434,14 +440,16 @@ function ContractDetail() {
     };
 
     const handleReviewConfirm = async () => {
+        // Đóng dialog trước khi bắt đầu processing
+        setShowReviewDialog(false);
+
         try {
-            setLoading(true);
+            setProcessingReview(true);
             const response = await contractService.approvalProcess(recipientId);
 
             if (response?.code === 'SUCCESS') {
                 showToast('Đã xác nhận đồng ý với hợp đồng thành công!', 'success');
                 setReviewDecision('');
-                setShowReviewDialog(false);
                 setTimeout(() => {
                     navigate(`/main/c/detail/${contractId}`);
                 }, 1200);
@@ -452,7 +460,7 @@ function ContractDetail() {
             console.error('Error reviewing contract:', error);
             showToast(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi xác nhận xem xét', 'error');
         } finally {
-            setLoading(false);
+            setProcessingReview(false);
         }
     };
 
@@ -483,8 +491,8 @@ function ContractDetail() {
         }
 
         // Kiểm tra xem có text field nào chưa điền không
-        const requiredTextFields = fields.filter(field => 
-            (field.type === 1 || field.type === 4) && 
+        const requiredTextFields = fields.filter(field =>
+            (field.type === 1 || field.type === 4) &&
             field.recipientId === recipientId
         );
 
@@ -504,7 +512,7 @@ function ContractDetail() {
         if (unfilledFields.length > 0) {
             const fieldNames = unfilledFields.map(f => f.name || (f.type === 4 ? 'Số hợp đồng' : 'Nội dung')).join(', ');
             showToast(`Vui lòng điền đầy đủ thông tin cho các ô: ${fieldNames}`, 'warning', 5000);
-            
+
             // Focus vào field đầu tiên chưa điền
             if (unfilledFields[0]) {
                 setFocusComponentId(`highlight-${unfilledFields[0].id}`);
@@ -532,13 +540,13 @@ function ContractDetail() {
     const handleComponentClick = (component) => {
         // Chỉ xử lý khi ở chế độ sign và component là text field
         if (type !== 'sign') return;
-        
+
         // Tìm field tương ứng với component
         const fieldId = component.id.replace('highlight-', '');
         const field = fields.find(f => f.id === parseInt(fieldId));
-        
+
         if (!field) return;
-        
+
         // Chỉ cho phép edit text fields (type 1, 4) thuộc về recipient hiện tại
         if ((field.type === 1 || field.type === 4) && field.recipientId === recipientId) {
             // Bật chế độ editing cho component này
@@ -570,15 +578,15 @@ function ContractDetail() {
                 if (participantResponse?.code === 'SUCCESS') {
                     const userParticipant = participantResponse.data;
                     const userOrgName = userParticipant.name; // Tên tổ chức của user
-                    
+
                     // Lấy tất cả participants của hợp đồng
                     const allParticipantsResponse = await contractService.getAllParticipantsByContract(contractId);
                     if (allParticipantsResponse?.code === 'SUCCESS') {
                         const participantsData = allParticipantsResponse.data || [];
-                        
+
                         // Tìm tất cả participants có cùng tên tổ chức với user
                         const sameOrgParticipants = participantsData.filter(p => p.name === userOrgName);
-                        
+
                         // Load tất cả signers (role = 3) từ các participants cùng tổ chức
                         const existingSigners = [];
                         sameOrgParticipants.forEach(participant => {
@@ -600,7 +608,7 @@ function ContractDetail() {
                                     });
                             }
                         });
-                        
+
                         if (existingSigners.length > 0) {
                             setSigners(existingSigners);
                         }
@@ -617,7 +625,7 @@ function ContractDetail() {
     // Hàm format trạng thái thành text
     const getStatusLabel = (status) => {
         if (!status && status !== 0) return 'Chưa xác định';
-        
+
         const statusMap = {
             0: 'Nháp',
             10: 'Đã tạo',
@@ -630,12 +638,12 @@ function ContractDetail() {
             2: 'Hết hạn',
             35: 'Scan',
         };
-        
+
         // Nếu backend trả sẵn text thì dùng luôn
         if (typeof status === 'string' && isNaN(Number(status))) {
             return status;
         }
-        
+
         return statusMap[Number(status)] || 'Chưa xác định';
     };
 
@@ -648,7 +656,7 @@ function ContractDetail() {
     const getStatusClass = () => {
         const status = contract?.status;
         if (status === undefined && status !== 0) return 'status-unknown';
-        
+
         const statusClassMap = {
             0: 'status-draft',      // Nháp
             10: 'status-created',   // Đã tạo
@@ -661,7 +669,7 @@ function ContractDetail() {
             2: 'status-expired',    // Hết hạn
             35: 'status-scan',      // Scan
         };
-        
+
         return statusClassMap[Number(status)] || 'status-unknown';
     };
 
@@ -742,16 +750,22 @@ function ContractDetail() {
 
     const handleCoordinateSuccess = (data) => {
         console.log('Điều phối thành công:', data);
+        setProcessingCoordinate(false); // Tắt loading
         showToast('Điều phối thành công!', 'success');
         setShowCoordinate(false);
-        // Điều phối xong navigate về màn detail
+        // Điều phối xong navigate về màn detail, dùng replace để thay thế history
         setTimeout(() => {
-            navigate(`/main/c/detail/${contractId}`);
+            navigate(`/main/c/detail/${contractId}`, { replace: true });
         }, 800);
     };
 
     const handleCoordinateError = (error) => {
         console.error('Lỗi điều phối:', error);
+        setProcessingCoordinate(false); // Tắt loading khi lỗi
+    };
+
+    const handleCoordinateStart = () => {
+        setProcessingCoordinate(true); // Bật loading khi bắt đầu
     };
 
     const handleBack = () => {
@@ -806,8 +820,8 @@ function ContractDetail() {
                             <button className="contract-error-btn contract-error-btn-primary" onClick={handleBack}>
                                 Quay lại
                             </button>
-                            <button 
-                                className="contract-error-btn contract-error-btn-secondary" 
+                            <button
+                                className="contract-error-btn contract-error-btn-secondary"
                                 onClick={() => window.location.reload()}
                             >
                                 Tải lại
@@ -824,6 +838,43 @@ function ContractDetail() {
         return (
             <>
                 <ToastStack />
+
+                {/* Fullscreen Loading Overlay for Coordinate */}
+                {processingCoordinate && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 9999,
+                        backdropFilter: 'blur(2px)'
+                    }}>
+                        <div style={{
+                            width: '60px',
+                            height: '60px',
+                            border: '5px solid rgba(255, 255, 255, 0.3)',
+                            borderTop: '5px solid #0B57D0',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                        }}></div>
+                        <div style={{
+                            marginTop: '20px',
+                            color: 'white',
+                            fontSize: '16px',
+                            fontWeight: '500',
+                            textAlign: 'center'
+                        }}>
+                            Đang điều phối, vui lòng đợi...
+                        </div>
+                    </div>
+                )}
+
                 <div className="document-detail-container">
                     <CoordinateAssigners
                         partner={partner}
@@ -850,6 +901,7 @@ function ContractDetail() {
                         coordinatorRecipient={coordinatorRecipient}
                         onCoordinateSuccess={handleCoordinateSuccess}
                         onCoordinateError={handleCoordinateError}
+                        onCoordinateStart={handleCoordinateStart}
                     />
                 </div>
             </>
@@ -860,237 +912,237 @@ function ContractDetail() {
         <>
             <ToastStack />
             <div className="document-detail-container">
-            {/* Sidebar bên trái */}
-            <div className={`document-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-                <button className="sidebar-toggle" onClick={toggleSidebar}>
-                    <span className={`toggle-icon ${sidebarCollapsed ? 'collapsed' : ''}`}>‹</span>
-                </button>
+                {/* Sidebar bên trái */}
+                <div className={`document-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+                    <button className="sidebar-toggle" onClick={toggleSidebar}>
+                        <span className={`toggle-icon ${sidebarCollapsed ? 'collapsed' : ''}`}>‹</span>
+                    </button>
 
-                {!sidebarCollapsed && (
-                    <div className="sidebar-content-container">
-                        <div className="document-info-section">
-                            <h3 className="section-title">THÔNG TIN CHI TIẾT HỢP ĐỒNG</h3>
-                            <div className="info-item">
-                                <label>Tên hợp đồng:</label>
-                                <span>{contract?.name || 'Chưa có tên'}</span>
-                            </div>
-                            <div className="info-item">
-                                <label>Mã hợp đồng:</label>
-                                <span>{contract?.contractNo || contract?.id || 'Chưa có mã'}</span>
-                            </div>
-                            <div className="info-item">
-                                <label>Trạng thái:</label>
-                                <span>{getStatusLabel(contract?.status)}</span>
-                            </div>
-                            <div className="info-item">
-                                <label>Thời gian tạo:</label>
-                                <span>{formatDate(contract?.createdAt) || 'Chưa có'}</span>
-                            </div>
-                            
-                            <button 
-                                className="signing-info-btn" 
-                                onClick={() => setShowSigningInfo(true)}
-                            >
-                                Thông tin ký
-                                <span className="arrow-icon">›</span>
-                            </button>
+                    {!sidebarCollapsed && (
+                        <div className="sidebar-content-container">
+                            <div className="document-info-section">
+                                <h3 className="section-title">THÔNG TIN CHI TIẾT HỢP ĐỒNG</h3>
+                                <div className="info-item">
+                                    <label>Tên hợp đồng:</label>
+                                    <span>{contract?.name || 'Chưa có tên'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Mã hợp đồng:</label>
+                                    <span>{contract?.contractNo || contract?.id || 'Chưa có mã'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Trạng thái:</label>
+                                    <span>{getStatusLabel(contract?.status)}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Thời gian tạo:</label>
+                                    <span>{formatDate(contract?.createdAt) || 'Chưa có'}</span>
+                                </div>
 
-                            {(type === 'review' || type === 'sign') && (
-                                <div className="sign-confirmation-section">
-                                    <h3 className="section-title">
-                                        {type === 'review' ? 'XEM XÉT TÀI LIỆU' : 'KÝ TÀI LIỆU'}
-                                    </h3>
-                                    <div className="confirmation-content">
-                                        <p className="confirmation-question">
-                                            Bạn có đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch không?
-                                        </p>
-                                        <div className="radio-options">
-                                            <label className="radio-option">
-                                                <input
-                                                    type="radio"
-                                                    name="reviewDecision"
-                                                    value="agree"
-                                                    checked={reviewDecision === 'agree'}
-                                                    onChange={() => {
-                                                        setReviewDecision('agree');
-                                                        // Khi chọn Đồng ý, tự động hiển thị tất cả text fields và signature fields
-                                                        if (type === 'sign') {
-                                                            const signFields = fields.filter(field => 
-                                                                ((field.type === 1 || field.type === 4 || field.type === 3) && 
-                                                                field.recipientId === recipientId)
-                                                            );
-                                                            if (signFields.length > 0) {
-                                                                setHighlightedFields(signFields);
-                                                                setHighlightType('sign');
-                                                                // Chuyển đến trang đầu tiên có field
-                                                                if (signFields[0].page) {
-                                                                    setCurrentPage(signFields[0].page);
+                                <button
+                                    className="signing-info-btn"
+                                    onClick={() => setShowSigningInfo(true)}
+                                >
+                                    Thông tin ký
+                                    <span className="arrow-icon">›</span>
+                                </button>
+
+                                {(type === 'review' || type === 'sign') && (
+                                    <div className="sign-confirmation-section">
+                                        <h3 className="section-title">
+                                            {type === 'review' ? 'XEM XÉT TÀI LIỆU' : 'KÝ TÀI LIỆU'}
+                                        </h3>
+                                        <div className="confirmation-content">
+                                            <p className="confirmation-question">
+                                                Bạn có đồng ý với nội dung, các điều khoản trong tài liệu và sử dụng phương thức điện tử để thực hiện giao dịch không?
+                                            </p>
+                                            <div className="radio-options">
+                                                <label className="radio-option">
+                                                    <input
+                                                        type="radio"
+                                                        name="reviewDecision"
+                                                        value="agree"
+                                                        checked={reviewDecision === 'agree'}
+                                                        onChange={() => {
+                                                            setReviewDecision('agree');
+                                                            // Khi chọn Đồng ý, tự động hiển thị tất cả text fields và signature fields
+                                                            if (type === 'sign') {
+                                                                const signFields = fields.filter(field =>
+                                                                ((field.type === 1 || field.type === 4 || field.type === 3) &&
+                                                                    field.recipientId === recipientId)
+                                                                );
+                                                                if (signFields.length > 0) {
+                                                                    setHighlightedFields(signFields);
+                                                                    setHighlightType('sign');
+                                                                    // Chuyển đến trang đầu tiên có field
+                                                                    if (signFields[0].page) {
+                                                                        setCurrentPage(signFields[0].page);
+                                                                    }
                                                                 }
                                                             }
-                                                        }
-                                                    }}
-                                                />
-                                                <span className="radio-label">Đồng ý</span>
-                                            </label>
-                                            <label className="radio-option">
-                                                <input
-                                                    type="radio"
-                                                    name="reviewDecision"
-                                                    value="disagree"
-                                                    checked={reviewDecision === 'disagree'}
-                                                    onChange={() => setReviewDecision('disagree')}
-                                                />
-                                                <span className="radio-label">Không đồng ý</span>
-                                            </label>
+                                                        }}
+                                                    />
+                                                    <span className="radio-label">Đồng ý</span>
+                                                </label>
+                                                <label className="radio-option">
+                                                    <input
+                                                        type="radio"
+                                                        name="reviewDecision"
+                                                        value="disagree"
+                                                        checked={reviewDecision === 'disagree'}
+                                                        onChange={() => setReviewDecision('disagree')}
+                                                    />
+                                                    <span className="radio-label">Không đồng ý</span>
+                                                </label>
+                                            </div>
+                                            <p className="confirmation-note">
+                                                Vui lòng lựa chọn trước khi nhấn nút Xác nhận ở phần Luồng xử lý tài liệu.
+                                            </p>
                                         </div>
-                                        <p className="confirmation-note">
-                                            Vui lòng lựa chọn trước khi nhấn nút Xác nhận ở phần Luồng xử lý tài liệu.
-                                        </p>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Nội dung chính */}
-            <div className="pdf-content-wrapper">
-                {/* Thanh điều khiển PDF */}
-                <div className="pdf-controls">
-                    <div className="pagination-controls">
-                        <button 
-                            className="page-btn" 
-                            onClick={() => handlePageChange(1)}
-                            disabled={currentPage === 1}
-                        >
-                            ««
-                        </button>
-                        <button 
-                            className="page-btn" 
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            «
-                        </button>
-                        <span className="page-info">{currentPage} / {totalPages}</span>
-                        <button 
-                            className="page-btn" 
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            »
-                        </button>
-                        <button 
-                            className="page-btn" 
-                            onClick={() => handlePageChange(totalPages)}
-                            disabled={currentPage === totalPages}
-                        >
-                            »»
-                        </button>
-                    </div>
-                    
-                    <div className="zoom-controls">
-                        <select 
-                            value={zoom} 
-                            onChange={(e) => handleZoomChange(Number(e.target.value))}
-                            className="zoom-select"
-                        >
-                            <option value={50}>50%</option>
-                            <option value={75}>75%</option>
-                            <option value={100}>100%</option>
-                            <option value={125}>125%</option>
-                            <option value={150}>150%</option>
-                            <option value={200}>200%</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* PDF Viewer */}
-                <div className="pdf-viewer">
-                    {pdfDocument ? (
-                        <PDFViewer
-                            document={pdfDocument}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            zoom={zoom}
-                            onPageChange={handlePageChange}
-                            components={getHighlightComponents()}
-                            focusComponentId={focusComponentId}
-                            onComponentClick={handleComponentClick}
-                            editingComponentId={editingComponentId}
-                            onTextFieldChange={handleTextFieldChange}
-                            onTextFieldBlur={handleTextFieldBlur}
-                        />
-                    ) : (
-                        <div className="pdf-loading">
-                            <div className="loading-spinner"></div>
-                            <p>Đang chuẩn bị URL tài liệu...</p>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* Nút hành động */}
-                {type === 'detail' ? (
-                    <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <button className={`edit-btn status-display ${getStatusClass()}`} type="button" disabled>
-                            Trạng thái: {getStatusButtonLabel()}
-                        </button>
-                        <button className="edit-btn" onClick={handleBack}>
-                            Đóng
-                        </button>
-                    </div>
-                ) : (
-                    <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <button className="edit-btn" onClick={handleDelegate}>
-                            Ủy quyền/Chuyển tiếp
-                        </button>
-                        <button className="edit-btn" onClick={handleFindSignFields}>
-                            Tìm ô ký
-                        </button>
-                        <button className="edit-btn" onClick={handleFindInfoFields}>
-                            Tìm ô thông tin
-                        </button>
-                        {type === 'review' ? (
-                            <button className="approve-btn" onClick={handleReviewClick}>
-                                Xác nhận
+                {/* Nội dung chính */}
+                <div className="pdf-content-wrapper">
+                    {/* Thanh điều khiển PDF */}
+                    <div className="pdf-controls">
+                        <div className="pagination-controls">
+                            <button
+                                className="page-btn"
+                                onClick={() => handlePageChange(1)}
+                                disabled={currentPage === 1}
+                            >
+                                ««
                             </button>
-                        ) : type === 'sign' ? (
-                            <button className="approve-btn" onClick={() => {
-                                if (!recipientId) {
-                                    showToast('Không tìm thấy thông tin người ký', 'warning');
-                                    return;
-                                }
-                                if (!reviewDecision) {
-                                    showToast('Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận', 'warning');
-                                    return;
-                                }
-                                if (reviewDecision === 'agree') {
-                                    handleSignClick();
-                                } else {
-                                    // Không đồng ý -> mở RejectDialog, dùng cùng luồng với xem xét
-                                    if (!documentMeta) {
-                                        showToast('Không tìm thấy thông tin tài liệu', 'error');
+                            <button
+                                className="page-btn"
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                            >
+                                «
+                            </button>
+                            <span className="page-info">{currentPage} / {totalPages}</span>
+                            <button
+                                className="page-btn"
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                            >
+                                »
+                            </button>
+                            <button
+                                className="page-btn"
+                                onClick={() => handlePageChange(totalPages)}
+                                disabled={currentPage === totalPages}
+                            >
+                                »»
+                            </button>
+                        </div>
+
+                        <div className="zoom-controls">
+                            <select
+                                value={zoom}
+                                onChange={(e) => handleZoomChange(Number(e.target.value))}
+                                className="zoom-select"
+                            >
+                                <option value={50}>50%</option>
+                                <option value={75}>75%</option>
+                                <option value={100}>100%</option>
+                                <option value={125}>125%</option>
+                                <option value={150}>150%</option>
+                                <option value={200}>200%</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* PDF Viewer */}
+                    <div className="pdf-viewer">
+                        {pdfDocument ? (
+                            <PDFViewer
+                                document={pdfDocument}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                zoom={zoom}
+                                onPageChange={handlePageChange}
+                                components={getHighlightComponents()}
+                                focusComponentId={focusComponentId}
+                                onComponentClick={handleComponentClick}
+                                editingComponentId={editingComponentId}
+                                onTextFieldChange={handleTextFieldChange}
+                                onTextFieldBlur={handleTextFieldBlur}
+                            />
+                        ) : (
+                            <div className="pdf-loading">
+                                <div className="loading-spinner"></div>
+                                <p>Đang chuẩn bị URL tài liệu...</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Nút hành động */}
+                    {type === 'detail' ? (
+                        <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button className={`edit-btn status-display ${getStatusClass()}`} type="button" disabled>
+                                Trạng thái: {getStatusButtonLabel()}
+                            </button>
+                            <button className="edit-btn" onClick={handleBack}>
+                                Đóng
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="document-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button className="edit-btn" onClick={handleDelegate}>
+                                Ủy quyền/Chuyển tiếp
+                            </button>
+                            <button className="edit-btn" onClick={handleFindSignFields}>
+                                Tìm ô ký
+                            </button>
+                            <button className="edit-btn" onClick={handleFindInfoFields}>
+                                Tìm ô thông tin
+                            </button>
+                            {type === 'review' ? (
+                                <button className="approve-btn" onClick={handleReviewClick}>
+                                    Xác nhận
+                                </button>
+                            ) : type === 'sign' ? (
+                                <button className="approve-btn" onClick={() => {
+                                    if (!recipientId) {
+                                        showToast('Không tìm thấy thông tin người ký', 'warning');
                                         return;
                                     }
-                                    setShowRejectDialog(true);
-                                }
-                            }}>
-                                Xác nhận
+                                    if (!reviewDecision) {
+                                        showToast('Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận', 'warning');
+                                        return;
+                                    }
+                                    if (reviewDecision === 'agree') {
+                                        handleSignClick();
+                                    } else {
+                                        // Không đồng ý -> mở RejectDialog, dùng cùng luồng với xem xét
+                                        if (!documentMeta) {
+                                            showToast('Không tìm thấy thông tin tài liệu', 'error');
+                                            return;
+                                        }
+                                        setShowRejectDialog(true);
+                                    }
+                                }}>
+                                    Xác nhận
+                                </button>
+                            ) : (
+                                <button className="finish-btn" onClick={handleCoordinate}>
+                                    Điều phối
+                                </button>
+                            )}
+                            <button className="edit-btn" onClick={handleBack}>
+                                Đóng
                             </button>
-                        ) : (
-                            <button className="finish-btn" onClick={handleCoordinate}>
-                                Điều phối
-                            </button>
-                        )}
-                        <button className="edit-btn" onClick={handleBack}>
-                            Đóng
-                        </button>
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
             </div>
-            </div>
-            
+
             {/* Review Confirmation Dialog */}
             {showReviewDialog && (
                 <div className="review-dialog-overlay" style={{
@@ -1148,6 +1200,78 @@ function ContractDetail() {
                                 {loading ? 'Đang xử lý...' : 'Xác nhận'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Fullscreen Loading Overlay - Same style as DocumentConfirmation step 4 */}
+            {processingReview && type === 'review' && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 9999,
+                    backdropFilter: 'blur(2px)'
+                }}>
+                    <div style={{
+                        width: '60px',
+                        height: '60px',
+                        border: '5px solid rgba(255, 255, 255, 0.3)',
+                        borderTop: '5px solid #0B57D0',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <div style={{
+                        marginTop: '20px',
+                        color: 'white',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        textAlign: 'center'
+                    }}>
+                        Đang xử lý, vui lòng đợi...
+                    </div>
+                </div>
+            )}
+
+            {/* Fullscreen Loading Overlay for Coordinate */}
+            {processingCoordinate && type === 'coordinate' && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 9999,
+                    backdropFilter: 'blur(2px)'
+                }}>
+                    <div style={{
+                        width: '60px',
+                        height: '60px',
+                        border: '5px solid rgba(255, 255, 255, 0.3)',
+                        borderTop: '5px solid #0B57D0',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <div style={{
+                        marginTop: '20px',
+                        color: 'white',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        textAlign: 'center'
+                    }}>
+                        Đang điều phối, vui lòng đợi...
                     </div>
                 </div>
             )}
