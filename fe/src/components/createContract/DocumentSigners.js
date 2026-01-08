@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/documentForm.css';
 
-function DocumentSigners({ 
+function DocumentSigners({
     documentType,
     formData,
     setFormData,
@@ -169,16 +169,6 @@ function DocumentSigners({
                         <span>Tài liệu đơn lẻ theo mẫu</span>
                     </label>
                 </div>
-                <div className="workflow-checkbox">
-                    <label className="checkbox-option">
-                        <input
-                            type="checkbox"
-                            checked={formData.printWorkflow}
-                            onChange={(e) => setFormData(prev => ({...prev, printWorkflow: e.target.checked}))}
-                        />
-                        <span>Ấn luồng xử lý</span>
-                    </label>
-                </div>
             </div>
 
             {/* Organization Info */}
@@ -231,7 +221,7 @@ function DocumentSigners({
                                     </div>
                                     <h4>Người xem xét {index + 1}</h4>
                                 </div>
-                                <button 
+                                <button
                                     className="remove-btn"
                                     onClick={() => removeReviewer(reviewer.id)}
                                 >
@@ -354,7 +344,7 @@ function DocumentSigners({
                                 </div>
                                 <h4>Người ký {index + 1}</h4>
                             </div>
-                            <button 
+                            <button
                                 className="remove-btn"
                                 onClick={() => removeSigner(signer.id)}
                             >
@@ -511,7 +501,7 @@ function DocumentSigners({
                                     </div>
                                     <h4>Văn thư {index + 1}</h4>
                                 </div>
-                                <button 
+                                <button
                                     className="remove-btn"
                                     onClick={() => removeDocumentClerk(clerk.id)}
                                 >
@@ -695,7 +685,7 @@ function DocumentSigners({
                                             />
                                         </div>
                                     </div>
-                                    <button 
+                                    <button
                                         className="remove-btn"
                                         onClick={() => removePartner(partner.id)}
                                     >
@@ -732,7 +722,7 @@ function DocumentSigners({
                                                         </div>
                                                         <h4>Người điều phối {index + 1}</h4>
                                                     </div>
-                                                    <button 
+                                                    <button
                                                         className="remove-btn"
                                                         onClick={() => removePartnerCoordinator(partner.id, coordinator.id)}
                                                     >
@@ -862,7 +852,7 @@ function DocumentSigners({
                                                         </div>
                                                         <h4>Người xem xét {index + 1}</h4>
                                                     </div>
-                                                    <button 
+                                                    <button
                                                         className="remove-btn"
                                                         onClick={() => removePartnerReviewer(partner.id, reviewer.id)}
                                                     >
@@ -972,147 +962,153 @@ function DocumentSigners({
                                         <span>+</span> Thêm người ký
                                     </button>
                                 </div>
-                                {partner.signers.map((signer, index) => (
-                                    <div key={signer.id} className="signer-card">
-                                        <div className="signer-header">
-                                            <div className="title-with-order">
-                                                <div className="order-input-box tiny">
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={signer.ordering ?? ''}
-                                                        onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'ordering', e.target.value)}
-                                                    />
-                                                </div>
-                                                <h4>Người ký {index + 1}</h4>
-                                            </div>
-                                            <button 
-                                                className="remove-btn"
-                                                onClick={() => removePartnerSigner(partner.id, signer.id)}
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                        <div className="signer-form">
-                                            <div className="form-row">
-                                                <div className="form-group" style={{ position: 'relative' }}>
-                                                    <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        value={signer.fullName}
-                                                        onChange={(e) => {
-                                                            updatePartnerSigner(partner.id, signer.id, 'fullName', e.target.value);
-                                                            fetchSuggestions(e.target.value, `partner-signer-${partner.id}-${signer.id}`);
-                                                        }}
-                                                        onFocus={() => {
-                                                            if (nameSuggestions.length > 0) {
-                                                                setShowSuggestions(true);
-                                                                setCurrentInputId(`partner-signer-${partner.id}-${signer.id}`);
-                                                            }
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            setTimeout(() => {
-                                                                setShowSuggestions(false);
-                                                                setCurrentInputId(null);
-                                                            }, 200);
-                                                        }}
-                                                        placeholder="Nhập họ và tên"
-                                                    />
-                                                    {showSuggestions && currentInputId === `partner-signer-${partner.id}-${signer.id}` && nameSuggestions.length > 0 && (
-                                                        <div className="suggestion-dropdown" style={{
-                                                            position: 'absolute',
-                                                            top: '100%',
-                                                            left: 0,
-                                                            right: 0,
-                                                            backgroundColor: 'white',
-                                                            border: '1px solid #ddd',
-                                                            borderRadius: '4px',
-                                                            maxHeight: '200px',
-                                                            overflowY: 'auto',
-                                                            zIndex: 1000,
-                                                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                                            marginTop: '4px'
-                                                        }}>
-                                                            {nameSuggestions.map((suggestion, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    onClick={() => handleSuggestionSelect(suggestion, signer.id, 'partner-signer', partner.id)}
-                                                                    style={{
-                                                                        padding: '8px 12px',
-                                                                        cursor: 'pointer',
-                                                                        borderBottom: idx < nameSuggestions.length - 1 ? '1px solid #eee' : 'none'
-                                                                    }}
-                                                                    onMouseEnter={(e) => {
-                                                                        e.target.style.backgroundColor = '#f5f5f5';
-                                                                    }}
-                                                                    onMouseLeave={(e) => {
-                                                                        e.target.style.backgroundColor = 'white';
-                                                                    }}
-                                                                >
-                                                                    <div style={{ fontWeight: '500' }}>{suggestion.name}</div>
-                                                                    {suggestion.email && (
-                                                                        <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-                                                                            📧 {suggestion.email}
-                                                                        </div>
-                                                                    )}
-                                                                    {suggestion.phone && (
-                                                                        <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-                                                                            📱 {suggestion.phone}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="form-group">
-                                                    <label>Email <span style={{ color: 'red' }}>*</span></label>
-                                                    <input
-                                                        type="email"
-                                                        value={signer.email}
-                                                        onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'email', e.target.value)}
-                                                        placeholder="Nhập email"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="form-row">
-                                                <div className="form-group">
-                                                    <label>Số điện thoại</label>
-                                                    <input
-                                                        type="tel"
-                                                        value={signer.phone || ''}
-                                                        onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'phone', e.target.value)}
-                                                        placeholder="Nhập số điện thoại"
-                                                    />
-                                                </div>
-                                                <div className="form-group">
-                                                    <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        value="Ký bằng chứng thư số server"
-                                                        readOnly
-                                                        className="readonly-input"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="form-row">
-                                                <div className="form-group">
-                                                    <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        value={signer.card_id || signer.cardId || ''}
-                                                        onChange={(e) => {
-                                                            const value = e.target.value;
-                                                            updatePartnerSigner(partner.id, signer.id, 'card_id', value);
-                                                            updatePartnerSigner(partner.id, signer.id, 'cardId', value);
-                                                        }}
-                                                        placeholder="Nhập Mã số thuế/CMT/CCCD"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
+                                {partner.signers.length === 0 ? (
+                                    <div className="empty-state">
+                                        <p>Chưa có người ký nào</p>
                                     </div>
-                                ))}
+                                ) : (
+                                    partner.signers.map((signer, index) => (
+                                        <div key={signer.id} className="signer-card">
+                                            <div className="signer-header">
+                                                <div className="title-with-order">
+                                                    <div className="order-input-box tiny">
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={signer.ordering ?? ''}
+                                                            onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'ordering', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <h4>Người ký {index + 1}</h4>
+                                                </div>
+                                                <button
+                                                    className="remove-btn"
+                                                    onClick={() => removePartnerSigner(partner.id, signer.id)}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                            <div className="signer-form">
+                                                <div className="form-row">
+                                                    <div className="form-group" style={{ position: 'relative' }}>
+                                                        <label>Họ tên <span style={{ color: 'red' }}>*</span></label>
+                                                        <input
+                                                            type="text"
+                                                            value={signer.fullName}
+                                                            onChange={(e) => {
+                                                                updatePartnerSigner(partner.id, signer.id, 'fullName', e.target.value);
+                                                                fetchSuggestions(e.target.value, `partner-signer-${partner.id}-${signer.id}`);
+                                                            }}
+                                                            onFocus={() => {
+                                                                if (nameSuggestions.length > 0) {
+                                                                    setShowSuggestions(true);
+                                                                    setCurrentInputId(`partner-signer-${partner.id}-${signer.id}`);
+                                                                }
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                setTimeout(() => {
+                                                                    setShowSuggestions(false);
+                                                                    setCurrentInputId(null);
+                                                                }, 200);
+                                                            }}
+                                                            placeholder="Nhập họ và tên"
+                                                        />
+                                                        {showSuggestions && currentInputId === `partner-signer-${partner.id}-${signer.id}` && nameSuggestions.length > 0 && (
+                                                            <div className="suggestion-dropdown" style={{
+                                                                position: 'absolute',
+                                                                top: '100%',
+                                                                left: 0,
+                                                                right: 0,
+                                                                backgroundColor: 'white',
+                                                                border: '1px solid #ddd',
+                                                                borderRadius: '4px',
+                                                                maxHeight: '200px',
+                                                                overflowY: 'auto',
+                                                                zIndex: 1000,
+                                                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                                                marginTop: '4px'
+                                                            }}>
+                                                                {nameSuggestions.map((suggestion, idx) => (
+                                                                    <div
+                                                                        key={idx}
+                                                                        onClick={() => handleSuggestionSelect(suggestion, signer.id, 'partner-signer', partner.id)}
+                                                                        style={{
+                                                                            padding: '8px 12px',
+                                                                            cursor: 'pointer',
+                                                                            borderBottom: idx < nameSuggestions.length - 1 ? '1px solid #eee' : 'none'
+                                                                        }}
+                                                                        onMouseEnter={(e) => {
+                                                                            e.target.style.backgroundColor = '#f5f5f5';
+                                                                        }}
+                                                                        onMouseLeave={(e) => {
+                                                                            e.target.style.backgroundColor = 'white';
+                                                                        }}
+                                                                    >
+                                                                        <div style={{ fontWeight: '500' }}>{suggestion.name}</div>
+                                                                        {suggestion.email && (
+                                                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                                                📧 {suggestion.email}
+                                                                            </div>
+                                                                        )}
+                                                                        {suggestion.phone && (
+                                                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                                                📱 {suggestion.phone}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label>Email <span style={{ color: 'red' }}>*</span></label>
+                                                        <input
+                                                            type="email"
+                                                            value={signer.email}
+                                                            onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'email', e.target.value)}
+                                                            placeholder="Nhập email"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="form-row">
+                                                    <div className="form-group">
+                                                        <label>Số điện thoại</label>
+                                                        <input
+                                                            type="tel"
+                                                            value={signer.phone || ''}
+                                                            onChange={(e) => updatePartnerSigner(partner.id, signer.id, 'phone', e.target.value)}
+                                                            placeholder="Nhập số điện thoại"
+                                                        />
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label>Loại ký <span style={{ color: 'red' }}>*</span></label>
+                                                        <input
+                                                            type="text"
+                                                            value="Ký bằng chứng thư số server"
+                                                            readOnly
+                                                            className="readonly-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="form-row">
+                                                    <div className="form-group">
+                                                        <label>Mã số thuế/CMT/CCCD <span style={{ color: 'red' }}>*</span></label>
+                                                        <input
+                                                            type="text"
+                                                            value={signer.card_id || signer.cardId || ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                updatePartnerSigner(partner.id, signer.id, 'card_id', value);
+                                                                updatePartnerSigner(partner.id, signer.id, 'cardId', value);
+                                                            }}
+                                                            placeholder="Nhập Mã số thuế/CMT/CCCD"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
 
                             {/* Clerks Section - Only for Organization */}
@@ -1143,7 +1139,7 @@ function DocumentSigners({
                                                         </div>
                                                         <h4>Văn thư {index + 1}</h4>
                                                     </div>
-                                                    <button 
+                                                    <button
                                                         className="remove-btn"
                                                         onClick={() => removePartnerClerk(partner.id, clerk.id)}
                                                     >

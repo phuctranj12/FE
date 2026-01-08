@@ -22,7 +22,7 @@ const DocumentPackage = () => {
                         : [];
 
                 const mappedUsers = rawList
-                    .slice(0, 5)
+                    .slice(0, 10)
                     .map((item, index) => ({
                         name:
                             item.fullName ||
