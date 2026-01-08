@@ -39,11 +39,20 @@ const CreatedDocumentsChart = () => {
         try {
             setLoading(true);
             setError(null);
-            const result = await dashboardService.getMyContracts({
+            const result = await dashboardService.getContractsByOrganization({
                 fromDate: startDate,
                 toDate: endDate,
-                rganizationId: 1,
+                organizationId: 1,
             });
+            console.log('📊 Response từ getContractsByOrganization:', result);
+
+            // Kiểm tra nếu result là null hoặc undefined
+            if (!result) {
+                console.warn('⚠️ API trả về null hoặc undefined');
+                setData(prev => ({ ...prev, org: [] }));
+                return;
+            }
+
             const chartData = [
                 { label: 'Đang xử lý', value: result.totalProcessing || 0, color: '#6DA9FF' },
                 { label: 'Hoàn thành', value: result.totalSigned || 0, color: '#FFC980' },
@@ -53,6 +62,7 @@ const CreatedDocumentsChart = () => {
             ];
             setData(prev => ({ ...prev, org: chartData }));
         } catch (err) {
+            console.error('❌ Lỗi fetchOrgDocuments:', err);
             setError(err.message || 'Không thể tải dữ liệu tài liệu tổ chức');
         } finally {
             setLoading(false);

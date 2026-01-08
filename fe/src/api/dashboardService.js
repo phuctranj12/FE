@@ -56,7 +56,7 @@ const dashboardService = {
             if (toDate) params.toDate = toDate;
             if (organizationId) params.organizationId = organizationId;
 
-            const response = await apiClient.get('/dashboard/count-contract-by-organization', {
+            const response = await apiClient.get('contracts/dashboard/count-contract-by-organization', {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     Accept: 'application/json',
